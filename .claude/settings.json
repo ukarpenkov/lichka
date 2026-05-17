@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm view *)",
+      "Bash(npx @react-native-community/cli init --help)",
+      "Read(//c/js/**)",
+      "Bash(npx @react-native-community/cli init lichka_temp --version 0.85.3 --skip-install --skip-git-init --pm npm)",
+      "Bash(cp -r /c/js/lichka_temp/android /c/js/lichka/)",
+      "Bash(cp -r /c/js/lichka_temp/ios /c/js/lichka/)",
+      "Bash(cp -r /c/js/lichka_temp/__tests__ /c/js/lichka/)",
+      "Bash(cp /c/js/lichka_temp/.bundle /c/js/lichka/ -r)",
+      "Bash(cp /c/js/lichka_temp/.watchmanconfig /c/js/lichka/)",
+      "Bash(rm -rf /c/js/lichka_temp)"
+    ],
+    "additionalDirectories": [
+      "C:\\js\\lichka_temp"
+    ]
+  }
+}
