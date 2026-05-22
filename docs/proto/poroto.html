@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Journal — Offline Diary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            /* Light Theme */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --bg-tertiary: #e8e8ed;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #86868b;
+            --accent: #0071e3;
+            --accent-soft: rgba(0, 113, 227, 0.1);
+            --border: rgba(0, 0, 0, 0.1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.12);
+            --success: #34c759;
+            --warning: #ff9500;
+            --error: #ff3b30;
+            --message-in: #f0f0f5;
+            --message-out: #0071e3;
+            --message-out-text: #ffffff;
+            --waveform: #0071e3;
+            --haptic-pulse: rgba(0, 113, 227, 0.3);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+
+            /* Radius */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-full: 999px;
+
+            /* Animation */
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-fluid: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --duration-fast: 150ms;
+            --duration-normal: 300ms;
+            --duration-slow: 500ms;
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-primary: #1c1c1e;
+            --bg-secondary: #2c2c2e;
+            --bg-tertiary: #3a3a3c;
+            --text-primary: #ffffff;
+            --text-secondary: #aeaeb2;
+            --text-tertiary: #86868b;
+            --accent: #0a84ff;
+            --accent-soft: rgba(10, 132, 255, 0.15);
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+            --message-in: #2c2c2e;
+            --message-out: #0a84ff;
+            --message-out-text: #ffffff;
+            --waveform: #0a84ff;
+            --haptic-pulse: rgba(10, 132, 255, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
+            transition: background var(--duration-normal) var(--ease-fluid), color var(--duration-normal) var(--ease-fluid);
+        }
+
+        /* Phone Frame */
+        .phone-frame {
+            max-width: 430px;
+            margin: 20px auto;
+            background: var(--bg-primary);
+            border-radius: 40px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #111;
+            min-height: 932px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px var(--space-lg) 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-bar .time {
+            font-weight: 600;
+        }
+
+        .status-bar .indicators {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .indicator {
+            width: 18px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 3px;
+            opacity: 0.8;
+        }
+
+        .indicator.battery {
+            width: 24px;
+            position: relative;
+        }
+
+        .indicator.battery::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 2px;
+            height: 6px;
+            background: var(--text-primary);
+            border-radius: 1px;
+        }
+
+        /* Navigation */
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-primary);
+            position: sticky;
+            top: 44px;
+            z-index: 90;
+            border-bottom: 1px solid var(--border);
+            transition: background var(--duration-normal) var(--ease-fluid);
+        }
+
+        .nav-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-fluid);
+            position: relative;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            transform: scale(1.05);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        .icon-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .icon-btn.haptic::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: var(--radius-full);
+            background: var(--haptic-pulse);
+            opacity: 0;
+            transition: opacity var(--duration-fast);
+            pointer-events: none;
+        }
+
+        .icon-btn.haptic:active::after {
+            opacity: 1;
+            animation: pulse 0.3s var(--ease-spring);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.3;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Content Area */
+        .content {
+            padding: var(--space-md) var(--space-lg) var(--space-xl);
+            min-height: calc(100vh - 140px);
+        }
+
+        /* Journal List */
+        .journal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+
+        .journal-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-spring);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .journal-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--border);
+        }
+
+        .journal-card:active {
+            transform: scale(0.98);
+        }
+
+        .journal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .journal-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .journal-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .journal-count {
+            margin-top: auto;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* Chat Screen */
+        .chat-screen {
+            display: none;
+            flex-direction: column;
+            height: calc(100vh - 140px);
+        }
+
+        .chat-screen.active {
+            display: flex;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-sm) 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            scroll-behavior: smooth;
+        }
+
+        .date-sticky {
+            position: sticky;
+            top: var(--space-md);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            margin: var(--space-lg) 0 var(--space-md);
+        }
+
+        .date-badge {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            animation: slideDown var(--duration-normal) var(--ease-fluid);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            position: relative;
+            animation: messageIn var(--duration-normal) var(--ease-spring);
+            transition: transform var(--duration-fast);
+        }
+
+        .message:hover {
+            transform: translateX(2px);
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message.in {
+            align-self: flex-start;
+            background: var(--message-in);
+            border-bottom-left-radius: 8px;
+            margin-right: auto;
+        }
+
+        .message.out {
+            align-self: flex-end;
+            background: var(--message-out);
+            color: var(--message-out-text);
+            border-bottom-right-radius: 8px;
+            margin-left: auto;
+        }
+
+        .message-content {
+            font-size: 16px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-meta {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .message.out .message-meta {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .message-image {
+            max-width: 100%;
+            border-radius: 12px;
+            margin: 4px 0;
+            cursor: pointer;
+            transition: transform var(--duration-fast);
+        }
+
+        .message-image:hover {
+            transform: scale(1.02);
+        }
+
+        .message-image:active {
+            transform: scale(0.98);
+        }
+
+        .message-voice {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+        }
+
+        .voice-play-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform var(--duration-fast);
+        }
+
+        .voice-play-btn:active {
+            transform: scale(0.9);
+        }
+
+        .voice-waveform {
+            flex: 1;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background: var(--waveform);
+            border-radius: 2px;
+            animation: waveform 1.2s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(2) {
+            animation-delay: -1s;
+        }
+
+        .wave-bar:nth-child(3) {
+            animation-delay: -0.8s;
+        }
+
+        .wave-bar:nth-child(4) {
+            animation-delay: -0.6s;
+        }
+
+        .wave-bar:nth-child(5) {
+            animation-delay: -0.4s;
+        }
+
+        .wave-bar:nth-child(6) {
+            animation-delay: -0.2s;
+        }
+
+        @keyframes waveform {
+
+            0%,
+            100% {
+                height: 8px;
+            }
+
+            50% {
+                height: 24px;
+            }
+        }
+
+        .voice-duration {
+            font-size: 12px;
+            opacity: 0.8;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        /* Input Area */
+        .chat-input {
+            padding: var(--space-md) var(--space-lg) var(--space-lg);
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: flex-end;
+            gap: var(--space-sm);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        .input-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+
+        .input-btn:hover {
+            background: var(--accent);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .input-btn:active {
+            transform: scale(0.95);
+        }
+
+        .input-btn.record {
+            background: var(--error);
+            color: white;
+            animation: recordPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes recordPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(255, 59, 48, 0);
+            }
+        }
+
+        .message-input {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: none;
+            border-radius: 20px;
+            padding: 12px 16px;
+            font-size: 16px;
+            color: var(--text-primary);
+            resize: none;
+            max-height: 120px;
+            min-height: 44px;
+            transition: all var(--duration-fast);
+        }
+
+        .message-input:focus {
+            outline: none;
+            background: var(--bg-tertiary);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-spring);
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
+        }
+
+        .send-btn:active {
+            transform: scale(0.9);
+        }
+
+        .send-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-tertiary);
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        /* Voice Recording Overlay */
+        .voice-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-xl);
+            animation: fadeIn var(--duration-fast);
+        }
+
+        .voice-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .recording-dot {
+            width: 16px;
+            height: 16px;
+            background: var(--error);
+            border-radius: var(--radius-full);
+            animation: blink 0.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .recording-waveform {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 60px;
+        }
+
+        .recording-bar {
+            width: 6px;
+            background: white;
+            border-radius: 3px;
+            animation: recordWave 0.8s ease-in-out infinite;
+        }
+
+        .recording-bar:nth-child(2) {
+            animation-delay: -0.6s;
+            height: 40px;
+        }
+
+        .recording-bar:nth-child(3) {
+            animation-delay: -0.4s;
+            height: 50px;
+        }
+
+        .recording-bar:nth-child(4) {
+            animation-delay: -0.2s;
+            height: 35px;
+        }
+
+        .recording-bar:nth-child(5) {
+            animation-delay: 0s;
+            height: 45px;
+        }
+
+        @keyframes recordWave {
+
+            0%,
+            100% {
+                transform: scaleY(0.5);
+            }
+
+            50% {
+                transform: scaleY(1);
+            }
+        }
+
+        .recording-time {
+            color: white;
+            font-size: 32px;
+            font-weight: 300;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .recording-actions {
+            display: flex;
+            gap: var(--space-lg);
+        }
+
+        .record-action-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: var(--radius-full);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform var(--duration-fast);
+        }
+
+        .record-action-btn:active {
+            transform: scale(0.9);
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-send-record {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-send-record svg {
+            transform: rotate(-45deg);
+        }
+
+        /* Reminder Modal */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 150;
+            align-items: flex-end;
+            animation: fadeIn var(--duration-fast);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            width: 100%;
+            padding: var(--space-lg);
+            animation: slideUp var(--duration-normal) var(--ease-spring);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-handle {
+            width: 40px;
+            height: 5px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-full);
+            margin: 0 auto var(--space-lg);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: var(--space-lg);
+            text-align: center;
+        }
+
+        .reminder-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .reminder-option {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+            border: 2px solid transparent;
+        }
+
+        .reminder-option:hover,
+        .reminder-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .reminder-option .label {
+            font-weight: 500;
+            margin-top: var(--space-xs);
+            font-size: 14px;
+        }
+
+        .time-picker {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .time-wheel {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm) var(--space-md);
+            min-width: 60px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: var(--space-md);
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--duration-fast);
+        }
+
+        .modal-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .modal-btn.primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .modal-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Settings Screen */
+        .settings-screen {
+            display: none;
+            flex-direction: column;
+        }
+
+        .settings-screen.active {
+            display: flex;
+        }
+
+        .settings-section {
+            margin-bottom: var(--space-lg);
+        }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 var(--space-lg) var(--space-sm);
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-xs);
+            cursor: pointer;
+            transition: background var(--duration-fast);
+        }
+
+        .settings-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .settings-item-content {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .settings-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .settings-label {
+            font-weight: 500;
+        }
+
+        .settings-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .toggle {
+            width: 50px;
+            height: 30px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-full);
+            position: relative;
+            cursor: pointer;
+            transition: background var(--duration-fast);
+        }
+
+        .toggle.active {
+            background: var(--success);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: var(--radius-full);
+            top: 2px;
+            left: 2px;
+            transition: transform var(--duration-fast) var(--ease-spring);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle.active::after {
+            transform: translateX(20px);
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-primary);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 20px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--duration-fast);
+            color: var(--text-secondary);
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .nav-item:active {
+            transform: scale(0.95);
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-full);
+            background: var(--accent);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0, 113, 227, 0.4);
+            transition: all var(--duration-fast) var(--ease-spring);
+            z-index: 200;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.9);
+        }
+
+        .theme-toggle svg {
+            transition: transform var(--duration-normal);
+        }
+
+        [data-theme="dark"] .theme-toggle svg.sun {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle svg.moon {
+            display: none;
+        }
+
+        /* App Icon Preview */
+        .app-icon-preview {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--bg-primary);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: var(--shadow);
+            z-index: 150;
+            border: 2px solid var(--border);
+        }
+
+        /* Screen Transitions */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .screen.active {
+            display: flex;
+            animation: screenIn var(--duration-normal) var(--ease-fluid);
+        }
+
+        @keyframes screenIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Image Preview Modal */
+        .image-preview {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 250;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+
+        .image-preview.active {
+            display: flex;
+            animation: fadeIn var(--duration-fast);
+        }
+
+        .image-preview img {
+            max-width: 90%;
+            max-height: 70vh;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .image-preview-close {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Helper Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .gap-sm {
+            gap: var(--space-sm);
+        }
+
+        .mt-auto {
+            margin-top: auto;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: var(--radius-full);
+        }
+
+        /* Haptic Visual Feedback */
+        @keyframes hapticTap {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.97);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .haptic-tap {
+            animation: hapticTap 0.1s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Phone Frame -->
+    <div class="phone-frame">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span class="time" id="currentTime">12:34</span>
+            <div class="indicators">
+                <div class="indicator"></div>
+                <div class="indicator"></div>
+                <div class="indicator battery"></div>
+            </div>
+        </div>
+
+        <!-- App Icon Preview (Monochrome) -->
+        <div class="app-icon-preview">📔</div>
+
+        <!-- Home Screen -->
+        <div class="screen active" id="homeScreen">
+            <div class="nav-header">
+                <h1 class="nav-title">Journal</h1>
+                <div class="nav-actions">
+                    <button class="icon-btn haptic" id="searchBtn" title="Search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                    </button>
+                    <button class="icon-btn haptic" id="settingsBtn" title="Settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="journal-grid">
+                    <div class="journal-card haptic" data-journal="learning">
+                        <div class="journal-icon">🧠</div>
+                        <div class="journal-name">Обучение</div>
+                        <div class="journal-meta">React Native, TypeScript</div>
+                        <div class="journal-count">24 записи</div>
+                    </div>
+                    <div class="journal-card haptic" data-journal="workouts">
+                        <div class="journal-icon">💪</div>
+                        <div class="journal-name">Тренировки</div>
+                        <div class="journal-meta">Зал, бег, растяжка</div>
+                        <div class="journal-count">18 записей</div>
+                    </div>
+                    <div class="journal-card haptic" data-journal="daily">
+                        <div class="journal-icon">✨</div>
+                        <div class="journal-name">Дневник</div>
+                        <div class="journal-meta">Мысли, рефлексия</div>
+                        <div class="journal-count">42 записи</div>
+                    </div>
+                    <div class="journal-card haptic" data-journal="habits">
+                        <div class="journal-icon">🎯</div>
+                        <div class="journal-name">Привычки</div>
+                        <div class="journal-meta">Трекер прогресса</div>
+                        <div class="journal-count">12 записей</div>
+                    </div>
+                    <div class="journal-card haptic" data-journal="work">
+                        <div class="journal-icon">💼</div>
+                        <div class="journal-name">Работа</div>
+                        <div class="journal-meta">Задачи, встречи</div>
+                        <div class="journal-count">31 запись</div>
+                    </div>
+                    <div class="journal-card haptic" data-journal="languages">
+                        <div class="journal-icon">🗣️</div>
+                        <div class="journal-name">Языки</div>
+                        <div class="journal-meta">Английский, испанский</div>
+                        <div class="journal-count">15 записей</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-screen="home">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9,22 9,12 15,12 15,22" />
+                    </svg>
+                    <span class="nav-label">Журналы</span>
+                </div>
+                <div class="nav-item" data-screen="notes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14,2 14,8 20,8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    <span class="nav-label">Заметки</span>
+                </div>
+                <div class="nav-item" data-screen="reminders">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                    </svg>
+                    <span class="nav-label">Напоминания</span>
+                </div>
+                <div class="nav-item" data-screen="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span class="nav-label">Настройки</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journal Chat Screen -->
+        <div class="screen" id="journalScreen">
+            <div class="nav-header">
+                <button class="icon-btn haptic" id="backBtn" style="margin-right: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15,18 9,12 15,6" />
+                    </svg>
+                </button>
+                <h1 class="nav-title" id="journalTitle">Дневник</h1>
+                <div class="nav-actions">
+                    <button class="icon-btn haptic" id="reminderBtn" title="Напоминание">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12,6 12,12 16,14" />
+                        </svg>
+                    </button>
+                    <button class="icon-btn haptic" id="journalMenuBtn" title="Меню">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="date-sticky">
+                    <span class="date-badge">Сегодня</span>
+                </div>
+
+                <div class="message in">
+                    <div class="message-content">Начал изучать React Native Reanimated. Впечатляет плавность анимаций!
+                        🎬</div>
+                    <div class="message-meta">
+                        <span>09:23</span>
+                    </div>
+                </div>
+
+                <div class="message out">
+                    <div class="message-content">Завершил тренировку ног. 4 подхода приседаний, чувствуется прогресс 💪
+                    </div>
+                    <div class="message-meta">
+                        <span>18:45</span>
+                        <span>✓✓</span>
+                    </div>
+                </div>
+
+                <div class="message in">
+                    <div class="message-voice">
+                        <button class="voice-play-btn haptic">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                <polygon points="5,3 19,12 5,21" />
+                            </svg>
+                        </button>
+                        <div class="voice-waveform">
+                            <div class="wave-bar" style="height: 12px;"></div>
+                            <div class="wave-bar" style="height: 20px;"></div>
+                            <div class="wave-bar" style="height: 16px;"></div>
+                            <div class="wave-bar" style="height: 24px;"></div>
+                            <div class="wave-bar" style="height: 14px;"></div>
+                            <div class="wave-bar" style="height: 18px;"></div>
+                        </div>
+                        <span class="voice-duration">0:24</span>
+                    </div>
+                    <div class="message-meta">
+                        <span>20:12</span>
+                    </div>
+                </div>
+
+                <div class="message out">
+                    <img src="https://picsum.photos/seed/journal1/300/200" alt="Workout" class="message-image" />
+                    <div class="message-content">Форма после тренировки 🔥</div>
+                    <div class="message-meta">
+                        <span>20:15</span>
+                        <span>✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Recording Overlay -->
+            <div class="voice-overlay" id="voiceOverlay">
+                <div class="recording-indicator">
+                    <div class="recording-dot"></div>
+                    <span>Запись...</span>
+                </div>
+                <div class="recording-waveform">
+                    <div class="recording-bar"></div>
+                    <div class="recording-bar"></div>
+                    <div class="recording-bar"></div>
+                    <div class="recording-bar"></div>
+                    <div class="recording-bar"></div>
+                </div>
+                <div class="recording-time" id="recordingTime">00:00</div>
+                <div class="recording-actions">
+                    <button class="record-action-btn btn-cancel haptic" id="cancelRecord">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28"
+                            height="28">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+                    <button class="record-action-btn btn-send-record haptic" id="sendRecord">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28"
+                            height="28">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22,2 15,22 11,13 2,9" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reminder Modal -->
+            <div class="modal-overlay" id="reminderModal">
+                <div class="modal">
+                    <div class="modal-handle"></div>
+                    <h3 class="modal-title">Новое напоминание</h3>
+
+                    <div class="reminder-options">
+                        <div class="reminder-option selected" data-type="alarm">
+                            <div style="font-size: 24px;">🔔</div>
+                            <div class="label">Будильник</div>
+                        </div>
+                        <div class="reminder-option" data-type="push">
+                            <div style="font-size: 24px;">🔕</div>
+                            <div class="label">Push</div>
+                        </div>
+                        <div class="reminder-option" data-type="daily">
+                            <div style="font-size: 24px;">📅</div>
+                            <div class="label">Ежедневно</div>
+                        </div>
+                        <div class="reminder-option" data-type="custom">
+                            <div style="font-size: 24px;">⚙️</div>
+                            <div class="label">Своё</div>
+                        </div>
+                    </div>
+
+                    <div class="time-picker">
+                        <div class="time-wheel">19</div>
+                        <div style="font-size: 24px; align-self: center;">:</div>
+                        <div class="time-wheel">30</div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="modal-btn secondary" id="cancelReminder">Отмена</button>
+                        <button class="modal-btn primary" id="saveReminder">Установить</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Preview -->
+            <div class="image-preview" id="imagePreview">
+                <button class="image-preview-close" id="closeImagePreview">×</button>
+                <img src="" alt="Preview" id="previewImage" />
+            </div>
+
+            <div class="chat-input">
+                <div class="input-actions">
+                    <button class="input-btn haptic" id="attachBtn" title="Прикрепить">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                        </svg>
+                    </button>
+                </div>
+                <textarea class="message-input" placeholder="Сообщение..." rows="1"></textarea>
+                <button class="input-btn haptic" id="voiceBtn" title="Голосовое">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                    </svg>
+                </button>
+                <button class="send-btn haptic" id="sendBtn" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22,2 15,22 11,13 2,9" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div class="screen settings-screen" id="settingsScreen">
+            <div class="nav-header">
+                <button class="icon-btn haptic" id="settingsBackBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15,18 9,12 15,6" />
+                    </svg>
+                </button>
+                <h1 class="nav-title">Настройки</h1>
+                <div class="nav-actions">
+                    <button class="icon-btn haptic" title="Экспорт">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17,8 12,3 7,8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="settings-section">
+                    <div class="settings-title">Внешний вид</div>
+                    <div class="settings-item haptic" id="themeToggle">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">🎨</div>
+                            <div>
+                                <div class="settings-label">Тема</div>
+                                <div class="settings-desc">Светлая / Тёмная / Система</div>
+                            </div>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">✨</div>
+                            <div>
+                                <div class="settings-label">Анимации</div>
+                                <div class="settings-desc">Плавные переходы и эффекты</div>
+                            </div>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">📳</div>
+                            <div>
+                                <div class="settings-label">Тактильный отклик</div>
+                                <div class="settings-desc">Вибрация при действиях</div>
+                            </div>
+                        </div>
+                        <div class="toggle active"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Данные</div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">🔐</div>
+                            <div>
+                                <div class="settings-label">Шифрование</div>
+                                <div class="settings-desc">AES-256 для экспорта</div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20" style="opacity: 0.5;">
+                            <polyline points="9,11 12,14 22,4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                    </div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">☁️</div>
+                            <div>
+                                <div class="settings-label">Google Drive Backup</div>
+                                <div class="settings-desc">Резервное копирование</div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20" style="opacity: 0.5;">
+                            <polyline points="9,11 12,14 22,4" />
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                        </svg>
+                    </div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">📤</div>
+                            <div>
+                                <div class="settings-label">Экспорт данных</div>
+                                <div class="settings-desc">JSON / ZIP архив</div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20" style="opacity: 0.5;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17,8 12,3 7,8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-title">Приложение</div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">🌐</div>
+                            <div>
+                                <div class="settings-label">Язык</div>
+                                <div class="settings-desc">Русский / English</div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20" style="opacity: 0.5;">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <path
+                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                    </div>
+                    <div class="settings-item haptic">
+                        <div class="settings-item-content">
+                            <div class="settings-icon">ℹ️</div>
+                            <div>
+                                <div class="settings-label">О приложении</div>
+                                <div class="settings-desc">Версия 1.0.0 • Оффлайн</div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20" style="opacity: 0.5;">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="16" x2="12" y2="12" />
+                            <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle haptic" id="globalThemeToggle" title="Сменить тему">
+            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                height="24">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24"
+                height="24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Theme toggle
+        const themeToggle = document.getElementById('globalThemeToggle');
+        const body = document.body;
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('journal-theme') || 'light';
+        body.setAttribute('data-theme', savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const current = body.getAttribute('data-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', next);
+            localStorage.setItem('journal-theme', next);
+
+            // Haptic feedback simulation
+            themeToggle.classList.add('haptic-tap');
+            setTimeout(() => themeToggle.classList.remove('haptic-tap'), 100);
+        });
+
+        // Navigation
+        const navItems = document.querySelectorAll('.nav-item');
+        const screens = {
+            home: document.getElementById('homeScreen'),
+            journal: document.getElementById('journalScreen'),
+            settings: document.getElementById('settingsScreen')
+        };
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.dataset.screen;
+
+                // Update active nav
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                // Show screen
+                Object.values(screens).forEach(s => s.classList.remove('active'));
+
+                if (target === 'home') {
+                    screens.home.classList.add('active');
+                } else if (target === 'settings') {
+                    screens.settings.classList.add('active');
+                }
+                // Notes and reminders would be implemented similarly
+
+                // Haptic feedback
+                item.classList.add('haptic-tap');
+                setTimeout(() => item.classList.remove('haptic-tap'), 100);
+            });
+        });
+
+        // Journal cards -> open chat
+        document.querySelectorAll('.journal-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const journalName = card.querySelector('.journal-name').textContent;
+                document.getElementById('journalTitle').textContent = journalName;
+
+                navItems.forEach(i => i.classList.remove('active'));
+                document.querySelector('.nav-item[data-screen="home"]').classList.add('active');
+
+                Object.values(screens).forEach(s => s.classList.remove('active'));
+                screens.journal.classList.add('active');
+
+                // Scroll to bottom
+                const container = document.getElementById('messagesContainer');
+                container.scrollTop = container.scrollHeight;
+
+                card.classList.add('haptic-tap');
+                setTimeout(() => card.classList.remove('haptic-tap'), 100);
+            });
+        });
+
+        // Back button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens.home.classList.add('active');
+
+            navItems.forEach(i => i.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="home"]').classList.add('active');
+        });
+
+        document.getElementById('settingsBackBtn').addEventListener('click', () => {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens.home.classList.add('active');
+
+            navItems.forEach(i => i.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="home"]').classList.add('active');
+        });
+
+        // Settings button from home
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            navItems.forEach(i => i.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="settings"]').classList.add('active');
+
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens.settings.classList.add('active');
+        });
+
+        // Message input
+        const input = document.querySelector('.message-input');
+        const sendBtn = document.getElementById('sendBtn');
+
+        input.addEventListener('input', () => {
+            sendBtn.disabled = !input.value.trim();
+            // Auto-resize
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        });
+
+        // Send message
+        sendBtn.addEventListener('click', () => {
+            if (!input.value.trim()) return;
+
+            const container = document.getElementById('messagesContainer');
+            const msg = document.createElement('div');
+            msg.className = 'message out';
+            msg.innerHTML = `
+        <div class="message-content">${input.value}</div>
+        <div class="message-meta">
+          <span>${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>✓</span>
+        </div>
+      `;
+            container.appendChild(msg);
+
+            input.value = '';
+            input.style.height = '44px';
+            sendBtn.disabled = true;
+
+            container.scrollTop = container.scrollHeight;
+
+            // Haptic + animation
+            sendBtn.classList.add('haptic-tap');
+            setTimeout(() => sendBtn.classList.remove('haptic-tap'), 100);
+        });
+
+        // Voice recording
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceOverlay = document.getElementById('voiceOverlay');
+        const cancelRecord = document.getElementById('cancelRecord');
+        const sendRecord = document.getElementById('sendRecord');
+        const recordingTime = document.getElementById('recordingTime');
+        let recordingInterval;
+        let seconds = 0;
+
+        voiceBtn.addEventListener('click', () => {
+            voiceOverlay.classList.add('active');
+            seconds = 0;
+            recordingTime.textContent = '00:00';
+
+            recordingInterval = setInterval(() => {
+                seconds++;
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                recordingTime.textContent = `${mins}:${secs}`;
+            }, 1000);
+
+            voiceBtn.classList.add('haptic-tap');
+            setTimeout(() => voiceBtn.classList.remove('haptic-tap'), 100);
+        });
+
+        cancelRecord.addEventListener('click', () => {
+            clearInterval(recordingInterval);
+            voiceOverlay.classList.remove('active');
+            cancelRecord.classList.add('haptic-tap');
+            setTimeout(() => cancelRecord.classList.remove('haptic-tap'), 100);
+        });
+
+        sendRecord.addEventListener('click', () => {
+            clearInterval(recordingInterval);
+            voiceOverlay.classList.remove('active');
+
+            // Add voice message to chat
+            const container = document.getElementById('messagesContainer');
+            const mins = Math.floor(seconds / 60);
+            const secs = (seconds % 60).toString().padStart(2, '0');
+
+            const msg = document.createElement('div');
+            msg.className = 'message out';
+            msg.innerHTML = `
+        <div class="message-voice">
+          <button class="voice-play-btn haptic">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+              <polygon points="5,3 19,12 5,21"/>
+            </svg>
+          </button>
+          <div class="voice-waveform">
+            <div class="wave-bar" style="height: 12px;"></div>
+            <div class="wave-bar" style="height: 20px;"></div>
+            <div class="wave-bar" style="height: 16px;"></div>
+            <div class="wave-bar" style="height: 24px;"></div>
+            <div class="wave-bar" style="height: 14px;"></div>
+            <div class="wave-bar" style="height: 18px;"></div>
+          </div>
+          <span class="voice-duration">${mins}:${secs}</span>
+        </div>
+        <div class="message-meta">
+          <span>${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>✓</span>
+        </div>
+      `;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+
+            sendRecord.classList.add('haptic-tap');
+            setTimeout(() => sendRecord.classList.remove('haptic-tap'), 100);
+        });
+
+        // Reminder modal
+        document.getElementById('reminderBtn').addEventListener('click', () => {
+            document.getElementById('reminderModal').classList.add('active');
+        });
+
+        document.getElementById('cancelReminder').addEventListener('click', () => {
+            document.getElementById('reminderModal').classList.remove('active');
+        });
+
+        document.getElementById('saveReminder').addEventListener('click', () => {
+            document.getElementById('reminderModal').classList.remove('active');
+            // Show confirmation
+            const btn = document.getElementById('saveReminder');
+            btn.classList.add('haptic-tap');
+            setTimeout(() => btn.classList.remove('haptic-tap'), 100);
+        });
+
+        // Reminder option selection
+        document.querySelectorAll('.reminder-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.reminder-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                opt.classList.add('haptic-tap');
+                setTimeout(() => opt.classList.remove('haptic-tap'), 100);
+            });
+        });
+
+        // Image preview
+        document.querySelectorAll('.message-image').forEach(img => {
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const preview = document.getElementById('imagePreview');
+                document.getElementById('previewImage').src = img.src;
+                preview.classList.add('active');
+                img.classList.add('haptic-tap');
+                setTimeout(() => img.classList.remove('haptic-tap'), 100);
+            });
+        });
+
+        document.getElementById('closeImagePreview').addEventListener('click', () => {
+            document.getElementById('imagePreview').classList.remove('active');
+        });
+
+        // Haptic buttons
+        document.querySelectorAll('.haptic').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!btn.classList.contains('record-action-btn')) {
+                    btn.classList.add('haptic-tap');
+                    setTimeout(() => btn.classList.remove('haptic-tap'), 100);
+                }
+            });
+        });
+
+        // Toggle in settings
+        document.querySelectorAll('.toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+                toggle.classList.add('haptic-tap');
+                setTimeout(() => toggle.classList.remove('haptic-tap'), 100);
+            });
+        });
+
+        // Attach button (demo)
+        document.getElementById('attachBtn').addEventListener('click', () => {
+            // Demo: add an image message
+            const container = document.getElementById('messagesContainer');
+            const msg = document.createElement('div');
+            msg.className = 'message out';
+            msg.innerHTML = `
+        <img src="https://picsum.photos/seed/demo${Date.now()}/300/200" alt="Attached" class="message-image" />
+        <div class="message-meta">
+          <span>${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>✓</span>
+        </div>
+      `;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+
+            // Re-attach click handler to new image
+            msg.querySelector('.message-image').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const preview = document.getElementById('imagePreview');
+                document.getElementById('previewImage').src = e.target.src;
+                preview.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>
