@@ -1,0 +1,45 @@
+---
+description: Conventional Commits — атомарные коммиты после каждого изменения
+alwaysApply: true
+---
+
+# Коммиты
+
+Источник: `docs/rules/development-and-release-rules.md`.
+
+## Обязательно
+
+- **Каждое изменение кода сопровождается коммитом** — без накопления незафиксированных правок
+- Коммиты **атомарные**: один коммит = одно логическое изменение
+- Формат **Conventional Commits**:
+
+```
+<type>(<scope>): <description>
+```
+
+## Типы
+
+| Тип | Когда |
+|-----|-------|
+| `feat` | Новая функциональность |
+| `fix` | Исправление бага |
+| `docs` | Документация |
+| `style` | Форматирование |
+| `refactor` | Рефакторинг без смены поведения |
+| `test` | Тесты |
+| `chore` | Конфиг, зависимости |
+
+## Примеры
+
+```
+feat(notes): add voice note recording
+fix(sync): resolve Google Drive auth timeout
+docs: add FSD architecture rules
+test(entities/note): add unit tests for Note model
+```
+
+## Порядок работы
+
+1. Изменить код
+2. Написать/обновить отчёт в `docs/reports/`
+3. Создать коммит с корректным типом и scope

@@ -1,0 +1,39 @@
+---
+description: Требования к тестам — покрытие 80%, типы, стиль
+globs: **/*.{test,spec}.{ts,tsx},**/__tests__/**,e2e/**
+alwaysApply: false
+---
+
+# Тестирование
+
+Источник: `docs/rules/development-and-release-rules.md`.
+
+## Требования
+
+- **Каждая новая фича — с тестами.** Без тестов не мержить в main
+- Минимальное покрытие: **80%** на модуль
+- Тесты **детерминированные** и **независимые** друг от друга
+- Моки для внешних сервисов (API, Google Drive, FS)
+
+## Типы и расположение
+
+| Тип | Инструмент | Где |
+|-----|------------|-----|
+| Unit | Jest | `__tests__/` или `*.test.ts` рядом с модулем |
+| Integration | Jest + RTL | `features/<name>/__tests__/` |
+| E2E | Detox / Maestro | `e2e/` |
+
+## Стиль
+
+- Один тест = один сценарий (Arrange → Act → Assert)
+- Названия описывают **поведение**, не реализацию
+
+```typescript
+// ✅ should save note to local storage when offline
+// ❌ should call AsyncStorage.setItem
+```
+
+## CI
+
+- Тесты запускаются перед мержем; PR не мержится при падении
+- Указывай в отчёте `docs/reports/` какие сценарии покрыты
