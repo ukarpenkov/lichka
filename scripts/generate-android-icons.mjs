@@ -126,6 +126,43 @@ const resources = [
 </svg>
 `,
   },
+  {
+    path: join(resDir, 'drawable/ic_stat_notification.xml'),
+    content: `<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.2"
+        android:scaleY="1.2">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="${featherPath}" />
+        <path
+            android:pathData="${veinPath}"
+            android:strokeWidth="2.67"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="@android:color/transparent" />
+    </group>
+</vector>
+`,
+  },
+  {
+    path: join(designAndroidDir, 'ic_stat_notification.svg'),
+    content: `<svg width="24" height="24" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(54 54) scale(1.2) translate(-54 -54)">
+    <path d="${featherPath}" fill="#FFFFFF"/>
+    <path d="${veinPath}" stroke="#FFFFFF" stroke-width="2.67" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
+`,
+  },
 ];
 
 function roundMask(size) {
@@ -172,6 +209,7 @@ async function main() {
   }
 
   console.log('✓ adaptive icon XML/SVG resources');
+  console.log('✓ notification icon (ic_stat_notification)');
 }
 
 main().catch((err) => {
