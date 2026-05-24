@@ -49,7 +49,7 @@
   — Настройки хранятся в SQLite таблице `settings` (key-value). Создай миграцию `003_settings.sql` с таблицей `settings` (key TEXT PRIMARY KEY, value TEXT)
   — При старте приложения — загрузить тему из `settings`, если нет — дефолтная light
 
-- [ ] **2.2 Создать базовые shared UI-компоненты**
+- [x] **2.2 Создать базовые shared UI-компоненты**
   Создай в `src/shared/ui/`:
   — `Text.tsx` — базовый текст с цветом из темы (автоматически подставляет `color` из `useTheme`)
   — `Button.tsx` — text-кнопка без border, без primary/secondary различия; поддержка `onPress`, `disabled`
