@@ -1,26 +1,18 @@
-import React from 'react';
-import {Text, View, StyleSheet} from 'react-native';
-import Animated from 'react-native-reanimated';
+import React, { useEffect } from 'react';
+import { ThemeProvider } from './src/shared/config/ThemeProvider';
+import { runMigrations } from './src/shared/db';
+import { AppNavigator } from './src/app/AppNavigator';
 
 function App(): React.JSX.Element {
+  useEffect(() => {
+    runMigrations();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Lichka+</Text>
-    </View>
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-});
 
 export default App;

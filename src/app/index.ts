@@ -1,2 +1,2 @@
-/** Public API слоя app — провайдеры, инициализация, корневой компонент. */
-export {};
+export { AppNavigator } from './AppNavigator';
+export type { ChatStackParamList } from './types';
