@@ -50,6 +50,12 @@ const MIGRATIONS: Record<number, string> = {
       INSERT INTO messages_fts(rowid, body) VALUES (new.rowid, new.body);
     END;
   `,
+  3: `
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT
+    );
+  `,
 };
 
 let dbInstance: DB | null = null;

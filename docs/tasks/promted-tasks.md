@@ -37,7 +37,7 @@
 
 ## 2. Тема и shared UI
 
-- [ ] **2.1 Реализовать систему тем (11 пресетов + light/dark)**
+- [x] **2.1 Реализовать систему тем (11 пресетов + light/dark)**
   Создай `src/shared/config/theme.ts`:
   — Тип `ThemePreset`: `{ id: string, name: string, background: string, text: string }`
   — 11 пресетов из ТЗ (#5): green-on-black, amber, cyan, blue, pink, light-gray, cream, mint, lavender, parchment, white-on-navy
