@@ -86,7 +86,7 @@
 
 ## 4. Навигация
 
-- [ ] **4.1 Настроить навигацию (3 таба + stack внутри «Чаты»)**
+- [x] **4.1 Настроить навигацию (3 таба + stack внутри «Чаты»)**
   Настрой React Navigation в `src/app/`:
   — `AppNavigator.tsx` — `BottomTabNavigator` с 3 табами: **Чаты** (иконка чата), **Запланировано** (иконка календаря/часов), **Настройки** (иконка шестерёнки). Иконки — системные Material Icons. Без text-лейблов, только иконки.
   — Внутри таба «Чаты» — `NativeStackNavigator`: экран `ChatList` (по умолчанию) и `ChatRoom` (экран чата). Shared element transition на аватар — feature flag (experimental, можно отложить).
