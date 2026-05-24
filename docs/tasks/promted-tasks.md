@@ -69,14 +69,14 @@
   — `index.ts`: экспорт типов и repository
   — Покрой unit-тестами: создание, получение списка, обновление, удаление
 
-- [ ] **3.2 Создать entity Message**
+- [x] **3.2 Создать entity Message**
   Создай `src/entities/message/`:
   — `model/types.ts`: тип `Message { id, chatId, type: 'simple'|'reminder'|'alarm'|'periodic', body, scheduledAt, intervalMinutes, enabled, payload, createdAt, updatedAt }`
   — `model/messageRepository.ts`: CRUD — `createMessage(chatId, type, body, scheduledAt?, intervalMinutes?, payload?)`, `getMessagesByChatId(chatId)`, `getMessageById(id)`, `updateMessage(id, fields)`, `deleteMessage(id)` (hard delete + удаление медиафайлов), `searchMessages(query, chatId?)` (через FTS5), `getScheduledMessages()` (все reminder/alarm/periodic с enabled=1 и scheduled_at > now или type=periodic), `getMessagesForChatAtTime(chatId)` — reminder/alarm которые должны появиться в ленте (scheduled_at <= now)
   — `index.ts`: экспорт
   — Покрой unit-тестами
 
-- [ ] **3.3 Создать entity Settings**
+- [x] **3.3 Создать entity Settings**
   Создай `src/entities/settings/`:
   — `model/types.ts`: тип `AppSettings { themePresetId, hapticEnabled, soundEnabled, locale }`
   — `model/settingsRepository.ts`: `getSettings()`, `updateSettings(partial)` — чтение/запись в таблицу `settings` SQLite
