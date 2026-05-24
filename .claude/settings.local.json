@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(npm list *)",
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Bash(npx react-native *)",
+      "Bash(kill %1)",
+      "Bash(./gradlew clean *)",
+      "Bash(rm -rf node_modules)",
+      "Bash(npm install *)",
+      "Bash(cmd.exe /c \"gradlew.bat app:installDebug -PreactNativeDevServerPort=8081\")",
+      "Bash(./gradlew.bat app:installDebug -PreactNativeDevServerPort=8081)"
     ]
   }
 }
