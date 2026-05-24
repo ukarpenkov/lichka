@@ -1,0 +1,3 @@
+#!/bin/sh
+# Strip Claude / AI co-author lines from commit messages (project policy)
+exec node "$(dirname "$0")/strip-ai-attribution.mjs" "$1"

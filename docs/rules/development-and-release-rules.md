@@ -64,6 +64,12 @@ docs: add FSD architecture rules
 test(entities/note): add unit tests for Note model
 ```
 
+### Авторство
+
+- В коммитах **нет** `Co-Authored-By: Claude…` / AI trailers — только автор-человек
+- Claude Code: `.claude/settings.json` → `"attribution": { "commit": "", "pr": "" }`
+- Git hook: `.githooks/commit-msg` (включается через `npm install` / `npm run prepare`)
+
 ---
 
 ## 3. Документация обсуждений и репортов

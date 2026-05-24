@@ -63,9 +63,12 @@ test(entities/note): add unit tests for Note model
 2. Написать/обновить отчёт в `docs/reports/`
 3. Создать коммит с корректным типом и scope
 
----
+### Авторство коммитов
 
-## Отчёты (docs/reports)
+- **Не добавлять** `Co-Authored-By: Claude…`, `Generated with Claude Code` и любые AI/Anthropic trailers
+- **Author/Committer** — только человек
+- `.claude/settings.json`: `"attribution": { "commit": "", "pr": "" }`
+- Hook `.githooks/commit-msg` — страховка на случай, если агент добавит trailer
 
 Каждый промпт и каждое изменение кода **обязаны** сопровождаться отчётом в `docs/reports/`.
 
