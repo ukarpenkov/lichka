@@ -8,7 +8,7 @@
 
 ## 1. Инфраструктура и зависимости
 
-- [ ] **1.1 Установить зависимости проекта**
+- [x] **1.1 Установить зависимости проекта**
   Установи все необходимые зависимости для проекта Lichka (React Native, bare, Android-only). Нужны:
   — `@op-engineering/op-sqlite` (SQLite)
   — `@react-navigation/native`, `@react-navigation/bottom-tabs`, `@react-navigation/native-stack` (навигация)
