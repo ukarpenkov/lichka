@@ -62,7 +62,7 @@
 
 ## 3. Сущности (entities)
 
-- [ ] **3.1 Создать entity Chat**
+- [x] **3.1 Создать entity Chat**
   Создай `src/entities/chat/`:
   — `model/types.ts`: тип `Chat { id, title, avatarPath, createdAt, updatedAt }`
   — `model/chatRepository.ts`: CRUD-операции с SQLite — `createChat(title, avatarPath)`, `getChats()`, `getChatById(id)`, `updateChat(id, fields)`, `deleteChat(id)` (hard delete + удаление файлов аватара). При создании — генерировать UUID, заполнять timestamps.

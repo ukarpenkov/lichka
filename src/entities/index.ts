@@ -1,2 +1,2 @@
-/** Public API слоя entities — бизнес-сущности (Note, Journal, Category и т.д.). */
-export {};
+/** Public API слоя entities — бизнес-сущности (Chat, Message, Settings). */
+export * from './chat';
