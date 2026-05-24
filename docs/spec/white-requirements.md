@@ -9,7 +9,7 @@
 ## Принципы продукта (зафиксировано)
 
 - **Оффлайн-first** — всё локально, без сервера.
-- **«Telegram с самим собой»** — тематические журналы, сообщения по времени, timestamp нельзя менять.
+- **«Telegram с самим собой»** — тематические журналы, сообщения по времени; **время можно исправить**, но с **индикатором «изменено»** (#58, #59).
 - **Скорость действий** — минимум шагов от намерения до результата.
 - **Минимализм UI** — по умолчанию **мягкий белый** фон и чёрный текст; тёмная тема — **полностью чёрный** фон и белый текст; в настройках — **11 пресетов** фона и текста; **формы — text-кнопки без border**; **нижние табы и 4 действия отправки в чате — иконки**; border в MVP нет (точечно — только если позже без него нельзя).
 - **Гибкость архитектуры** — готовность к изменениям без переписывания ядра.
@@ -188,7 +188,7 @@
 | # | Вопрос | Ответ |
 |---|--------|-------|
 | 34 | **Шифруем** только export/backup или **вся БД at rest** (SQLCipher)? | **out of MVP v1** — решение и scope (export vs at rest) на следующем этапе |
-| 35 | Если только export: нужен ли **app lock** (PIN/biometric) для локальных данных? | _отложено — уточнить вместе со шифрованием_ |
+| 35 | Если только export: нужен ли **app lock** (PIN/biometric) для локальных данных? | **нет в MVP** — см. **#53**; post-MVP вместе со шифрованием (#34) |
 
 ### Поиск
 
@@ -211,7 +211,7 @@
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 39 | **Kotlin modules в v1** — alarm full-screen, foreground service для записи, notification channels, biometrics? | **да, Kotlin-native допустим** — минимально необходимое для Android. **MVP v1:** **full-screen AlarmActivity** (будильник, lock screen, #41) + **notification channels** (alarms, reminders) при старте. **Не в MVP v1:** foreground service для записи — **v1.1** вместе с голосом (#72); **biometrics / app lock** — out (отложено с шифрованием, #35, #53). Остальное — RN + готовые модули, Kotlin только где без него нельзя |
+| 39 | **Kotlin modules в v1** — alarm full-screen, foreground service для записи, notification channels, biometrics? | **да, Kotlin-native допустим** — минимально необходимое для Android. **MVP v1:** **full-screen AlarmActivity** (будильник, lock screen, #41) + **2 notification channels** (`alarms`, `reminders`, #44) при старте. **Голос (#45, #72):** не диктофон — **голосовое сообщение**, запись **только при открытом приложении**; **foreground service не нужен**, Kotlin для записи не требуется. **biometrics / app lock** — out (отложено с шифрованием, #35, #53). Остальное — RN + готовые модули, Kotlin только где без него нельзя |
 | 40 | **Минимальная версия Android** — API 26 / 29 / 33+? | **minSdk API 24 (Android 7.0 Nougat)** — нижняя граница по продукту. **Google Play не диктует minSdk** — требует **targetSdk** (с 31.08.2025: **API 35+** для новых приложений и обновлений). В проекте: `minSdkVersion = 24`, `targetSdkVersion = 36` — compliant. Поднимать minSdk до 26/29/33 **не нужно** ради Play; только если RN/зависимости или нативные API (exact alarms, FGS) потребуют выше — пересмотрим |
 | 41 | **Будильник** — отдельный Activity поверх lock screen обязателен в MVP или high-priority notification достаточно? | **full-screen alarm** (тип «будильник»); длительность ~10 мин или стандартное время будильника |
 
@@ -221,36 +221,36 @@
 |---|--------|-------|
 | 42 | **Exact alarms** — нужен `SCHEDULE_EXACT_ALARM`? Как объясняем permission на Android 12+? | **да, но узко** — **`SCHEDULE_EXACT_ALARM`**, **не** `USE_EXACT_ALARM` (последний — только для dedicated alarm/calendar apps; Личка — журнал с типом «будильник», не Clock). **Exact только для `alarm`:** `AlarmManager.setAlarmClock()` → full-screen `AlarmActivity` (#41). **`reminder` / `periodic` — без exact:** inexact `AlarmManager` или WorkManager → push; точность ±несколько минут допустима, permission не требует. **Manifest:** `<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />` (API 31+). **Google Play (App content → Alarms & reminders):** категория *Other* / user-facing alarm; текст: *«Users schedule personal alarm messages at an exact time. At trigger time the app shows a full-screen alarm over the lock screen (AlarmActivity), like a wake-up alarm. Exact timing is essential for this feature.»* **In-app (перед первым `alarm`):** проверка `canScheduleExactAlarms()` → rationale («Чтобы будильник сработал ровно в выбранное время») → `ACTION_REQUEST_SCHEDULE_EXACT_ALARM`; слушать `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. **Fallback если отказ:** не блокировать приложение; предупреждение + inexact/high-priority notification без full-screen guarantee; повторный запрос из настроек / при создании будильника |
 | 43 | **Battery optimization** — onboarding «исключить из оптимизации» для будильников? | **да, но только для `alarm` и только в контексте** — не на первом запуске. **Цель:** будильник как у Clock — срабатывает в точное время, будит экран, звук на `STREAM_ALARM`, full-screen поверх lock screen (#41). **Техника (MVP, без onboarding):** `setAlarmClock()` (#42) + `AlarmActivity` (`showWhenLocked`, `turnScreenOn`, `setShowWhenLocked`) + канал `alarms` (IMPORTANCE_HIGH, `CATEGORY_ALARM`) + partial wake lock на время звонка + `USE_FULL_SCREEN_INTENT` (Android 14+ — декларация в Play). **Onboarding (после первого будильника, в том же flow что #42):** если `!isIgnoringBatteryOptimizations()` — один экран: «На некоторых телефонах система откладывает будильники ради батареи» → кнопка **«Разрешить»** → `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (package URI); **«Позже»** — не блокируем. Повтор — **Настройки → «Надёжность будильника»**. **Не просим** для `reminder`/`periodic`. **Play:** restricted permission — в декларации указать user-facing alarm (#42). **Fallback:** без exemption — предупреждение в UI; на агрессивных OEM (Xiaomi/Samsung/Huawei) — ссылка на `ACTION_APPLICATION_DETAILS_SETTINGS` → Battery → Unrestricted (без гарантии) |
-| 44 | **Каналы уведомлений** — сколько: alarms, reminders, backup, recording? | |
+| 44 | **Каналы уведомлений** — сколько: alarms, reminders, backup, recording? | **2 канала в MVP:** **`reminders`** — push для типов `reminder` и `periodic` (IMPORTANCE_DEFAULT/HIGH, без `CATEGORY_ALARM`); **`alarms`** — full-screen будильник для типа `alarm` (IMPORTANCE_HIGH, `CATEGORY_ALARM`, #41–#43). **Не создаём:** **`recording`** — голос не диктофон, без foreground service и без уведомления при записи (#45); **`backup`** — post-MVP. Оба канала регистрируем при старте приложения |
 
 ### Голос и медиа
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 45 | **Запись голоса** — foreground notification обязательна на Android 14+? | |
-| 46 | **Формат аудио MVP** — AAC m4a или MP3? Max duration: без лимита или 30 мин? | |
-| 47 | **Воспроизведение** — один track-player instance глобально или per-message? | |
+| 45 | **Запись голоса** — foreground notification обязательна на Android 14+? | **нет** — foreground notification **не нужна**. Голос — **голосовое сообщение в чате** (как в мессенджере), **не диктофон**: press/hold в composer, запись **только пока приложение на экране** (foreground). При сворачивании или убийстве процесса запись **прерывается**, без фоновой записи. **Без** foreground service, **без** канала `recording` (#44). Требование Android 14+ на persistent notification для микрофона в фоне **не применяется** |
+| 46 | **Формат аудио MVP** — AAC m4a или MP3? Max duration: без лимита или 30 мин? | **AAC-LC в `.m4a`**, **mono**, **16 kHz**, **~64 kbps** — нативный формат iOS/Android, меньше MP3 при том же качестве речи; путь `media/voice/{messageId}.m4a` (#31). **Макс. длительность: 60 сек** — hard stop при достижении; UI показывает таймер/прогресс. MP3 и WAV **не используем** |
+| 47 | **Воспроизведение** — один track-player instance глобально или per-message? | **per-message** — каждый voice bubble владеет своим player/state (play/pause/progress). **Одновременно играет только одно:** tap на другое сообщение → предыдущее stop. **Без** глобального singleton `react-native-track-player` и без фонового воспроизведения (#45) — короткие клипы до 60 сек (#46), только в открытом чате. Координация «stop others» — на уровне экрана чата (ref/context), lifecycle player — привязан к сообщению |
 
 ### Производительность
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 48 | **FlashList** — ожидаемый max messages per journal до деградации (10k / 100k)? | |
-| 49 | **Lazy load медиа** — thumbnails в списке, full res по тапу? | **один файл (#33)** — в ленте и по тапу тот же compressed; Image даунскейлит для превью. Отдельные thumb-файлы — не в MVP; если perf проседает — позже |
+| 48 | **FlashList** — ожидаемый max messages per journal до деградации (10k / 100k)? | **~365 сообщений на чат** — целевой объём без деградации (~1 запись/день × год). **FlashList inverted**, загрузка **всего чата сразу** из SQLite — ок для MVP; **пагинация при скролле вверх не нужна**. Больше 365 — не ломаем, но **не оптимизируем под 10k/100k** в v1; при реальных жалобах на perf — cursor-load порциями (post-MVP) |
+| 49 | **Lazy load медиа** — thumbnails в списке, full res по тапу? | **отдельный lazy loading не нужен** — офлайн: в SQLite только **путь** к файлу (#31), байты на диске в sandbox. **FlashList** (#48) монтирует видимые строки → `<Image>` / player читают файл **когда ячейка на экране**; отдельный preload/CDN-pipeline не делаем. **Один compressed файл (#33)** — тот же в ленте и full-screen по тапу; RN Image даунскейлит для превью. Отдельные thumb-файлы — **не в MVP** |
 
 ### Backup и Google (post-MVP)
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
 | 50 | **Encrypted backup key** — Android Keystore для derived keys? | _post-MVP; зависит от решения по шифрованию_ |
-| 51 | **WorkManager** для фонового backup vs manual only? | |
+| 51 | **WorkManager** для фонового backup vs manual only? | **только вручную** — backup/export **по действию пользователя** (Настройки → «Экспорт» / «Создать резервную копию»). **Без** WorkManager, без фонового расписания, без auto-sync. **Без** notification channel `backup` (#44). Google Drive (#82) — когда появится, тоже **manual upload**, не periodic sync |
 
 ### Безопасность ОС
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 52 | **Screenshot blocking** — `FLAG_SECURE` для экрана журнала? | |
-| 53 | **App lock** — PIN / biometric при открытии приложения в MVP? | |
+| 52 | **Screenshot blocking** — `FLAG_SECURE` для экрана журнала? | **нет** — скриншоты **разрешены**; `FLAG_SECURE` **не используем** (ни на чате, ни глобально). Превью в Recent apps — обычное. Блокировку скриншотов — не в MVP; при необходимости вместе с app lock / шифрованием (#53, #34) |
+| 53 | **App lock** — PIN / biometric при открытии приложения в MVP? | **нет, не в MVP** — без PIN/biometric при открытии. Защита на уровне **блокировки экрана телефона**; app lock — post-MVP, вместе со шифрованием (#34, #35). Kotlin biometrics модуль **не нужен** (#39) |
 
 ---
 
@@ -260,31 +260,31 @@
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 54 | **Главный persona MVP** — «быстро сбросить мысль» / «тренировочный лог» / «дневник» / «рабочие заметки»? | |
-| 55 | **Сколько журналов типично** — 3–5 или 20+? | |
+| 54 | **Главный persona MVP** — «быстро сбросить мысль» / «тренировочный лог» / «дневник» / «рабочие заметки»? | **все четыре** — MVP **не заточен под одну persona**; «Telegram с собой» = **тематические чаты под любой сценарий**. **Быстро сбросить мысль** — основной паттерн capture (открыл чат → отправил). **Тренировочный лог / дневник / рабочие заметки** — отдельные чаты с разными названиями и аватарами, **один и тот же UI**. Не делаем отдельные режимы, шаблоны или onboarding под persona |
+| 55 | **Сколько журналов типично** — 3–5 или 20+? | **~10–12** — типичный объём активных чатов (между «3–5» и «20+»). Список на табе «Чаты» — **вертикальный скролл** (см. #9b), без папок и группировки в MVP. UI проектируем под **~10 видимых без перегруза**; **жёсткого лимита** на число чатов в БД **нет** |
 
 ### Ежедневные сценарии
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 56 | **Топ-3 действия в день** — ранжировать: текст, голос, фото, напоминание, поиск, экспорт | |
-| 57 | **Открываете приложение** — из иконки, notification, widget (widget post-MVP)? | |
+| 56 | **Топ-3 действия в день** — ранжировать: текст, голос, фото, напоминание, поиск, экспорт | **топ-3:** **1) текст** → **2) напоминание** → **3) фото**. **Полный порядок:** текст → напоминание → фото → голос → поиск → экспорт. Приоритет UX: **composer чата и 4 иконки отправки** (#3, #9c) — на первом месте; **экспорт** — редкое действие (Настройки, manual #51) |
+| 57 | **Открываете приложение** — из иконки, notification, widget (widget post-MVP)? | **MVP:** **1) иконка** (основной вход — capture, список чатов) → **2) notification** (tap по push напоминания / full-screen будильника → **deep link в чат к сообщению**, см. #2). **Widget — post-MVP** (будет, но не в v1); в #69 считаем widgets **out of MVP v1** |
 
 ### Ожидания от «Telegram с собой»
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 58 | **Нельзя менять timestamp** — жёсткое правило или «исправить время» через advanced? | |
-| 59 | **Редактирование** — нужен ли индикатор «изменено» у сообщения? | |
-| 60 | **Удаление** — swipe to delete, long press menu, undo snackbar? | |
+| 58 | **Нельзя менять timestamp** — жёсткое правило или «исправить время» через advanced? | **можно менять** — timestamp **не зафиксирован навсегда**; пользователь может **исправить время** сообщения (edit flow / advanced). При смене времени обновляем **`created_at`** (или отдельное поле отображаемого времени) + **`updated_at`** (#22). **История старого времени не показывается** — только маркер «изменено» (см. #59) |
+| 59 | **Редактирование** — нужен ли индикатор «изменено» у сообщения? | **да** — если сообщение редактировали (**текст и/или время**, `updated_at` > `created_at`) — рядом с временем **«изменено»** (как в Telegram). Без diff, без истории правок (#22); только факт edited |
+| 60 | **Удаление** — swipe to delete, long press menu, undo snackbar? | **long press menu** — удаление через **контекстное меню** по long press на сообщении (рядом с «редактировать», см. #58–#59). **Swipe to delete — нет** (риск случайного удаления). **Undo snackbar — нет** — **hard delete** (#23), без отката в UI; восстановление только через backup/export (#51) |
 
 ### Напоминания
 
 | # | Вопрос | Ответ |
 |---|--------|-------|
-| 61 | **Что чаще** — мягкий push или «будильник, который не замолчит»? | |
-| 62 | **Snooze default** — 5 или 10 мин? | |
-| 63 | **Напоминание без текста** — допустимо («проверь журнал X»)? | |
+| 61 | **Что чаще** — мягкий push или «будильник, который не замолчит»? | **мягкий push** — основной сценарий (`reminder` + `periodic`, #9e, #14). **Full-screen будильник (`alarm`)** — редко, «когда нельзя пропустить» (подъём, дедлайн). Согласовано с #56 (напоминание — 2-е по частоте) и #E |
+| 62 | **Snooze default** — 5 или 10 мин? | **5 мин** — дефолт snooze для push-напоминаний и full-screen будильника; **10 мин** — опционально в меню snooze (если есть выбор), но не default |
+| 63 | **Напоминание без текста** — допустимо («проверь журнал X»)? | **допустимо** — **`body` может быть пустым**, если есть **контент: фото или голос** (напоминание / будильник / периодичность с **только медиа** — ок). **Пустое совсем** (нет текста, фото и голоса) — **нет**. **Push без текста:** в notification — **название чата** или fallback «Напоминание в {название чата}»; tap → чат с медиа-bubble (#57) |
 
 ### Доверие и данные
 
@@ -510,3 +510,18 @@ _（заполнить）_
 | 2026-05-23 | Ответ #42: `SCHEDULE_EXACT_ALARM` только для типа `alarm` (`setAlarmClock`); reminder/periodic — inexact/WorkManager; текст для Google Play + in-app rationale |
 | 2026-05-23 | Ответ #43: battery optimization onboarding — только для `alarm`, после первого будильника (flow #42); setAlarmClock + AlarmActivity + wake lock; fallback на OEM |
 | 2026-05-23 | Ответ #39: Kotlin-native — AlarmActivity + notification channels в MVP; FGS/biometrics — не в v1 |
+| 2026-05-24 | Ответ #44: 2 канала — `reminders` (push) + `alarms` (full-screen); без `recording` и `backup` |
+| 2026-05-24 | Ответ #45: голос — голосовое сообщение, только в foreground; без FGS и без notification channel |
+| 2026-05-24 | Уточнение #39: FGS для записи снят — голос работает только при открытом приложении |
+| 2026-05-24 | Ответ #46: AAC-LC mono m4a, 16 kHz ~64 kbps; max 60 сек |
+| 2026-05-24 | Ответ #47: per-message player; одно воспроизведение; без global track-player |
+| 2026-05-24 | Ответ #48: ~365 сообщений/чат; FlashList без пагинации в MVP |
+| 2026-05-24 | Уточнение #49: offline — lazy load pipeline не нужен; FlashList + local file path |
+| 2026-05-24 | Ответ #51: backup только вручную; без WorkManager и auto-sync |
+| 2026-05-24 | Ответ #52: скриншоты разрешены; FLAG_SECURE не используем |
+| 2026-05-24 | Ответ #53: app lock не в MVP; #35 уточнён |
+| 2026-05-24 | Ответ #58–#59: время сообщения можно менять; индикатор «изменено» при edit текста/времени; принцип продукта обновлён |
+| 2026-05-24 | Ответ #60: удаление — long press menu; без swipe и без undo snackbar (hard delete #23) |
+| 2026-05-24 | Ответ #61: чаще мягкий push (reminder/periodic); будильник — редкий сценарий |
+| 2026-05-24 | Ответ #62: snooze default — 5 мин |
+| 2026-05-24 | Ответ #63: напоминание без текста допустимо с фото или голосом; полностью пустое — нет |
