@@ -2,12 +2,13 @@ import React, { useState, useCallback } from 'react';
 import { FlatList, Pressable, Alert, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Svg, { Path } from 'react-native-svg';
+import { Plus } from 'lucide-react-native';
 
 import { Screen, Text } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
+import { ChatForm } from '../../widgets/chat-form';
 
 import { ChatListItem } from './ChatListItem';
 import { ChatContextMenu } from './ChatContextMenu';
@@ -19,12 +20,18 @@ export function ChatListScreen() {
   const { text, background } = useTheme();
   const [chats, setChats] = useState<Chat[]>([]);
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
+  const [formVisible, setFormVisible] = useState(false);
+  const [editChat, setEditChat] = useState<Chat | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       setChats(getChats());
     }, []),
   );
+
+  const refresh = useCallback(() => {
+    setChats(getChats());
+  }, []);
 
   const handleDelete = useCallback(() => {
     if (!menuChat) return;
@@ -42,7 +49,19 @@ export function ChatListScreen() {
   }, [menuChat]);
 
   const handleEdit = useCallback(() => {
-    // TODO: переход на экран редактирования чата
+    if (!menuChat) return;
+    setEditChat(menuChat);
+    setFormVisible(true);
+  }, [menuChat]);
+
+  const handleCreate = useCallback(() => {
+    setEditChat(null);
+    setFormVisible(true);
+  }, []);
+
+  const handleFormClose = useCallback(() => {
+    setFormVisible(false);
+    setEditChat(null);
   }, []);
 
   return (
@@ -76,12 +95,8 @@ export function ChatListScreen() {
             opacity: pressed ? 0.7 : 1,
           },
         ]}
-        onPress={() => {
-          // TODO: создание нового чата
-        }}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill={background} />
-        </Svg>
+        onPress={handleCreate}>
+        <Plus size={24} color={background} />
       </Pressable>
 
       <ChatContextMenu
@@ -89,6 +104,13 @@ export function ChatListScreen() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onClose={() => setMenuChat(null)}
+      />
+
+      <ChatForm
+        visible={formVisible}
+        onClose={handleFormClose}
+        onSaved={refresh}
+        editChat={editChat}
       />
     </Screen>
   );

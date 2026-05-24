@@ -1,2 +1,2 @@
 /** Утилиты и хелперы. */
-export {};
+export { resolveMediaPath, ensureDir, saveAvatar, AVATARS_DIR } from './mediaPath';

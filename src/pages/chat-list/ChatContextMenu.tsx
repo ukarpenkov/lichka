@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, View, StyleSheet } from 'react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import { Text } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 
@@ -20,12 +21,14 @@ export function ChatContextMenu({ visible, onEdit, onDelete, onClose }: ChatCont
           <Pressable
             onPress={() => { onClose(); onEdit(); }}
             style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
+            <Pencil size={18} color={text} />
             <Text>Редактировать</Text>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: text + '20' }]} />
           <Pressable
             onPress={() => { onClose(); onDelete(); }}
             style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
+            <Trash2 size={18} color="#FF3B30" />
             <Text style={{ color: '#FF3B30' }}>Удалить</Text>
           </Pressable>
         </View>
@@ -48,8 +51,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   item: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 20,
+    gap: 12,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

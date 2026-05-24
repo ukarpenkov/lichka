@@ -1,2 +1,2 @@
 /** Public API слоя widgets — составные UI-блоки. */
-export {};
+export { ChatForm } from './chat-form';
