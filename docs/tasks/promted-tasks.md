@@ -18,7 +18,7 @@
   — `@react-native-async-storage/async-storage` (понадобится для кэша темы если будет проблема cold start)
   Проверь что проект собирается после установки. Следи за совместимостью с RN 0.85.3 и React 19.
 
-- [ ] **1.2 Настроить SQLite и миграции**
+- [x] **1.2 Настроить SQLite и миграции**
   Создай в `src/shared/db/` систему миграций:
   — Файл `migrations/001_initial.sql` — создание таблиц `chats`, `messages`, `schema_migrations`
   — `chats`: id (TEXT, primary key, uuid), title (TEXT NOT NULL), avatar_path (TEXT nullable), created_at (TEXT NOT NULL, UTC ISO8601), updated_at (TEXT NOT NULL)
