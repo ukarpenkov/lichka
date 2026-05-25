@@ -1,17 +1,9 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  useAnimatedProps,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue, runOnJS } from 'react-native-reanimated';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { cartesianToAngle, snapToSegment, segmentToAngle, polarToCartesian } from './circularMath';
-
-const AnimatedSvgText = Animated.createAnimatedComponent(SvgText);
 
 const RADIUS = 130;
 const TEXT_RADIUS = 108;

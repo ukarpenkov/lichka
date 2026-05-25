@@ -1,19 +1,18 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, FlatList, StyleSheet, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { View, FlatList, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Text } from '../../shared/ui';
 
 const ITEM_WIDTH = 48;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const VISIBLE_ITEMS = 5;
 const PICKER_WIDTH = ITEM_WIDTH * VISIBLE_ITEMS;
 const PICKER_PADDING = (PICKER_WIDTH - ITEM_WIDTH) / 2;
 
-function getHour12(): boolean {
+function getIs24Hour(): boolean {
   try {
-    return !Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12;
+    const fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric' });
+    return !fmt.resolvedOptions().hour12;
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -27,14 +26,11 @@ type Props = {
 };
 
 export function TimeScroller({ hour, minute, textColor, accentColor, onHourChange, onMinuteChange }: Props) {
-  const is24 = useRef(getHour12()).current;
+  const is24 = useRef(getIs24Hour()).current;
   const hourListRef = useRef<FlatList>(null);
   const minListRef = useRef<FlatList>(null);
 
-  const hours = is24
-    ? Array.from({ length: 24 }, (_, i) => i)
-    : Array.from({ length: 24 }, (_, i) => i); // always 0–23 internally
-
+  const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   const formatHour = useCallback(
