@@ -11,12 +11,15 @@
 - Поле ввода для произвольного интервала (в минутах)
 - Кнопки «Отмена» и «Готово»
 - Виджет экспортирован через `src/widgets/index.ts`
+- Интегрирован в `MessageComposer` (иконка Repeat) — заменяет старый `IntervalPicker`
 
 ## Изменённые файлы
 
 - `src/widgets/period-picker/PeriodPicker.tsx` — основной компонент виджета
 - `src/widgets/period-picker/index.ts` — barrel-экспорт
 - `src/widgets/index.ts` — добавлен экспорт `PeriodPicker`
+- `src/widgets/message-composer/MessageComposer.tsx` — замена `IntervalPicker` на `PeriodPicker`
+- `src/widgets/message-composer/IntervalPicker.tsx` — удалён (заменён на `PeriodPicker`)
 
 ## Принятые решения
 
