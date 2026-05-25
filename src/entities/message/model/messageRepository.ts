@@ -1,4 +1,5 @@
 import { getDatabase } from '../../../shared/db';
+import { generateId } from '../../../shared/lib';
 import type { Message, MessageType } from './types';
 
 const SELECT_COLUMNS =
@@ -13,7 +14,7 @@ export function createMessage(
   payload?: string | null,
 ): Message {
   const db = getDatabase();
-  const id = crypto.randomUUID();
+  const id = generateId();
   const now = new Date().toISOString();
   const sAt = scheduledAt ?? null;
   const interval = intervalMinutes ?? null;
@@ -137,6 +138,23 @@ export function getScheduledMessages(): Message[] {
      WHERE enabled = 1
        AND (scheduled_at > ? OR type = 'periodic')`,
     [now],
+  );
+
+  return result.rows.map(mapRow);
+}
+
+export function getVisibleMessagesByChatId(chatId: string): Message[] {
+  const db = getDatabase();
+  const result = db.executeSync(
+    `SELECT ${SELECT_COLUMNS} FROM messages
+     WHERE chat_id = ?
+       AND (
+         type IN ('simple', 'periodic')
+         OR scheduled_at IS NULL
+         OR scheduled_at <= datetime('now')
+       )
+     ORDER BY created_at ASC`,
+    [chatId],
   );
 
   return result.rows.map(mapRow);

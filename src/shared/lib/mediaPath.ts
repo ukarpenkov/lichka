@@ -4,6 +4,7 @@ const BASE_DIR = RNFS.DocumentDirectoryPath;
 
 export const MEDIA_DIR = `${BASE_DIR}/media`;
 export const AVATARS_DIR = `${MEDIA_DIR}/avatars`;
+export const VOICE_DIR = `${MEDIA_DIR}/voice`;
 
 export function resolveMediaPath(relative: string): string {
   return `${BASE_DIR}/${relative}`;

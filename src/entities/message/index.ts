@@ -2,6 +2,7 @@ export type { Message, MessageType } from './model/types';
 export {
   createMessage,
   getMessagesByChatId,
+  getVisibleMessagesByChatId,
   getMessageById,
   updateMessage,
   deleteMessage,

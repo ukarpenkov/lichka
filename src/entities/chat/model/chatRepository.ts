@@ -1,9 +1,10 @@
 import { getDatabase } from '../../../shared/db';
+import { generateId } from '../../../shared/lib';
 import type { Chat } from './types';
 
 export function createChat(title: string, avatarPath?: string | null): Chat {
   const db = getDatabase();
-  const id = crypto.randomUUID();
+  const id = generateId();
   const now = new Date().toISOString();
   const path = avatarPath ?? null;
 

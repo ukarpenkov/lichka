@@ -35,7 +35,7 @@ function ChatStackScreen() {
       <Stack.Screen
         name="ChatRoom"
         component={ChatRoomScreen}
-        options={{ title: 'Чат' }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

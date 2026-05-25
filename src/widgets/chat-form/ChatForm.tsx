@@ -10,6 +10,7 @@ import {
   BottomSheetModal,
   BottomSheetView,
   BottomSheetBackdrop,
+  type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { Camera, Smile } from 'lucide-react-native';
@@ -17,7 +18,7 @@ import { Camera, Smile } from 'lucide-react-native';
 import { Input, Button, Text } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
-import { saveAvatar } from '../../shared/lib';
+import { saveAvatar, generateId } from '../../shared/lib';
 
 import { EmojiGrid } from './EmojiGrid';
 
@@ -30,7 +31,9 @@ type ChatFormProps = {
 
 export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps) {
   const { text, background } = useTheme();
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
+
+  const modalRef = useRef<BottomSheetModal>(null);
+  const wasVisible = useRef(false);
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -41,10 +44,10 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const isEdit = !!editChat;
   const canSave = title.trim().length > 0;
 
-  const snapPoints = useMemo(() => ['90%'], []);
+  const snapPoints = useMemo(() => [90], []);
 
   useEffect(() => {
-    if (visible) {
+    if (visible && !wasVisible.current) {
       if (editChat) {
         setTitle(editChat.title);
         setAvatarUri(editChat.avatarPath ? `file://${editChat.avatarPath}` : null);
@@ -55,10 +58,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         setEmojiAvatar(null);
       }
       setShowEmojiPicker(false);
-      bottomSheetRef.current?.present();
-    } else {
-      bottomSheetRef.current?.dismiss();
+      modalRef.current?.present();
+    } else if (!visible && wasVisible.current) {
+      modalRef.current?.dismiss();
     }
+    wasVisible.current = visible;
   }, [visible, editChat]);
 
   const handlePickImage = useCallback(() => {
@@ -98,7 +102,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       let avatarPath: string | null = editChat?.avatarPath ?? null;
 
       if (avatarUri) {
-        const chatId = editChat?.id || crypto.randomUUID();
+        const chatId = editChat?.id || generateId();
         avatarPath = await saveAvatar(avatarUri, chatId);
       } else if (emojiAvatar) {
         avatarPath = null;
@@ -113,16 +117,17 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       }
 
       onSaved();
-      onClose();
-    } catch (e) {
-      Alert.alert('Ошибка', 'Не удалось сохранить чат');
+      modalRef.current?.dismiss();
+    } catch (e: any) {
+      console.error('ChatForm handleSave error:', e);
+      Alert.alert('Ошибка', e?.message ?? 'Не удалось сохранить чат');
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved, onClose]);
+  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved]);
 
   const renderBackdrop = useCallback(
-    (props: any) => (
+    (props: BottomSheetBackdropProps) => (
       <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
     ),
     [],
@@ -151,72 +156,61 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     );
   };
 
-  if (showEmojiPicker) {
-    return (
-      <BottomSheetModal
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: background }}
-        handleIndicatorStyle={{ backgroundColor: text + '40' }}
-        onDismiss={onClose}>
-        <BottomSheetView style={styles.sheetContent}>
-          <EmojiGrid onSelect={handleEmojiSelect} />
-        </BottomSheetView>
-      </BottomSheetModal>
-    );
-  }
-
   return (
     <BottomSheetModal
-      ref={bottomSheetRef}
-      index={0}
+      ref={modalRef}
       snapPoints={snapPoints}
-      backdropComponent={renderBackdrop}
+      index={0}
       backgroundStyle={{ backgroundColor: background }}
       handleIndicatorStyle={{ backgroundColor: text + '40' }}
+      backdropComponent={renderBackdrop}
       onDismiss={onClose}>
       <BottomSheetView style={styles.sheetContent}>
-        <Text variant="body" style={[styles.headerTitle, { color: text }]}>
-          {isEdit ? 'Редактировать чат' : 'Новый чат'}
-        </Text>
+        {showEmojiPicker ? (
+          <EmojiGrid onSelect={handleEmojiSelect} />
+        ) : (
+          <>
+            <Text variant="body" style={[styles.headerTitle, { color: text }]}>
+              {isEdit ? 'Редактировать чат' : 'Новый чат'}
+            </Text>
 
-        <View style={styles.avatarButton}>
-          {avatarContent()}
-          <View style={styles.avatarActions}>
-            <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
-              <Camera size={18} color={text + '99'} />
-              <Text variant="caption" style={{ color: text + '99' }}>Фото</Text>
-            </Pressable>
-            <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
-              <Smile size={18} color={text + '99'} />
-              <Text variant="caption" style={{ color: text + '99' }}>Эмодзи</Text>
-            </Pressable>
-          </View>
-        </View>
+            <View style={styles.avatarButton}>
+              {avatarContent()}
+              <View style={styles.avatarActions}>
+                <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
+                  <Camera size={18} color={text + '99'} />
+                  <Text variant="caption" style={{ color: text + '99' }}>Фото</Text>
+                </Pressable>
+                <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
+                  <Smile size={18} color={text + '99'} />
+                  <Text variant="caption" style={{ color: text + '99' }}>Эмодзи</Text>
+                </Pressable>
+              </View>
+            </View>
 
-        <Input
-          placeholder="Название чата"
-          value={title}
-          onChangeText={setTitle}
-          autoFocus={!isEdit}
-        />
+            <Input
+              placeholder="Название чата"
+              value={title}
+              onChangeText={setTitle}
+              autoFocus={!isEdit}
+            />
 
-        <View style={styles.actions}>
-          <Button
-            title={isEdit ? 'Сохранить' : 'Создать'}
-            onPress={handleSave}
-            disabled={!canSave || saving}
-            style={[
-              styles.saveButton,
-              {
-                backgroundColor: text,
-                opacity: !canSave || saving ? 0.4 : 1,
-              },
-            ]}
-          />
-        </View>
+            <View style={styles.actions}>
+              <Button
+                title={isEdit ? 'Сохранить' : 'Создать'}
+                onPress={handleSave}
+                disabled={!canSave || saving}
+                style={[
+                  styles.saveButton,
+                  {
+                    backgroundColor: text,
+                    opacity: !canSave || saving ? 0.4 : 1,
+                  },
+                ]}
+              />
+            </View>
+          </>
+        )}
       </BottomSheetView>
     </BottomSheetModal>
   );

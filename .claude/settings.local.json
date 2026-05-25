@@ -12,7 +12,11 @@
       "Bash(rm -rf node_modules)",
       "Bash(npm install *)",
       "Bash(cmd.exe /c \"gradlew.bat app:installDebug -PreactNativeDevServerPort=8081\")",
-      "Bash(./gradlew.bat app:installDebug -PreactNativeDevServerPort=8081)"
+      "Bash(./gradlew.bat app:installDebug -PreactNativeDevServerPort=8081)",
+      "Bash(node -e \"const pkg = require\\('./node_modules/@gorhom/bottom-sheet/package.json'\\); console.log\\('bottom-sheet:', pkg.version\\); console.log\\('peerDeps:', JSON.stringify\\(pkg.peerDependencies, null, 2\\)\\)\")",
+      "Bash(node -e \"console.log\\('reanimated:', require\\('./node_modules/react-native-reanimated/package.json'\\).version\\); console.log\\('gesture-handler:', require\\('./node_modules/react-native-gesture-handler/package.json'\\).version\\)\")",
+      "Read(//tmp/**)",
+      "Bash(node -e \"const m = require\\('react-native-audio-recorder-player'\\); console.log\\(typeof m, typeof m.default, Object.keys\\(m\\)\\)\")"
     ]
   }
 }
