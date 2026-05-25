@@ -20,7 +20,9 @@
       "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); const p=d.dependencies['react-native-nitro-modules']; console.log\\(JSON.stringify\\(p, null, 2\\)\\)\")",
       "Bash(./gradlew.bat clean *)",
       "Bash(git -C c:/JS/lichka status)",
-      "Bash(git -C c:/JS/lichka log --oneline -5)"
+      "Bash(git -C c:/JS/lichka log --oneline -5)",
+      "Bash(npx jest *)",
+      "Bash(git rm *)"
     ]
   }
 }
