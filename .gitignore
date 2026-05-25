@@ -52,6 +52,8 @@ yarn-error.log
 *.lock
 !Gemfile.lock
 
+
+
 # Environment
 .env
 .env.local
@@ -65,3 +67,6 @@ coverage/
 
 # Reanimated
 react-native-reanimated-*
+
+# Claude Code
+.claude
