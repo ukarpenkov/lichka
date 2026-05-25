@@ -8,13 +8,14 @@ import { useTheme } from '../shared/config/ThemeProvider';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
-import { SettingsScreen } from '../pages/settings';
+import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
 
-import type { ChatStackParamList } from './types';
+import type { ChatStackParamList, SettingsStackParamList } from './types';
 
 // --- Navigators ---
 
 const Stack = createNativeStackNavigator<ChatStackParamList>();
+const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
 
 function ChatStackScreen() {
@@ -38,6 +39,30 @@ function ChatStackScreen() {
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
+  );
+}
+
+function SettingsStackScreen() {
+  const { text, background } = useTheme();
+
+  return (
+    <SettingsStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: background },
+        headerTintColor: text,
+        headerTitleStyle: { color: text },
+      }}>
+      <SettingsStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <SettingsStack.Screen
+        name="ThemePicker"
+        component={ThemePickerScreen}
+        options={{ title: 'Тема оформления' }}
+      />
+    </SettingsStack.Navigator>
   );
 }
 
@@ -77,7 +102,7 @@ export function AppNavigator() {
         />
         <Tab.Screen
           name="SettingsTab"
-          component={SettingsScreen}
+          component={SettingsStackScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
               <Settings color={color} size={size} />
