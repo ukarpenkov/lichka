@@ -1,10 +1,75 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import { FlatList, View, StyleSheet } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+
 import { Screen, Text } from '../../shared/ui';
+import { useTheme } from '../../shared/config';
+import { getScheduledMessages, type Message } from '../../entities/message';
+import { getChatById } from '../../entities/chat';
+
+import { ScheduledItem } from './ScheduledItem';
+
+type ScheduledEntry = {
+  message: Message;
+  chatTitle: string;
+};
 
 export function ScheduledScreen() {
+  const navigation = useNavigation();
+  const { text } = useTheme();
+  const [entries, setEntries] = useState<ScheduledEntry[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const messages = getScheduledMessages();
+      const items: ScheduledEntry[] = [];
+      for (const msg of messages) {
+        const chat = getChatById(msg.chatId);
+        items.push({ message: msg, chatTitle: chat?.title ?? '—' });
+      }
+      setEntries(items);
+    }, []),
+  );
+
+  const handlePress = useCallback(
+    (entry: ScheduledEntry) => {
+      navigation.navigate('ChatsTab', {
+        screen: 'ChatRoom',
+        params: { chatId: entry.message.chatId, messageId: entry.message.id },
+      } as never);
+    },
+    [navigation],
+  );
+
   return (
     <Screen>
-      <Text variant="body">Запланировано</Text>
+      {entries.length === 0 ? (
+        <View style={styles.empty}>
+          <Text variant="body" style={{ color: text + '80' }}>
+            Нет запланированных
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={entries}
+          keyExtractor={(item) => item.message.id}
+          renderItem={({ item }) => (
+            <ScheduledItem
+              message={item.message}
+              chatTitle={item.chatTitle}
+              onPress={() => handlePress(item)}
+            />
+          )}
+        />
+      )}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

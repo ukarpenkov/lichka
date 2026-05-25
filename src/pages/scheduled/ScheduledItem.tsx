@@ -1,0 +1,113 @@
+import React from 'react';
+import { Pressable, View, StyleSheet } from 'react-native';
+import { Bell, AlarmClock, Repeat } from 'lucide-react-native';
+
+import { Text } from '../../shared/ui';
+import { useTheme } from '../../shared/config';
+import type { Message, MessageType } from '../../entities/message';
+
+export type ScheduledItemProps = {
+  message: Message;
+  chatTitle: string;
+  onPress: () => void;
+};
+
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
+  reminder: Bell,
+  alarm: AlarmClock,
+  periodic: Repeat,
+};
+
+function formatScheduledAt(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow =
+    date.getDate() === tomorrow.getDate() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getFullYear() === tomorrow.getFullYear();
+
+  const time = date.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  if (isToday) return time;
+  if (isTomorrow) return `Завтра ${time}`;
+  return date.toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+  }) + ` ${time}`;
+}
+
+export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProps) {
+  const { text } = useTheme();
+  const Icon = TYPE_ICON[message.type as keyof typeof TYPE_ICON];
+  const timeText =
+    message.type === 'periodic'
+      ? `каждые ${message.intervalMinutes} мин`
+      : message.scheduledAt
+        ? formatScheduledAt(message.scheduledAt)
+        : '';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        { opacity: pressed ? 0.7 : 1, borderBottomColor: text + '15' },
+      ]}>
+      <View style={styles.iconWrap}>
+        {Icon && <Icon size={20} color={text} />}
+      </View>
+      <View style={styles.content}>
+        <Text numberOfLines={1} style={styles.body}>
+          {message.body}
+        </Text>
+        <View style={styles.meta}>
+          <Text variant="caption" style={{ color: text + '99' }}>
+            {chatTitle}
+          </Text>
+          <Text variant="caption" style={{ color: text + '60' }}>
+            {timeText}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  content: {
+    flex: 1,
+  },
+  body: {
+    fontSize: 15,
+  },
+  meta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+});

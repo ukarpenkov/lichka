@@ -136,7 +136,9 @@ export function getScheduledMessages(): Message[] {
   const result = db.executeSync(
     `SELECT ${SELECT_COLUMNS} FROM messages
      WHERE enabled = 1
-       AND (scheduled_at > ? OR type = 'periodic')`,
+       AND type IN ('reminder', 'alarm', 'periodic')
+       AND (scheduled_at > ? OR type = 'periodic')
+     ORDER BY scheduled_at ASC`,
     [now],
   );
 
