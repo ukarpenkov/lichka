@@ -5,7 +5,7 @@ import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 
-import { DateTimePickerModal } from './DateTimePickerModal';
+import { DateTimePicker } from '../datetime-picker';
 import { IntervalPicker } from './IntervalPicker';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { DocumentDirectoryPath } from 'react-native-fs';
@@ -150,7 +150,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
         </View>
       </View>
 
-      <DateTimePickerModal
+      <DateTimePicker
         visible={pickerMode !== null}
         value={pickerDate}
         onConfirm={handlePickerConfirm}
