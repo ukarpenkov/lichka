@@ -1,8 +1,9 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useTheme } from '../../shared/config';
 import { Text } from '../../shared/ui';
+import { VoiceMessage } from '../../widgets/voice-message';
 import type { Message } from '../../entities/message';
 
 type MessageBubbleProps = {
@@ -18,10 +19,21 @@ function formatTime(iso: string): string {
   return `${h}:${m}`;
 }
 
+function isVoiceMessage(message: Message): boolean {
+  if (!message.payload) return false;
+  try {
+    const parsed = JSON.parse(message.payload);
+    return typeof parsed.uri === 'string' && parsed.uri.includes('voice');
+  } catch {
+    return false;
+  }
+}
+
 export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
   const { text } = useTheme();
 
   const isEdited = message.updatedAt > message.createdAt;
+  const isVoice = useMemo(() => isVoiceMessage(message), [message]);
 
   const handleLongPress = useCallback(() => {
     onLongPress(message);
@@ -40,9 +52,13 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
           },
         ]}
       >
-        <Text variant="body" style={styles.body}>
-          {message.body}
-        </Text>
+        {isVoice ? (
+          <VoiceMessage message={message} />
+        ) : (
+          <Text variant="body" style={styles.body}>
+            {message.body}
+          </Text>
+        )}
         <View style={styles.metaRow}>
           {isEdited && (
             <Text variant="caption" style={[styles.meta, styles.edited, { color: text + '60' }]}>
