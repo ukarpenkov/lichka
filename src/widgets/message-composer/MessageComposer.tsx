@@ -6,7 +6,7 @@ import { createMessage } from '../../entities/message';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 
 import { DateTimePicker } from '../datetime-picker';
-import { IntervalPicker } from './IntervalPicker';
+import { PeriodPicker } from '../period-picker';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { DocumentDirectoryPath } from 'react-native-fs';
 
@@ -157,7 +157,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
         onCancel={handlePickerCancel}
       />
 
-      <IntervalPicker
+      <PeriodPicker
         visible={intervalVisible}
         onConfirm={handleIntervalConfirm}
         onCancel={handleIntervalCancel}
