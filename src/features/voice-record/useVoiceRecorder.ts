@@ -6,8 +6,7 @@ import AudioRecorderPlayer, {
   AVEncoderAudioQualityIOSType,
 } from 'react-native-audio-recorder-player';
 import { DocumentDirectoryPath } from 'react-native-fs';
-import { ensureDir, VOICE_DIR } from '../../shared/lib';
-import { generateId } from '../../shared/lib';
+import { ensureDir, VOICE_DIR, generateId } from '../../shared/lib';
 
 const MAX_DURATION_MS = 60_000;
 
@@ -83,7 +82,6 @@ export function useVoiceRecorder(): VoiceRecorderState {
         setDurationMs((prev) => {
           const next = prev + 200;
           if (next >= MAX_DURATION_MS) {
-            // Auto-stop at 60s
             stopInternal();
             return MAX_DURATION_MS;
           }
@@ -114,7 +112,6 @@ export function useVoiceRecorder(): VoiceRecorderState {
   const cancelRecording = useCallback(async () => {
     if (!isRecording) return;
     await stopInternal();
-    // Delete the file
     if (currentUriRef.current) {
       try {
         const RNFS = require('react-native-fs');

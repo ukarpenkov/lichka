@@ -5,7 +5,7 @@ import { useTheme } from '../../shared/config';
 import { IconButton } from '../../shared/ui';
 import { Text } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
-import { useVoicePlayer } from './useVoicePlayer';
+import { useVoicePlayer } from '../../features/voice-play';
 import { WaveformBar } from './WaveformBar';
 import type { Message } from '../../entities/message';
 

@@ -75,10 +75,8 @@ export function useVoicePlayer(): VoicePlayerState {
         setIsPlaying(true);
         setIsPaused(false);
       } catch {
-        // fallback: restart from beginning
         await stopInternal();
       }
-      // re-add listener after resume
       player.addPlayBackListener((e: PlayBackType) => {
         setDurationMs(e.duration);
         setCurrentPositionMs(e.currentPosition);

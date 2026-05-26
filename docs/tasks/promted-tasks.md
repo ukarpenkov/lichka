@@ -221,7 +221,7 @@
 
 ## 9. Голосовые сообщения
 
-- [ ] **9.1 Реализовать запись голосового сообщения**
+- [x] **9.1 Реализовать запись голосового сообщения**
   В `src/features/voice-record/`:
   — Хук `useVoiceRecorder()`: start/stop/cancel, возвращает `{ isRecording, duration, filePath }`
   — Формат: AAC-LC, `.m4a`, mono, 16 kHz, ~64 kbps, max 60 сек (hard stop)

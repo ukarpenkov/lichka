@@ -1,5 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withRepeat,
+  withSequence,
+} from 'react-native-reanimated';
 import { useTheme } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
@@ -8,11 +15,11 @@ import {
   ensureExactAlarmPermission,
   requestBatteryOptimizationExemption,
 } from '../../features/notifications';
+import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
-import { useVoiceRecorder } from './useVoiceRecorder';
 import { DocumentDirectoryPath } from 'react-native-fs';
 
 type Props = {
@@ -29,6 +36,8 @@ function formatDuration(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function MessageComposer({ chatId, onSent }: Props) {
   const { text, background } = useTheme();
   const [body, setBody] = useState('');
@@ -38,6 +47,18 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
+
+  // Animation values for recording indicator
+  const dotScale = useSharedValue(1);
+  const recOpacity = useSharedValue(0);
+
+  const dotAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+  }));
+
+  const recRowAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: recOpacity.value,
+  }));
 
   const sendMessage = useCallback(
     (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number; payload?: string }) => {
@@ -106,41 +127,64 @@ export function MessageComposer({ chatId, onSent }: Props) {
     setIntervalVisible(false);
   }, []);
 
-  const handleMic = useCallback(async () => {
-    if (isRecording) {
-      const result = await stopRecording();
-      if (result && result.uri) {
-        const relativeUri = result.uri.replace(`${DocumentDirectoryPath}/`, '');
-        const payload = JSON.stringify({ uri: relativeUri });
-        const durationSec = Math.round(result.durationMs / 1000);
-        createMessage(chatId, 'simple', `[Голосовое ${durationSec}с]`, null, null, payload);
-        onSent?.();
-      }
-    } else {
-      await startRecording();
+  const handleMicLongPress = useCallback(async () => {
+    const granted = await requestMicrophonePermission();
+    if (!granted) return;
+
+    const uri = await startRecording();
+    if (uri) {
+      // Start pulsating animation
+      dotScale.value = withRepeat(
+        withSequence(
+          withSpring(1.3, { damping: 2, stiffness: 200 }),
+          withSpring(1.0, { damping: 2, stiffness: 200 }),
+        ),
+        -1,
+        true,
+      );
+      recOpacity.value = withSpring(1, { damping: 15, stiffness: 150 });
     }
-  }, [isRecording, stopRecording, startRecording, chatId, onSent]);
+  }, [startRecording, dotScale, recOpacity]);
+
+  const handleMicPressOut = useCallback(async () => {
+    if (!isRecording) return;
+
+    // Stop pulsating
+    dotScale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    recOpacity.value = withSpring(0, { damping: 15, stiffness: 150 });
+
+    const result = await stopRecording();
+    if (result && result.uri) {
+      const relativeUri = result.uri.replace(`${DocumentDirectoryPath}/`, '');
+      const payload = JSON.stringify({ uri: relativeUri });
+      const durationSec = Math.round(result.durationMs / 1000);
+      createMessage(chatId, 'simple', `[Голосовое ${durationSec}с]`, null, null, payload);
+      onSent?.();
+    }
+  }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity]);
 
   const handleCancelRecord = useCallback(async () => {
+    dotScale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    recOpacity.value = withSpring(0, { damping: 15, stiffness: 150 });
     await cancelRecording();
-  }, [cancelRecording]);
+  }, [cancelRecording, dotScale, recOpacity]);
 
   // Recording mode UI
   if (isRecording) {
     return (
       <View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
-        <View style={styles.recordingRow}>
+        <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <View style={styles.recordingIndicator}>
-            <View style={[styles.recDot, { backgroundColor: '#ff4444' }]} />
+            <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
             <Text variant="body">Запись {formatDuration(durationMs)}</Text>
           </View>
           <View style={styles.recordingActions}>
             <IconButton icon={X} size={22} color={`${text}99`} onPress={handleCancelRecord} />
-            <Pressable style={[styles.stopBtn, { backgroundColor: text }]} onPress={handleMic}>
+            <Pressable style={[styles.stopBtn, { backgroundColor: text }]} onPress={handleMicPressOut}>
               <Square size={16} color={background} fill={background} />
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       </View>
     );
   }
@@ -162,7 +206,13 @@ export function MessageComposer({ chatId, onSent }: Props) {
           <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} />
           <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} />
           <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} />
-          <IconButton icon={Mic} size={22} color={`${text}99`} onPress={handleMic} />
+          <AnimatedPressable
+            style={styles.micBtn}
+            onLongPress={handleMicLongPress}
+            delayLongPress={300}
+          >
+            <Mic size={22} color={`${text}99`} />
+          </AnimatedPressable>
         </View>
       </View>
 
@@ -202,6 +252,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     marginTop: 6,
+  },
+  micBtn: {
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   recordingRow: {
     flexDirection: 'row',
