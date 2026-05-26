@@ -3,6 +3,7 @@ import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
+import { scheduleNotification } from '../../features/notifications';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 
 import { DateTimePicker } from '../datetime-picker';
@@ -39,7 +40,10 @@ export function MessageComposer({ chatId, onSent }: Props) {
       const textBody = type === 'simple' ? body.trim() : body.trim() || '(без текста)';
       if (!textBody && type === 'simple') return;
 
-      createMessage(chatId, type, textBody, opts?.scheduledAt ?? null, opts?.intervalMinutes ?? null, opts?.payload ?? null);
+      const msg = createMessage(chatId, type, textBody, opts?.scheduledAt ?? null, opts?.intervalMinutes ?? null, opts?.payload ?? null);
+      if (type !== 'simple') {
+        scheduleNotification(msg);
+      }
       setBody('');
       onSent?.();
     },

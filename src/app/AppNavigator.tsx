@@ -9,6 +9,7 @@ import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
 import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
+import { useNotificationNavigation } from '../features/notifications';
 
 import type { ChatStackParamList, SettingsStackParamList } from './types';
 
@@ -17,6 +18,11 @@ import type { ChatStackParamList, SettingsStackParamList } from './types';
 const Stack = createNativeStackNavigator<ChatStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
+
+function NotificationHandler() {
+  useNotificationNavigation();
+  return null;
+}
 
 function ChatStackScreen() {
   const { text, background } = useTheme();
@@ -71,6 +77,7 @@ export function AppNavigator() {
 
   return (
     <NavigationContainer>
+      <NotificationHandler />
       <Tab.Navigator
         screenOptions={{
           headerShown: false,

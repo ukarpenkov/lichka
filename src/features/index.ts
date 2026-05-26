@@ -1,2 +1,7 @@
 /** Public API слоя features — пользовательские действия и бизнес-логика. */
-export {};
+export {
+  scheduleNotification,
+  cancelNotification,
+  requestNotificationPermission,
+  useNotificationNavigation,
+} from './notifications';

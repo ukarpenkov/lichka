@@ -12,6 +12,7 @@ import {
   deleteMessage,
   type Message,
 } from '../../entities/message';
+import { cancelNotification } from '../../features/notifications';
 import { ChatForm } from '../../widgets/chat-form';
 import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
@@ -122,6 +123,7 @@ export function ChatRoomScreen() {
         style: 'destructive',
         onPress: () => {
           deleteMessage(menuMessage.id);
+          cancelNotification(menuMessage.id);
           setMessages(getVisibleMessagesByChatId(chatId));
         },
       },

@@ -203,7 +203,7 @@
   — Вызвать регистрацию каналов из `MainApplication.kt` или из JS через `NativeModules` при инициализации приложения
   — Expo-modules-core не используем — plain RN Native Module
 
-- [ ] **8.2 Реализовать push-напоминания (reminder + periodic)**
+- [x] **8.2 Реализовать push-напоминания (reminder + periodic)**
   — Для `reminder`: при создании сообщения — запланировать `AlarmManager.set()` (inexact) на `scheduledAt`. При срабатывании — показать notification на канале `reminders` с текстом сообщения и названием чата. Tap → deep link в чат.
   — Для `periodic`: при создании — запланировать первый `AlarmManager.set()` через `intervalMinutes`. При каждом срабатывании — notification + перепланировать следующий.
   — При удалении/отключении сообщения — отменить pending alarm

@@ -1,5 +1,6 @@
 package com.lichka
 
+import android.content.Intent
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -19,4 +20,19 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    val chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
+    if (chatId != null) {
+      val reactHost = (application as MainApplication).reactHost
+      val reactContext = reactHost?.currentReactContext
+      if (reactContext != null) {
+        val module =
+            reactContext.getNativeModule(NotificationModule::class.java) as? NotificationModule
+        module?.emitNotificationOpen(chatId)
+      }
+    }
+  }
 }
