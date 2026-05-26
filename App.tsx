@@ -4,11 +4,12 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { ThemeProvider } from './src/shared/config/ThemeProvider';
 import { runMigrations } from './src/shared/db';
-import { registerNotificationChannels } from './src/shared/lib/notificationChannels';
+import { registerNotificationChannels, cleanupOrphanMedia } from './src/shared/lib';
 import { AppNavigator } from './src/app/AppNavigator';
 
 runMigrations();
 registerNotificationChannels();
+cleanupOrphanMedia();
 
 function App(): React.JSX.Element {
   return (

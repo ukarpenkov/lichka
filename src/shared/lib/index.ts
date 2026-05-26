@@ -1,5 +1,6 @@
 /** Утилиты и хелперы. */
 export { resolveMediaPath, ensureDir, saveAvatar, AVATARS_DIR, VOICE_DIR } from './mediaPath';
+export { cleanupOrphanMedia } from './cleanupMedia';
 export { generateId } from './generateId';
 export {
   registerNotificationChannels,
