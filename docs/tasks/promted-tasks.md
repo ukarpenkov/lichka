@@ -230,7 +230,7 @@
   — Использовать `react-native` Audio API или нативный модуль записи (MediaRecorder в Kotlin, exposed в JS)
   — UI: long press на иконке микрофона → запись, отпускание → сохранение как голосовое сообщение. Анимация индикатора записи (Reanimated `withSpring`)
 
-- [ ] **9.2 Реализовать воспроизведение голосовых сообщений**
+- [x] **9.2 Реализовать воспроизведение голосовых сообщений**
   В `src/features/voice-play/`:
   — Хук `useVoicePlayer(messageId)`: play/pause/stop, progress, duration
   — Per-message instance: каждый bubble — свой player. Одновременно играет только одно: tap на другое → stop предыдущего (координация через ref/context на уровне экрана чата)
