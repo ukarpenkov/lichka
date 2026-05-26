@@ -22,7 +22,9 @@
       "Bash(git -C c:/JS/lichka status)",
       "Bash(git -C c:/JS/lichka log --oneline -5)",
       "Bash(npx jest *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(xxd \"c:\\\\JS\\\\lichka\\\\src\\\\pages\\\\chat-room\\\\ChatRoomScreen.tsx\")",
+      "Bash(python3 -c ' *)"
     ]
   }
 }
