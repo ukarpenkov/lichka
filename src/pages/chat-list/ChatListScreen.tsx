@@ -2,9 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { FlatList, Pressable, Alert, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus } from 'lucide-react-native';
+import { Plus, Search } from 'lucide-react-native';
 
-import { Screen, Text } from '../../shared/ui';
+import { Screen, Text, IconButton } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
@@ -12,6 +12,7 @@ import { ChatForm } from '../../widgets/chat-form';
 
 import { ChatListItem } from './ChatListItem';
 import { ChatContextMenu } from './ChatContextMenu';
+import { GlobalSearch } from './GlobalSearch';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
 
@@ -22,6 +23,7 @@ export function ChatListScreen() {
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [editChat, setEditChat] = useState<Chat | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -66,6 +68,18 @@ export function ChatListScreen() {
 
   return (
     <Screen>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: text + '20' }]}>
+        <Text variant="body" style={{ fontWeight: '600', color: text }}>
+          Чаты
+        </Text>
+        <IconButton
+          icon={Search}
+          size={22}
+          onPress={() => setSearchVisible(true)}
+        />
+      </View>
+
       {chats.length === 0 ? (
         <View style={styles.empty}>
           <Text variant="body" style={{ color: text + '80' }}>
@@ -112,11 +126,24 @@ export function ChatListScreen() {
         onSaved={refresh}
         editChat={editChat}
       />
+
+      <GlobalSearch
+        visible={searchVisible}
+        onClose={() => setSearchVisible(false)}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   empty: {
     flex: 1,
     alignItems: 'center',

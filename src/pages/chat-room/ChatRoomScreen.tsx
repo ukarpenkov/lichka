@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, FlatList, Alert, StyleSheet, type ViewToken, type LayoutChangeEvent } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -55,7 +55,7 @@ function buildListItems(messages: Message[]): ListItem[] {
 export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
-  const { chatId } = route.params;
+  const { chatId, messageId } = route.params;
   const { text, background } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -70,6 +70,7 @@ export function ChatRoomScreen() {
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  const flatListRef = useRef<FlatList>(null);
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId));
@@ -83,6 +84,22 @@ export function ChatRoomScreen() {
   );
 
   const listItems = useMemo(() => buildListItems(messages), [messages]);
+
+  useEffect(() => {
+    if (!messageId || listItems.length === 0) return;
+    const index = listItems.findIndex(
+      (item) => item.kind === 'message' && item.message.id === messageId,
+    );
+    if (index === -1) return;
+    const timer = setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [messageId, listItems]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return listItems;
@@ -220,6 +237,7 @@ export function ChatRoomScreen() {
 
       {/* Message list */}
       <FlatList
+        ref={flatListRef}
         data={filteredItems}
         renderItem={renderListItem}
         keyExtractor={keyExtractor}
@@ -228,6 +246,15 @@ export function ChatRoomScreen() {
         contentContainerStyle={styles.listContent}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({
+              index: info.index,
+              animated: false,
+              viewPosition: 0.5,
+            });
+          }, 200);
+        }}
       />
 
       {/* Message composer */}
