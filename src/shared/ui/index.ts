@@ -4,3 +4,4 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export { Screen, type ScreenProps } from './Screen';
 export { Input, type InputProps } from './Input';
 export { Avatar, type AvatarProps } from './Avatar';
+export { HighlightedBody, parseHighlights } from './HighlightedBody';

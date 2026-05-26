@@ -56,7 +56,7 @@ export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
   const { chatId, messageId } = route.params;
-  const { text, background } = useTheme();
+  const { background } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [chat, setChat] = useState<Chat | null>(null);
@@ -65,7 +65,6 @@ export function ChatRoomScreen() {
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
 
@@ -101,23 +100,6 @@ export function ChatRoomScreen() {
     return () => clearTimeout(timer);
   }, [messageId, listItems]);
 
-  const filteredItems = useMemo(() => {
-    if (!searchQuery.trim()) return listItems;
-    const q = searchQuery.toLowerCase();
-    return listItems.filter((item) => {
-      if (item.kind === 'date') return true;
-      return item.message.body.toLowerCase().includes(q);
-    });
-  }, [listItems, searchQuery]);
-
-  const highlightedIds = useMemo(() => {
-    if (!searchQuery.trim()) return new Set<string>();
-    const q = searchQuery.toLowerCase();
-    return new Set(
-      messages.filter((m) => m.body.toLowerCase().includes(q)).map((m) => m.id),
-    );
-  }, [messages, searchQuery]);
-
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       for (const v of viewableItems) {
@@ -133,6 +115,23 @@ export function ChatRoomScreen() {
   const handleHeaderLayout = useCallback((e: LayoutChangeEvent) => {
     setHeaderAreaHeight(e.nativeEvent.layout.height);
   }, []);
+
+  const handleSearchSelect = useCallback(
+    (msgId: string) => {
+      const index = listItems.findIndex(
+        (item) => item.kind === 'message' && item.message.id === msgId,
+      );
+      if (index === -1) return;
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({
+          index,
+          animated: true,
+          viewPosition: 0.5,
+        });
+      }, 200);
+    },
+    [listItems],
+  );
 
   const handleDeleteMessage = useCallback(() => {
     if (!menuMessage) return;
@@ -176,12 +175,11 @@ export function ChatRoomScreen() {
       return (
         <MessageBubble
           message={item.message}
-          highlighted={highlightedIds.has(item.message.id)}
           onLongPress={setMenuMessage}
         />
       );
     },
-    [highlightedIds],
+    [],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -205,24 +203,16 @@ export function ChatRoomScreen() {
           onTitlePress={() => setEditFormVisible(true)}
           onSearch={() => setSearchVisible(true)}
         />
-        {searchVisible && (
-          <SearchOverlay
-            query={searchQuery}
-            onChangeQuery={setSearchQuery}
-            onClose={() => {
-              setSearchVisible(false);
-              setSearchQuery('');
-            }}
-            resultCount={
-              searchQuery.trim()
-                ? messages.filter((m) =>
-                    m.body.toLowerCase().includes(searchQuery.toLowerCase()),
-                  ).length
-                : 0
-            }
-          />
-        )}
       </View>
+
+      {/* Search overlay */}
+      {searchVisible && (
+        <SearchOverlay
+          chatId={chatId}
+          onClose={() => setSearchVisible(false)}
+          onSelect={handleSearchSelect}
+        />
+      )}
 
       {/* Sticky date header */}
       {stickyDate && (
@@ -238,7 +228,7 @@ export function ChatRoomScreen() {
       {/* Message list */}
       <FlatList
         ref={flatListRef}
-        data={filteredItems}
+        data={listItems}
         renderItem={renderListItem}
         keyExtractor={keyExtractor}
         inverted
