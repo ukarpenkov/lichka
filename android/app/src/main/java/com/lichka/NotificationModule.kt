@@ -1,8 +1,13 @@
 package com.lichka
 
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -60,6 +65,42 @@ class NotificationModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun cancelAlarm(messageId: String) {
         AlarmScheduler.cancel(reactApplicationContext, messageId)
+    }
+
+    @ReactMethod
+    fun scheduleAlarm(
+        messageId: String,
+        chatId: String,
+        body: String,
+        chatTitle: String,
+        triggerAtMillis: Double,
+    ) {
+        AlarmScheduler.scheduleAlarm(
+            reactApplicationContext, messageId, chatId, body, chatTitle, triggerAtMillis.toLong(),
+        )
+    }
+
+    @ReactMethod
+    fun canScheduleExactAlarms(promise: Promise) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager =
+                reactApplicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            promise.resolve(alarmManager.canScheduleExactAlarms())
+        } else {
+            promise.resolve(true)
+        }
+    }
+
+    @ReactMethod
+    fun requestIgnoreBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent =
+                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:${reactApplicationContext.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            reactApplicationContext.startActivity(intent)
+        }
     }
 
     @ReactMethod

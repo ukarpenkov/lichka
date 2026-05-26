@@ -41,6 +41,24 @@ export function cancelAlarm(messageId: string): void {
   NotificationModule.cancelAlarm(messageId);
 }
 
+export function scheduleAlarm(
+  messageId: string,
+  chatId: string,
+  body: string,
+  chatTitle: string,
+  triggerAtMillis: number,
+): void {
+  NotificationModule.scheduleAlarm(messageId, chatId, body, chatTitle, triggerAtMillis);
+}
+
+export function canScheduleExactAlarms(): Promise<boolean> {
+  return NotificationModule.canScheduleExactAlarms();
+}
+
+export function requestIgnoreBatteryOptimizations(): void {
+  NotificationModule.requestIgnoreBatteryOptimizations();
+}
+
 export function getInitialChatId(): Promise<string | null> {
   return NotificationModule.getInitialChatId();
 }

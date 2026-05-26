@@ -3,7 +3,11 @@ import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
-import { scheduleNotification } from '../../features/notifications';
+import {
+  scheduleNotification,
+  ensureExactAlarmPermission,
+  requestBatteryOptimizationExemption,
+} from '../../features/notifications';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 
 import { DateTimePicker } from '../datetime-picker';
@@ -69,8 +73,16 @@ export function MessageComposer({ chatId, onSent }: Props) {
   }, []);
 
   const handlePickerConfirm = useCallback(
-    (date: Date) => {
+    async (date: Date) => {
       if (pickerMode) {
+        if (pickerMode === 'alarm') {
+          const canSchedule = await ensureExactAlarmPermission();
+          if (!canSchedule) {
+            setPickerMode(null);
+            return;
+          }
+          requestBatteryOptimizationExemption();
+        }
         sendMessage(pickerMode, { scheduledAt: date.toISOString() });
       }
       setPickerMode(null);

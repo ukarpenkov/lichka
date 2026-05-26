@@ -2,6 +2,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
       android:name=".MainApplication"
@@ -27,5 +29,11 @@
       <receiver
           android:name=".AlarmReceiver"
           android:exported="false" />
+      <activity
+          android:name=".AlarmActivity"
+          android:showWhenLocked="true"
+          android:turnScreenOn="true"
+          android:exported="false"
+          android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
     </application>
 </manifest>

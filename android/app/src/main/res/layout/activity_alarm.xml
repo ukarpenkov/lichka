@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#FF1A1A2E">
+
+    <ImageView
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:src="@android:drawable/ic_lock_idle_alarm"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:id="@+id/alarm_chat_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textColor="#CCCCCC"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/alarm_body"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="48dp" />
+
+    <Button
+        android:id="@+id/btn_dismiss"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Отключить"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#E53935"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_snooze"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Snooze (5 мин)"
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#455A64" />
+
+</LinearLayout>

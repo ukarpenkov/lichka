@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import {
   scheduleReminder,
   schedulePeriodic,
+  scheduleAlarm,
   cancelAlarm,
 } from '../../shared/lib/notificationChannels';
 import { getChatById } from '../../entities/chat';
@@ -13,7 +14,12 @@ export function scheduleNotification(message: Message): void {
   const chat = getChatById(message.chatId);
   const chatTitle = chat?.title ?? 'Lichka';
 
-  if (message.type === 'reminder' || message.type === 'alarm') {
+  if (message.type === 'alarm') {
+    if (!message.scheduledAt) return;
+    const triggerAt = new Date(message.scheduledAt).getTime();
+    if (triggerAt <= Date.now()) return;
+    scheduleAlarm(message.id, message.chatId, message.body, chatTitle, triggerAt);
+  } else if (message.type === 'reminder') {
     if (!message.scheduledAt) return;
     const triggerAt = new Date(message.scheduledAt).getTime();
     if (triggerAt <= Date.now()) return;

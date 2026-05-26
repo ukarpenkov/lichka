@@ -3,5 +3,7 @@ export {
   scheduleNotification,
   cancelNotification,
   requestNotificationPermission,
+  ensureExactAlarmPermission,
+  requestBatteryOptimizationExemption,
   useNotificationNavigation,
 } from './notifications';

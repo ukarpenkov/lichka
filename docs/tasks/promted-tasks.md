@@ -210,7 +210,7 @@
   — BroadcastReceiver в Kotlin для обработки срабатываний
   — Snooze: action в notification, 5 мин (default)
 
-- [ ] **8.3 Реализовать full-screen alarm (будильник)**
+- [x] **8.3 Реализовать full-screen alarm (будильник)**
   — `AlarmActivity.kt`: полноэкранный экран поверх lock screen (`showWhenLocked`, `turnScreenOn`). Текст сообщения + кнопки «Отключить» и «Snooze» (5 мин). Звук на `STREAM_ALARM`, вибрация.
   — `AlarmManager.setAlarmClock()` для точного времени (requires `SCHEDULE_EXACT_ALARM` permission на API 31+)
   — Permission flow: перед первым будильником — проверка `canScheduleExactAlarms()` → rationale → запрос. Fallback: inexact + предупреждение.
