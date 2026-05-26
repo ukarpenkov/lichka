@@ -197,7 +197,7 @@
 
 ## 8. Уведомления и напоминания (нативный Android)
 
-- [ ] **8.1 Создать notification channels и регистрацию**
+- [x] **8.1 Создать notification channels и регистрацию**
   В `android/app/src/main/java/.../`:
   — Создай `NotificationModule.kt` (React Native Native Module): регистрация 2 каналов при старте: `reminders` (IMPORTANCE_DEFAULT) и `alarms` (IMPORTANCE_HIGH, CATEGORY_ALARM)
   — Вызвать регистрацию каналов из `MainApplication.kt` или из JS через `NativeModules` при инициализации приложения
