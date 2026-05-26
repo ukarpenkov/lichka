@@ -13,6 +13,7 @@ import {
   type Message,
 } from '../../entities/message';
 import { cancelNotification } from '../../features/notifications';
+import { useEditMessage, type EditFields } from '../../features/edit-message';
 import { ChatForm } from '../../widgets/chat-form';
 import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
@@ -20,6 +21,7 @@ import type { ChatStackParamList } from '../../app/types';
 import { ChatHeader } from './ChatHeader';
 import { MessageBubble } from './MessageBubble';
 import { MessageContextMenu } from './MessageContextMenu';
+import { MessageEditor } from './MessageEditor';
 import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
 
@@ -60,6 +62,7 @@ export function ChatRoomScreen() {
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
+  const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,9 +133,23 @@ export function ChatRoomScreen() {
     ]);
   }, [menuMessage, chatId]);
 
+  const { saveEdit } = useEditMessage();
+
   const handleEditMessage = useCallback(() => {
-    // TODO: откроется форма редактирования сообщения
-  }, []);
+    if (menuMessage) {
+      setEditMessage(menuMessage);
+    }
+  }, [menuMessage]);
+
+  const handleSaveEdit = useCallback(
+    (fields: EditFields) => {
+      if (!editMessage) return;
+      saveEdit(editMessage, fields);
+      setEditMessage(null);
+      setMessages(getVisibleMessagesByChatId(chatId));
+    },
+    [editMessage, saveEdit, chatId],
+  );
 
   const renderListItem = useCallback(
     ({ item }: { item: ListItem }) => {
@@ -222,6 +239,14 @@ export function ChatRoomScreen() {
         onEdit={handleEditMessage}
         onDelete={handleDeleteMessage}
         onClose={() => setMenuMessage(null)}
+      />
+
+      {/* Message editor */}
+      <MessageEditor
+        visible={editMessage !== null}
+        message={editMessage}
+        onSave={handleSaveEdit}
+        onClose={() => setEditMessage(null)}
       />
 
       {/* Chat edit form */}
