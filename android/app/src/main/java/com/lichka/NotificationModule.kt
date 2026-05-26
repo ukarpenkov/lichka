@@ -105,13 +105,13 @@ class NotificationModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getInitialChatId(promise: Promise) {
-        val chatId = currentActivity?.intent?.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
+        val chatId = reactApplicationContext.currentActivity?.intent?.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
         promise.resolve(chatId)
     }
 
     @ReactMethod
     fun consumeInitialChatId() {
-        currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_CHAT_ID)
+        reactApplicationContext.currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_CHAT_ID)
     }
 
     @ReactMethod
