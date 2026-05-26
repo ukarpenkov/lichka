@@ -1,11 +1,12 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { View, FlatList, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { View, FlatList, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../../shared/ui';
 
-const ITEM_WIDTH = 48;
-const VISIBLE_ITEMS = 5;
-const PICKER_WIDTH = ITEM_WIDTH * VISIBLE_ITEMS;
-const PICKER_PADDING = (PICKER_WIDTH - ITEM_WIDTH) / 2;
+const ITEM_HEIGHT = 40;
+const VISIBLE_ITEMS = 3;
+const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
+const SNAP_INTERVAL = ITEM_HEIGHT;
+const HALF_PADDING = (LIST_HEIGHT - ITEM_HEIGHT) / 2;
 
 function getIs24Hour(): boolean {
   try {
@@ -17,158 +18,190 @@ function getIs24Hour(): boolean {
 }
 
 type Props = {
-  hour: number; // 0–23
-  minute: number; // 0–59
+  hour: number;
+  minute: number;
   textColor: string;
   accentColor: string;
   onHourChange: (h: number) => void;
   onMinuteChange: (m: number) => void;
 };
 
-export function TimeScroller({ hour, minute, textColor, accentColor, onHourChange, onMinuteChange }: Props) {
+export function TimeScroller({
+  hour,
+  minute,
+  textColor,
+  accentColor,
+  onHourChange,
+  onMinuteChange,
+}: Props) {
   const is24 = useRef(getIs24Hour()).current;
-  const hourListRef = useRef<FlatList>(null);
-  const minListRef = useRef<FlatList>(null);
+  const hourListRef = useRef<FlatList<number>>(null);
+  const minListRef = useRef<FlatList<number>>(null);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   const formatHour = useCallback(
     (h: number) => {
-      if (!is24) {
-        const h12 = h % 12 || 12;
-        return `${h12}`;
-      }
-      return `${h}`.padStart(2, '0');
+      if (is24) return `${h}`.padStart(2, '0');
+      const h12 = h % 12 || 12;
+      return `${h12}`.padStart(2, '0');
     },
     [is24],
   );
 
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
 
-  const scrollToHour = useCallback(
-    (h: number) => {
-      hourListRef.current?.scrollToOffset({ offset: h * ITEM_WIDTH, animated: false });
+  const scrollToIndex = useCallback(
+    (ref: React.RefObject<FlatList<number> | null>, index: number, animated: boolean) => {
+      ref.current?.scrollToOffset({
+        offset: index * ITEM_HEIGHT,
+        animated,
+      });
     },
     [],
   );
-
-  const scrollToMinute = useCallback(
-    (m: number) => {
-      minListRef.current?.scrollToOffset({ offset: m * ITEM_WIDTH, animated: false });
-    },
-    [],
-  );
-
-  useEffect(() => {
-    scrollToHour(hour);
-  }, [hour, scrollToHour]);
-
-  useEffect(() => {
-    scrollToMinute(minute);
-  }, [minute, scrollToMinute]);
 
   const handleHourScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH);
+    (e: any) => {
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(23, idx));
       if (clamped !== hour) onHourChange(clamped);
+      // Re-snap in case of slight misalignment
+      scrollToIndex(hourListRef, clamped, true);
     },
-    [hour, onHourChange],
+    [hour, onHourChange, scrollToIndex],
   );
 
   const handleMinuteScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.x / ITEM_WIDTH);
+    (e: any) => {
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(59, idx));
       if (clamped !== minute) onMinuteChange(clamped);
+      scrollToIndex(minListRef, clamped, true);
     },
-    [minute, onMinuteChange],
+    [minute, onMinuteChange, scrollToIndex],
   );
 
-  const renderHourItem = useCallback(
-    ({ item }: { item: number }) => {
-      const isSelected = item === hour;
-      return (
-        <View style={[styles.item, { width: ITEM_WIDTH }]}>
-          <Text
-            variant="body"
-            style={{
-              fontSize: isSelected ? 22 : 16,
-              fontWeight: isSelected ? '700' : '400',
-              color: isSelected ? accentColor : `${textColor}66`,
-              textAlign: 'center',
-            }}
-          >
-            {formatHour(item)}
-          </Text>
-        </View>
-      );
+  const handleHourPress = useCallback(
+    (idx: number) => {
+      onHourChange(idx);
+      scrollToIndex(hourListRef, idx, true);
     },
-    [hour, accentColor, textColor, formatHour],
+    [onHourChange, scrollToIndex],
   );
 
-  const renderMinuteItem = useCallback(
-    ({ item }: { item: number }) => {
-      const isSelected = item === minute;
-      return (
-        <View style={[styles.item, { width: ITEM_WIDTH }]}>
-          <Text
-            variant="body"
-            style={{
-              fontSize: isSelected ? 22 : 16,
-              fontWeight: isSelected ? '700' : '400',
-              color: isSelected ? accentColor : `${textColor}66`,
-              textAlign: 'center',
-            }}
-          >
-            {formatMinute(item)}
-          </Text>
-        </View>
-      );
+  const handleMinutePress = useCallback(
+    (idx: number) => {
+      onMinuteChange(idx);
+      scrollToIndex(minListRef, idx, true);
     },
-    [minute, accentColor, textColor, formatMinute],
+    [onMinuteChange, scrollToIndex],
+  );
+
+  const renderItem = useCallback(
+    (
+      item: number,
+      isSelected: boolean,
+      format: (v: number) => string,
+      onPress: (v: number) => void,
+    ) => (
+      <Pressable
+        onPress={() => onPress(item)}
+        style={[styles.item, { height: ITEM_HEIGHT }]}
+      >
+        <Text
+          style={{
+            fontSize: isSelected ? 22 : 15,
+            fontWeight: isSelected ? '700' : '400',
+            color: isSelected ? accentColor : `${textColor}44`,
+            textAlign: 'center',
+            lineHeight: ITEM_HEIGHT,
+          }}
+        >
+          {format(item)}
+        </Text>
+      </Pressable>
+    ),
+    [accentColor, textColor],
   );
 
   return (
     <View style={styles.container}>
+      {/* Hours column */}
       <FlatList
         ref={hourListRef}
         data={hours}
         keyExtractor={(item) => `h${item}`}
-        renderItem={renderHourItem}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={ITEM_WIDTH}
+        renderItem={({ item }) =>
+          renderItem(item, item === hour, formatHour, handleHourPress)
+        }
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: PICKER_PADDING }}
+        disableIntervalMomentum
+        contentContainerStyle={{
+          paddingVertical: HALF_PADDING,
+        }}
         onMomentumScrollEnd={handleHourScrollEnd}
+        onScrollEndDrag={handleHourScrollEnd}
         getItemLayout={(_, index) => ({
-          length: ITEM_WIDTH,
-          offset: ITEM_WIDTH * index,
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
           index,
         })}
+        style={styles.list}
+        onLayout={() => scrollToIndex(hourListRef, hour, false)}
       />
-      <Text variant="body" style={{ fontSize: 22, fontWeight: '700', color: textColor, marginHorizontal: 4 }}>:</Text>
+
+      <Text
+        style={{
+          fontSize: 22,
+          fontWeight: '700',
+          color: textColor,
+          marginHorizontal: 6,
+          lineHeight: LIST_HEIGHT,
+          textAlignVertical: 'center',
+        }}
+      >
+        :
+      </Text>
+
+      {/* Minutes column */}
       <FlatList
         ref={minListRef}
         data={minutes}
         keyExtractor={(item) => `m${item}`}
-        renderItem={renderMinuteItem}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={ITEM_WIDTH}
+        renderItem={({ item }) =>
+          renderItem(item, item === minute, formatMinute, handleMinutePress)
+        }
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SNAP_INTERVAL}
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: PICKER_PADDING }}
+        disableIntervalMomentum
+        contentContainerStyle={{
+          paddingVertical: HALF_PADDING,
+        }}
         onMomentumScrollEnd={handleMinuteScrollEnd}
+        onScrollEndDrag={handleMinuteScrollEnd}
         getItemLayout={(_, index) => ({
-          length: ITEM_WIDTH,
-          offset: ITEM_WIDTH * index,
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
           index,
         })}
+        style={styles.list}
+        onLayout={() => scrollToIndex(minListRef, minute, false)}
       />
+
       {!is24 && (
-        <Text variant="caption" style={{ color: `${textColor}66`, marginLeft: 4, alignSelf: 'center' }}>
+        <Text
+          style={{
+            color: `${textColor}66`,
+            fontSize: 11,
+            marginLeft: 4,
+            alignSelf: 'center',
+          }}
+        >
           {hour < 12 ? 'AM' : 'PM'}
         </Text>
       )}
@@ -181,10 +214,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: LIST_HEIGHT,
+  },
+  list: {
+    width: 52,
+    height: LIST_HEIGHT,
   },
   item: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 40,
+    width: 52,
   },
 });

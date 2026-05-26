@@ -1,86 +1,84 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, runOnJS } from 'react-native-reanimated';
-import Svg, { Circle, Text as SvgText } from 'react-native-svg';
-import { cartesianToAngle, snapToSegment, segmentToAngle, polarToCartesian } from './circularMath';
+import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Svg, { Circle, Text as SvgText, G } from 'react-native-svg';
+import { segmentToAngle, polarToCartesian } from './circularMath';
 
-const RADIUS = 130;
-const TEXT_RADIUS = 108;
-const SEGMENTS = 31;
-const STEP = 360 / SEGMENTS;
-const RING_WIDTH = 40;
+export const DAY_RADIUS = 130;
+export const DAY_TEXT_RADIUS = 108;
+export const DAY_SEGMENTS = 31;
+export const DAY_STEP = 360 / DAY_SEGMENTS;
+export const DAY_RING_WIDTH = 40;
+export const DAY_RING_INNER = DAY_RADIUS - DAY_RING_WIDTH / 2;
+export const DAY_RING_OUTER = DAY_RADIUS + DAY_RING_WIDTH / 2;
 
 type Props = {
-  selectedDay: number; // 1–31
+  rotation: SharedValue<number>;
   textColor: string;
   accentColor: string;
   size: number;
-  onSelect: (day: number) => void;
 };
 
-export function DayRing({ selectedDay, textColor, accentColor, size, onSelect }: Props) {
+export function DayRing({ rotation, textColor, accentColor, size }: Props) {
   const cx = size / 2;
   const cy = size / 2;
 
-  const selectedIndex = useSharedValue(selectedDay - 1);
+  const ringAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
 
-  const handleSelect = (idx: number) => {
-    onSelect(idx + 1);
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      const angle = cartesianToAngle(cx, cy, e.x, e.y);
-      const idx = snapToSegment(angle, SEGMENTS);
-      if (idx !== selectedIndex.value) {
-        selectedIndex.value = idx;
-        runOnJS(handleSelect)(idx);
-      }
-    });
-
-  const days = Array.from({ length: SEGMENTS }, (_, i) => i + 1);
+  const days = Array.from({ length: DAY_SEGMENTS }, (_, i) => i + 1);
+  const arcLen =
+    (DAY_STEP / 360) * 2 * Math.PI * (DAY_RADIUS - DAY_RING_WIDTH / 2);
+  const circumference = 2 * Math.PI * (DAY_RADIUS - DAY_RING_WIDTH / 2);
+  const dashOffset = circumference * 0.25 - arcLen / 2;
 
   return (
-    <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.container, { width: size, height: size }]}>
+    <View style={[styles.container, { width: size, height: size }]}>
+      {/* Selection arc — static, always at top */}
+      <Svg
+        width={size}
+        height={size}
+        style={StyleSheet.absoluteFill}
+      >
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={DAY_RADIUS - DAY_RING_WIDTH / 2}
+          stroke={accentColor}
+          strokeWidth={DAY_RING_WIDTH}
+          fill="none"
+          strokeDasharray={`${arcLen} ${circumference}`}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          opacity={0.9}
+        />
+      </Svg>
+
+      {/* Rotating ring content */}
+      <Animated.View style={[styles.ring, ringAnimatedStyle, { width: size, height: size }]}>
         <Svg width={size} height={size}>
-          {/* Ring background */}
           <Circle
             cx={cx}
             cy={cy}
-            r={RADIUS - RING_WIDTH / 2}
+            r={DAY_RADIUS - DAY_RING_WIDTH / 2}
             stroke={`${textColor}15`}
-            strokeWidth={RING_WIDTH}
+            strokeWidth={DAY_RING_WIDTH}
             fill="none"
           />
-          {/* Active arc segment */}
-          <Circle
-            cx={cx}
-            cy={cy}
-            r={RADIUS - RING_WIDTH / 2}
-            stroke={`${textColor}33`}
-            strokeWidth={RING_WIDTH}
-            fill="none"
-            strokeDasharray={`${(STEP / 360) * 2 * Math.PI * (RADIUS - RING_WIDTH / 2)} ${2 * Math.PI * (RADIUS - RING_WIDTH / 2)}`}
-            strokeDashoffset={-((segmentToAngle(selectedDay - 1, SEGMENTS) - STEP / 2) / 360) * 2 * Math.PI * (RADIUS - RING_WIDTH / 2)}
-            strokeLinecap="round"
-          />
-          {/* Day labels */}
           {days.map((day) => {
-            const angle = segmentToAngle(day - 1, SEGMENTS);
-            const pos = polarToCartesian(cx, cy, TEXT_RADIUS, angle);
-            const isSelected = day === selectedDay;
+            const angle = segmentToAngle(day - 1, DAY_SEGMENTS);
+            const pos = polarToCartesian(cx, cy, DAY_TEXT_RADIUS, angle);
             return (
               <SvgText
                 key={day}
                 x={pos.x}
                 y={pos.y}
                 textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={isSelected ? 14 : 11}
-                fontWeight={isSelected ? '700' : '400'}
-                fill={isSelected ? accentColor : `${textColor}66`}
+                alignmentBaseline="middle"
+                fontSize={12}
+                fontWeight={'normal' as const}
+                fill={`${textColor}88`}
               >
                 {day}
               </SvgText>
@@ -88,12 +86,15 @@ export function DayRing({ selectedDay, textColor, accentColor, size, onSelect }:
           })}
         </Svg>
       </Animated.View>
-    </GestureDetector>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+  },
+  ring: {
     position: 'absolute',
   },
 });
