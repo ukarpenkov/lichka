@@ -24,7 +24,8 @@
       "Bash(npx jest *)",
       "Bash(git rm *)",
       "Bash(xxd \"c:\\\\JS\\\\lichka\\\\src\\\\pages\\\\chat-room\\\\ChatRoomScreen.tsx\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(gh api *)"
     ]
   }
 }
