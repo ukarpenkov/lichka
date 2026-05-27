@@ -19,3 +19,5 @@ export type { EditFields } from './edit-message';
 
 export { exportToJSON } from './export';
 export { importFromJSON, type ImportMode, type ImportResult } from './import';
+
+export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup } from './google-drive';

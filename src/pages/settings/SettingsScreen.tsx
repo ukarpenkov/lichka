@@ -7,7 +7,7 @@ import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, F
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, getTheme } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToJSON, importFromJSON } from '../../features';
+import { exportToJSON, importFromJSON, getGoogleToken, uploadBackup, downloadBackup } from '../../features';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import type { SettingsStackParamList } from '../../app/types';
@@ -166,12 +166,78 @@ export function SettingsScreen() {
           <SettingsRow
             label="Сохранить в Google Drive"
             icon={Cloud}
-            onPress={() => Alert.alert('Скоро', 'Функция будет доступна в следующих версиях')}
+            onPress={async () => {
+              try {
+                const token = await getGoogleToken();
+                await uploadBackup(token);
+                Alert.alert('Готово', 'Бэкап сохранён в Google Drive');
+              } catch (e: any) {
+                if (e?.code === 'SIGN_IN_CANCELLED') return;
+                Alert.alert('Ошибка', 'Не удалось сохранить бэкап');
+              }
+            }}
           />
           <SettingsRow
             label="Восстановить из Google Drive"
             icon={CloudDownload}
-            onPress={() => Alert.alert('Скоро', 'Функция будет доступна в следующих версиях')}
+            onPress={async () => {
+              try {
+                const token = await getGoogleToken();
+                const json = await downloadBackup(token);
+
+                Alert.alert(
+                  'Восстановление',
+                  'Выберите режим импорта:',
+                  [
+                    { text: 'Отмена', style: 'cancel' },
+                    {
+                      text: 'Объединить',
+                      onPress: () => {
+                        const result = importFromJSON(json, 'merge');
+                        const parts: string[] = [];
+                        if (result.chatsAdded > 0) parts.push(`Добавлено чатов: ${result.chatsAdded}`);
+                        if (result.chatsUpdated > 0) parts.push(`Обновлено чатов: ${result.chatsUpdated}`);
+                        if (result.messagesAdded > 0) parts.push(`Добавлено сообщений: ${result.messagesAdded}`);
+                        if (result.messagesUpdated > 0) parts.push(`Обновлено сообщений: ${result.messagesUpdated}`);
+                        if (result.settingsImported) parts.push('Настройки импортированы');
+                        Alert.alert('Восстановление завершено', parts.length > 0 ? parts.join('\n') : 'Нет новых данных');
+                        setSettings(getSettings());
+                      },
+                    },
+                    {
+                      text: 'Заменить всё',
+                      style: 'destructive',
+                      onPress: () => {
+                        Alert.alert(
+                          'Заменить всё?',
+                          'Все текущие данные будут удалены и заменены данными из резервной копии. Это действие нельзя отменить.',
+                          [
+                            { text: 'Отмена', style: 'cancel' },
+                            {
+                              text: 'Заменить',
+                              style: 'destructive',
+                              onPress: () => {
+                                const result = importFromJSON(json, 'replace');
+                                Alert.alert('Восстановление завершено',
+                                  `Чатов: ${result.chatsAdded}, сообщений: ${result.messagesAdded}${result.settingsImported ? ', настройки импортированы' : ''}`);
+                                setSettings(getSettings());
+                              },
+                            },
+                          ],
+                        );
+                      },
+                    },
+                  ],
+                );
+              } catch (e: any) {
+                if (e?.code === 'SIGN_IN_CANCELLED') return;
+                if (e?.message === 'NO_BACKUP') {
+                  Alert.alert('Нет бэкапа', 'Резервная копия не найдена в Google Drive');
+                  return;
+                }
+                Alert.alert('Ошибка', 'Не удалось восстановить бэкап');
+              }
+            }}
           />
           <SettingsRow
             label="Экспорт в файл"
