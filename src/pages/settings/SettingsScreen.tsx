@@ -7,6 +7,7 @@ import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, I
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, getTheme } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
+import { exportToJSON } from '../../features';
 import type { SettingsStackParamList } from '../../app/types';
 
 import { SettingsRow } from './SettingsRow';
@@ -147,7 +148,14 @@ export function SettingsScreen() {
           <SettingsRow
             label="Экспорт в файл"
             icon={FileJson}
-            onPress={() => Alert.alert('Скоро', 'Функция будет доступна в следующих версиях')}
+            onPress={async () => {
+              try {
+                const filePath = await exportToJSON();
+                Alert.alert('Готово', `Файл сохранён:\n${filePath}`);
+              } catch (e) {
+                Alert.alert('Ошибка', 'Не удалось экспортировать данные');
+              }
+            }}
           />
         </View>
 

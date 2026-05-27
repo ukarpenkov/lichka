@@ -16,3 +16,5 @@ export type { VoicePlayerState } from './voice-play';
 
 export { useEditMessage } from './edit-message';
 export type { EditFields } from './edit-message';
+
+export { exportToJSON } from './export';
