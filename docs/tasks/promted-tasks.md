@@ -280,7 +280,7 @@
   — Сохранение в файл через `react-native-fs` или Share API
   — Кнопка в настройках → «Экспорт в файл»
 
-- [ ] **12.2 Реализовать импорт из JSON (merge)**
+- [x] **12.2 Реализовать импорт из JSON (merge)**
   В `src/features/import/`:
   — Функция `importFromJSON(json)`: merge по `id` — если запись уже есть, keep newer `updated_at`; новые — добавляем
   — Опция «Заменить всё» — destructive, с подтверждением

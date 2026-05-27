@@ -2,12 +2,14 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, View, Switch, Pressable, Alert, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, Info, ChevronRight } from 'lucide-react-native';
+import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, FileUp, Info, ChevronRight } from 'lucide-react-native';
 
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, getTheme } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToJSON } from '../../features';
+import { exportToJSON, importFromJSON } from '../../features';
+import DocumentPicker from 'react-native-document-picker';
+import RNFS from 'react-native-fs';
 import type { SettingsStackParamList } from '../../app/types';
 
 import { SettingsRow } from './SettingsRow';
@@ -39,6 +41,32 @@ export function SettingsScreen() {
     (locale: string) => {
       updateSettings({ locale });
       setSettings(getSettings());
+    },
+    [],
+  );
+
+  const handleImport = useCallback(
+    async (mode: 'merge' | 'replace') => {
+      try {
+        const file = await DocumentPicker.pickSingle({
+          type: [DocumentPicker.types.allFiles],
+        });
+        const json = await RNFS.readFile(file.uri, 'utf8');
+        const result = importFromJSON(json, mode);
+
+        const parts: string[] = [];
+        if (result.chatsAdded > 0) parts.push(`Добавлено чатов: ${result.chatsAdded}`);
+        if (result.chatsUpdated > 0) parts.push(`Обновлено чатов: ${result.chatsUpdated}`);
+        if (result.messagesAdded > 0) parts.push(`Добавлено сообщений: ${result.messagesAdded}`);
+        if (result.messagesUpdated > 0) parts.push(`Обновлено сообщений: ${result.messagesUpdated}`);
+        if (result.settingsImported) parts.push('Настройки импортированы');
+
+        Alert.alert('Импорт завершён', parts.length > 0 ? parts.join('\n') : 'Нет новых данных');
+        setSettings(getSettings());
+      } catch (e: any) {
+        if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
+        Alert.alert('Ошибка', 'Не удалось импортировать данные');
+      }
     },
     [],
   );
@@ -155,6 +183,40 @@ export function SettingsScreen() {
               } catch (e) {
                 Alert.alert('Ошибка', 'Не удалось экспортировать данные');
               }
+            }}
+          />
+          <SettingsRow
+            label="Импорт из файла"
+            icon={FileUp}
+            onPress={() => {
+              Alert.alert(
+                'Импорт из файла',
+                'Выберите режим импорта:',
+                [
+                  {
+                    text: 'Отмена',
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Объединить',
+                    onPress: () => handleImport('merge'),
+                  },
+                  {
+                    text: 'Заменить всё',
+                    style: 'destructive',
+                    onPress: () => {
+                      Alert.alert(
+                        'Заменить всё?',
+                        'Все текущие данные будут удалены и заменены данными из файла. Это действие нельзя отменить.',
+                        [
+                          { text: 'Отмена', style: 'cancel' },
+                          { text: 'Заменить', style: 'destructive', onPress: () => handleImport('replace') },
+                        ],
+                      );
+                    },
+                  },
+                ],
+              );
             }}
           />
         </View>

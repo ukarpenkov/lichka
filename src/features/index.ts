@@ -18,3 +18,4 @@ export { useEditMessage } from './edit-message';
 export type { EditFields } from './edit-message';
 
 export { exportToJSON } from './export';
+export { importFromJSON, type ImportMode, type ImportResult } from './import';
