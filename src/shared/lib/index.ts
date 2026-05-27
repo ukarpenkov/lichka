@@ -15,3 +15,5 @@ export {
   CHANNEL_REMINDERS,
   CHANNEL_ALARMS,
 } from './notificationChannels';
+export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
+export { playSendSound, playReminderSound } from './sounds';

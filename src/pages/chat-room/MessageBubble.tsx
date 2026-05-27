@@ -1,9 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Pressable, StyleSheet, View, AccessibilityInfo } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useTheme } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
+import { hapticLongPress } from '../../shared/lib';
+import { getSettings } from '../../entities/settings';
 import type { Message } from '../../entities/message';
 
 type MessageBubbleProps = {
@@ -31,11 +33,25 @@ function isVoiceMessage(message: Message): boolean {
 
 export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
   const { text } = useTheme();
+  const reduceMotionRef = useRef(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      reduceMotionRef.current = enabled;
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      reduceMotionRef.current = enabled;
+    });
+    return () => sub.remove();
+  }, []);
 
   const isEdited = message.updatedAt > message.createdAt;
   const isVoice = useMemo(() => isVoiceMessage(message), [message]);
 
   const handleLongPress = useCallback(() => {
+    if (!reduceMotionRef.current && getSettings().hapticEnabled) {
+      hapticLongPress();
+    }
     onLongPress(message);
   }, [message, onLongPress]);
 

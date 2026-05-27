@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
 import { useTheme } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
+import { getSettings } from '../../entities/settings';
 import {
   scheduleNotification,
   ensureExactAlarmPermission,
@@ -17,6 +18,7 @@ import {
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
+import { hapticTap, hapticLongPress, hapticSuccess, playSendSound } from '../../shared/lib';
 
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
@@ -48,6 +50,18 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
 
+  const reduceMotionRef = useRef(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      reduceMotionRef.current = enabled;
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      reduceMotionRef.current = enabled;
+    });
+    return () => sub.remove();
+  }, []);
+
   // Animation values for recording indicator
   const dotScale = useSharedValue(1);
   const recOpacity = useSharedValue(0);
@@ -60,6 +74,29 @@ export function MessageComposer({ chatId, onSent }: Props) {
     opacity: recOpacity.value,
   }));
 
+  const triggerHapticTap = useCallback(() => {
+    if (reduceMotionRef.current) return;
+    if (!getSettings().hapticEnabled) return;
+    hapticTap();
+  }, []);
+
+  const triggerHapticSuccess = useCallback(() => {
+    if (reduceMotionRef.current) return;
+    if (!getSettings().hapticEnabled) return;
+    hapticSuccess();
+  }, []);
+
+  const triggerHapticLongPress = useCallback(() => {
+    if (reduceMotionRef.current) return;
+    if (!getSettings().hapticEnabled) return;
+    hapticLongPress();
+  }, []);
+
+  const triggerSendSound = useCallback(() => {
+    if (!getSettings().soundEnabled) return;
+    playSendSound();
+  }, []);
+
   const sendMessage = useCallback(
     (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number; payload?: string }) => {
       const textBody = type === 'simple' ? body.trim() : body.trim() || '(без текста)';
@@ -69,10 +106,12 @@ export function MessageComposer({ chatId, onSent }: Props) {
       if (type !== 'simple') {
         scheduleNotification(msg);
       }
+      triggerHapticSuccess();
+      triggerSendSound();
       setBody('');
       onSent?.();
     },
-    [body, chatId, onSent],
+    [body, chatId, onSent, triggerHapticSuccess, triggerSendSound],
   );
 
   const handleSend = useCallback(() => {
@@ -128,6 +167,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   }, []);
 
   const handleMicLongPress = useCallback(async () => {
+    triggerHapticLongPress();
     const granted = await requestMicrophonePermission();
     if (!granted) return;
 
@@ -144,7 +184,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
       );
       recOpacity.value = withSpring(1, { damping: 15, stiffness: 150 });
     }
-  }, [startRecording, dotScale, recOpacity]);
+  }, [startRecording, dotScale, recOpacity, triggerHapticLongPress]);
 
   const handleMicPressOut = useCallback(async () => {
     if (!isRecording) return;
@@ -202,10 +242,10 @@ export function MessageComposer({ chatId, onSent }: Props) {
           maxLength={4000}
         />
         <View style={styles.actions}>
-          <IconButton icon={Send} size={22} color={body.trim() ? text : `${text}40`} onPress={handleSend} disabled={!body.trim()} />
-          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} />
-          <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} />
-          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} />
+          <IconButton icon={Send} size={22} color={body.trim() ? text : `${text}40`} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} onPressIn={triggerHapticTap} />
+          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} onPressIn={triggerHapticTap} />
           <AnimatedPressable
             style={styles.micBtn}
             onLongPress={handleMicLongPress}

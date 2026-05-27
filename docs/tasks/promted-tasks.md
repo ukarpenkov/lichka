@@ -286,7 +286,7 @@
   — Опция «Заменить всё» — destructive, с подтверждением
   — Кнопка в настройках → «Импорт из файла»
 
-- [ ] **12.3 Интеграция Google Drive (manual backup)**
+- [x] **12.3 Интеграция Google Drive (manual backup)**
   В `src/features/google-drive/`:
   — OAuth через Google Sign-In (отдельный dependency)
   — Загрузка JSON-экспорта в appDataFolder Google Drive
@@ -298,7 +298,7 @@
 
 ## 13. Звук и haptic
 
-- [ ] **13.1 Добавить haptic feedback и звуки**
+- [x] **13.1 Добавить haptic feedback и звуки**
   В `src/shared/lib/haptics.ts` и `src/shared/lib/sounds.ts`:
   — Haptic: `Haptics.impactAsync()` при отправке сообщения, при tap на иконки, при long press. Использовать `react-native` Haptics API
   — Sound: короткий звук при отправке сообщения, при срабатывании напоминания. Файлы — в `src/shared/assets/sounds/`
@@ -326,6 +326,7 @@
 - [ ] **15.1 Настроить локализацию RU + EN**
   В `src/shared/config/locale.ts`:
   — Словари для RU и EN (все строки UI: табы, кнопки, пустые состояния, настройки, уведомления)
+  - важно сделать возможность для добалвения новых языков и нюансов...скорее всего арабский, турецкий, японский, корейский, армянский, европейские языки. но это не в первой версии, но заложить можно
   — Хук `useLocale()` — возвращает строки для текущего языка
   — Default по системному языку; fallback EN если системный не RU/EN
   — Формат даты/времени: locale-aware (toLocaleDateString/toLocaleTimeString)
