@@ -273,7 +273,7 @@
 
 ## 12. Backup и экспорт
 
-- [ ] **12.1 Реализовать экспорт в JSON**
+- [x] **12.1 Реализовать экспорт в JSON**
   В `src/features/export/`:
   — Функция `exportToJSON()`: выгружает все чаты + сообщения + настройки в JSON-файл
   — `schema_version: 1` (integer), timestamps в UTC
