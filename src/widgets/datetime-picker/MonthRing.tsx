@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import { useLocale, getMonthLabels } from '../../shared/config';
 import { segmentToAngle, polarToCartesian } from './circularMath';
 
 export const MONTH_RADIUS = 80;
@@ -12,11 +13,6 @@ export const MONTH_RING_WIDTH = 32;
 export const MONTH_RING_INNER = MONTH_RADIUS - MONTH_RING_WIDTH / 2;
 export const MONTH_RING_OUTER = MONTH_RADIUS + MONTH_RING_WIDTH / 2;
 
-const MONTH_LABELS = [
-  'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
-  'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек',
-];
-
 type Props = {
   rotation: SharedValue<number>;
   textColor: string;
@@ -25,6 +21,8 @@ type Props = {
 };
 
 export function MonthRing({ rotation, textColor, accentColor, size }: Props) {
+  const { locale } = useLocale();
+  const monthLabels = getMonthLabels(locale);
   const cx = size / 2;
   const cy = size / 2;
 
@@ -71,7 +69,7 @@ export function MonthRing({ rotation, textColor, accentColor, size }: Props) {
             strokeWidth={MONTH_RING_WIDTH}
             fill="none"
           />
-          {MONTH_LABELS.map((label, i) => {
+          {monthLabels.map((label, i) => {
             const angle = segmentToAngle(i, MONTH_SEGMENTS);
             const pos = polarToCartesian(cx, cy, MONTH_TEXT_RADIUS, angle);
             return (

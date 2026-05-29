@@ -3,7 +3,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 import { Bell, AlarmClock, Repeat } from 'lucide-react-native';
 
 import { Text } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale, formatRelativeDate } from '../../shared/config';
 import type { Message, MessageType } from '../../entities/message';
 
 export type ScheduledItemProps = {
@@ -18,42 +18,39 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
   periodic: Repeat,
 };
 
-function formatScheduledAt(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  const isToday =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const isTomorrow =
-    date.getDate() === tomorrow.getDate() &&
-    date.getMonth() === tomorrow.getMonth() &&
-    date.getFullYear() === tomorrow.getFullYear();
-
-  const time = date.toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  if (isToday) return time;
-  if (isTomorrow) return `Завтра ${time}`;
-  return date.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  }) + ` ${time}`;
-}
-
 export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProps) {
   const { text } = useTheme();
+  const { t, locale } = useLocale();
   const Icon = TYPE_ICON[message.type as keyof typeof TYPE_ICON];
+  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
   const timeText =
     message.type === 'periodic'
-      ? `каждые ${message.intervalMinutes} мин`
+      ? t.everyNMin(message.intervalMinutes ?? 0)
       : message.scheduledAt
-        ? formatScheduledAt(message.scheduledAt)
+        ? (() => {
+            const date = new Date(message.scheduledAt);
+            const now = new Date();
+            const isToday =
+              date.getDate() === now.getDate() &&
+              date.getMonth() === now.getMonth() &&
+              date.getFullYear() === now.getFullYear();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const isTomorrow =
+              date.getDate() === tomorrow.getDate() &&
+              date.getMonth() === tomorrow.getMonth() &&
+              date.getFullYear() === tomorrow.getFullYear();
+            const time = date.toLocaleTimeString(localeTag, {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+            if (isToday) return time;
+            if (isTomorrow) return `${t.tomorrow} ${time}`;
+            return date.toLocaleDateString(localeTag, {
+              day: 'numeric',
+              month: 'short',
+            }) + ` ${time}`;
+          })()
         : '';
 
   return (

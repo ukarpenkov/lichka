@@ -3,6 +3,8 @@ import {
   canScheduleExactAlarms,
   requestIgnoreBatteryOptimizations,
 } from '../../shared/lib/notificationChannels';
+import { getDictionary } from '../../shared/config/locale';
+import { getSettings } from '../../entities/settings';
 
 let batteryOptimizationRequested = false;
 
@@ -13,13 +15,14 @@ export async function ensureExactAlarmPermission(): Promise<boolean> {
   if (canSchedule) return true;
 
   return new Promise((resolve) => {
+    const t = getDictionary(getSettings().locale);
     Alert.alert(
-      'Точные будильники',
-      'Для своевременного срабатывания будильников разрешите приложению планировать точные будильники в настройках.',
+      t.exactAlarms,
+      t.exactAlarmsMessage,
       [
-        { text: 'Отмена', style: 'cancel', onPress: () => resolve(false) },
+        { text: t.cancel, style: 'cancel', onPress: () => resolve(false) },
         {
-          text: 'Настройки',
+          text: t.openSettings,
           onPress: () => {
             Linking.openSettings();
             resolve(false);

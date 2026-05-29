@@ -16,7 +16,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { Camera, Smile } from 'lucide-react-native';
 
 import { Input, Button, Text } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { saveAvatar, generateId } from '../../shared/lib';
 
@@ -31,6 +31,7 @@ type ChatFormProps = {
 
 export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
 
   const modalRef = useRef<BottomSheetModal>(null);
   const wasVisible = useRef(false);
@@ -76,7 +77,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       (response) => {
         if (response.didCancel) return;
         if (response.errorCode) {
-          Alert.alert('Ошибка', response.errorMessage || 'Не удалось выбрать фото');
+          Alert.alert(t.error, response.errorMessage || t.photoPickError);
           return;
         }
         const asset = response.assets?.[0];
@@ -120,7 +121,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       modalRef.current?.dismiss();
     } catch (e: any) {
       console.error('ChatForm handleSave error:', e);
-      Alert.alert('Ошибка', e?.message ?? 'Не удалось сохранить чат');
+      Alert.alert(t.error, e?.message ?? t.chatSaveError);
     } finally {
       setSaving(false);
     }
@@ -171,7 +172,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         ) : (
           <>
             <Text variant="body" style={[styles.headerTitle, { color: text }]}>
-              {isEdit ? 'Редактировать чат' : 'Новый чат'}
+              {isEdit ? t.editChat : t.newChat}
             </Text>
 
             <View style={styles.avatarButton}>
@@ -179,17 +180,17 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
               <View style={styles.avatarActions}>
                 <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
                   <Camera size={18} color={text + '99'} />
-                  <Text variant="caption" style={{ color: text + '99' }}>Фото</Text>
+                  <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
                 </Pressable>
                 <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
                   <Smile size={18} color={text + '99'} />
-                  <Text variant="caption" style={{ color: text + '99' }}>Эмодзи</Text>
+                  <Text variant="caption" style={{ color: text + '99' }}>{t.emoji}</Text>
                 </Pressable>
               </View>
             </View>
 
             <Input
-              placeholder="Название чата"
+              placeholder={t.chatNamePlaceholder}
               value={title}
               onChangeText={setTitle}
               autoFocus={!isEdit}
@@ -197,7 +198,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
             <View style={styles.actions}>
               <Button
-                title={isEdit ? 'Сохранить' : 'Создать'}
+                title={isEdit ? t.save : t.create}
                 onPress={handleSave}
                 disabled={!canSave || saving}
                 style={[

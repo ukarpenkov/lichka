@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, AccessibilityInfo } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { hapticLongPress } from '../../shared/lib';
@@ -33,6 +33,7 @@ function isVoiceMessage(message: Message): boolean {
 
 export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
   const { text } = useTheme();
+  const { t } = useLocale();
   const reduceMotionRef = useRef(false);
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
         <View style={styles.metaRow}>
           {isEdited && (
             <Text variant="caption" style={[styles.meta, styles.edited, { color: text + '60' }]}>
-              изменено
+              {t.edited}
             </Text>
           )}
           <Text variant="caption" style={[styles.meta, { color: text + '50' }]}>

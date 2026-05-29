@@ -3,7 +3,7 @@ import { FlatList, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Screen, Text } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { getScheduledMessages, type Message } from '../../entities/message';
 import { getChatById } from '../../entities/chat';
 
@@ -17,6 +17,7 @@ type ScheduledEntry = {
 export function ScheduledScreen() {
   const navigation = useNavigation();
   const { text } = useTheme();
+  const { t } = useLocale();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
 
   useFocusEffect(
@@ -46,7 +47,7 @@ export function ScheduledScreen() {
       {entries.length === 0 ? (
         <View style={styles.empty}>
           <Text variant="body" style={{ color: text + '80' }}>
-            Нет запланированных
+            {t.noScheduled}
           </Text>
         </View>
       ) : (

@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, FileUp, Info, ChevronRight } from 'lucide-react-native';
 
 import { Screen, Text } from '../../shared/ui';
-import { useTheme, getTheme } from '../../shared/config';
+import { useTheme, getTheme, useLocale } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToJSON, importFromJSON, getGoogleToken, uploadBackup, downloadBackup } from '../../features';
 import DocumentPicker from 'react-native-document-picker';
@@ -21,6 +21,7 @@ const APP_VERSION = '0.1';
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { text, background } = useTheme();
+  const { t, locale, setLocale: setAppLocale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   useFocusEffect(
@@ -38,11 +39,12 @@ export function SettingsScreen() {
   );
 
   const handleLocaleChange = useCallback(
-    (locale: string) => {
-      updateSettings({ locale });
+    (newLocale: string) => {
+      updateSettings({ locale: newLocale });
+      setAppLocale(newLocale as any);
       setSettings(getSettings());
     },
-    [],
+    [setAppLocale],
   );
 
   const handleImport = useCallback(
@@ -55,17 +57,17 @@ export function SettingsScreen() {
         const result = importFromJSON(json, mode);
 
         const parts: string[] = [];
-        if (result.chatsAdded > 0) parts.push(`Добавлено чатов: ${result.chatsAdded}`);
-        if (result.chatsUpdated > 0) parts.push(`Обновлено чатов: ${result.chatsUpdated}`);
-        if (result.messagesAdded > 0) parts.push(`Добавлено сообщений: ${result.messagesAdded}`);
-        if (result.messagesUpdated > 0) parts.push(`Обновлено сообщений: ${result.messagesUpdated}`);
-        if (result.settingsImported) parts.push('Настройки импортированы');
+        if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
+        if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
+        if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
+        if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
+        if (result.settingsImported) parts.push(t.settingsImported);
 
-        Alert.alert('Импорт завершён', parts.length > 0 ? parts.join('\n') : 'Нет новых данных');
+        Alert.alert(t.importComplete, parts.length > 0 ? parts.join('\n') : t.noNewData);
         setSettings(getSettings());
       } catch (e: any) {
         if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
-        Alert.alert('Ошибка', 'Не удалось импортировать данные');
+        Alert.alert(t.error, t.exportFailed);
       }
     },
     [],
@@ -74,7 +76,7 @@ export function SettingsScreen() {
   if (!settings) {
     return (
       <Screen>
-        <Text variant="body">Загрузка...</Text>
+        <Text variant="body">{t.loading}</Text>
       </Screen>
     );
   }
@@ -87,12 +89,12 @@ export function SettingsScreen() {
         <Text
           variant="body"
           style={[styles.title, { color: text }]}>
-          Настройки
+          {t.settings}
         </Text>
 
         {/* Theme */}
         <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
-          ТЕМА
+          {t.sectionTheme}
         </Text>
         <View style={[styles.section, { borderColor: text + '20' }]}>
           <SettingsRow
@@ -105,10 +107,10 @@ export function SettingsScreen() {
 
         {/* Sound & Haptics */}
         <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
-          ЗВУК И ТАКТИЛЬНОСТЬ
+          {t.sectionSound}
         </Text>
         <View style={[styles.section, { borderColor: text + '20' }]}>
-          <SettingsRow label="Звук" icon={Volume2}>
+          <SettingsRow label={t.sound} icon={Volume2}>
             <Switch
               value={settings.soundEnabled}
               onValueChange={(v) => handleToggle('soundEnabled', v)}
@@ -116,7 +118,7 @@ export function SettingsScreen() {
               thumbColor={settings.soundEnabled ? text : text + '60'}
             />
           </SettingsRow>
-          <SettingsRow label="Тактильная отдача" icon={Vibrate}>
+          <SettingsRow label={t.hapticFeedback} icon={Vibrate}>
             <Switch
               value={settings.hapticEnabled}
               onValueChange={(v) => handleToggle('hapticEnabled', v)}
@@ -128,10 +130,10 @@ export function SettingsScreen() {
 
         {/* Language */}
         <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
-          ЯЗЫК
+          {t.sectionLanguage}
         </Text>
         <View style={[styles.section, { borderColor: text + '20' }]}>
-          <SettingsRow label="Язык интерфейса" icon={Languages}>
+          <SettingsRow label={t.interfaceLanguage} icon={Languages}>
             <View style={styles.localeToggle}>
               {['ru', 'en'].map((loc) => (
                 <Pressable
@@ -160,25 +162,25 @@ export function SettingsScreen() {
 
         {/* Backup */}
         <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
-          РЕЗЕРВНАЯ КОПИЯ
+          {t.sectionBackup}
         </Text>
         <View style={[styles.section, { borderColor: text + '20' }]}>
           <SettingsRow
-            label="Сохранить в Google Drive"
+            label={t.backupToGoogleDrive}
             icon={Cloud}
             onPress={async () => {
               try {
                 const token = await getGoogleToken();
                 await uploadBackup(token);
-                Alert.alert('Готово', 'Бэкап сохранён в Google Drive');
+                Alert.alert(t.done, t.backupSaved);
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
-                Alert.alert('Ошибка', 'Не удалось сохранить бэкап');
+                Alert.alert(t.error, t.backupFailed);
               }
             }}
           />
           <SettingsRow
-            label="Восстановить из Google Drive"
+            label={t.restoreFromGoogleDrive}
             icon={CloudDownload}
             onPress={async () => {
               try {
@@ -186,40 +188,40 @@ export function SettingsScreen() {
                 const json = await downloadBackup(token);
 
                 Alert.alert(
-                  'Восстановление',
-                  'Выберите режим импорта:',
+                  t.restoreTitle,
+                  t.chooseImportMode,
                   [
-                    { text: 'Отмена', style: 'cancel' },
+                    { text: t.cancel, style: 'cancel' },
                     {
-                      text: 'Объединить',
+                      text: t.merge,
                       onPress: () => {
                         const result = importFromJSON(json, 'merge');
                         const parts: string[] = [];
-                        if (result.chatsAdded > 0) parts.push(`Добавлено чатов: ${result.chatsAdded}`);
-                        if (result.chatsUpdated > 0) parts.push(`Обновлено чатов: ${result.chatsUpdated}`);
-                        if (result.messagesAdded > 0) parts.push(`Добавлено сообщений: ${result.messagesAdded}`);
-                        if (result.messagesUpdated > 0) parts.push(`Обновлено сообщений: ${result.messagesUpdated}`);
-                        if (result.settingsImported) parts.push('Настройки импортированы');
-                        Alert.alert('Восстановление завершено', parts.length > 0 ? parts.join('\n') : 'Нет новых данных');
+                        if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
+                        if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
+                        if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
+                        if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
+                        if (result.settingsImported) parts.push(t.settingsImported);
+                        Alert.alert(t.restoreComplete, parts.length > 0 ? parts.join('\n') : t.noNewData);
                         setSettings(getSettings());
                       },
                     },
                     {
-                      text: 'Заменить всё',
+                      text: t.replaceAll,
                       style: 'destructive',
                       onPress: () => {
                         Alert.alert(
-                          'Заменить всё?',
-                          'Все текущие данные будут удалены и заменены данными из резервной копии. Это действие нельзя отменить.',
+                          t.replaceAllConfirm,
+                          t.replaceAllWarning,
                           [
-                            { text: 'Отмена', style: 'cancel' },
+                            { text: t.cancel, style: 'cancel' },
                             {
-                              text: 'Заменить',
+                              text: t.replace,
                               style: 'destructive',
                               onPress: () => {
                                 const result = importFromJSON(json, 'replace');
-                                Alert.alert('Восстановление завершено',
-                                  `Чатов: ${result.chatsAdded}, сообщений: ${result.messagesAdded}${result.settingsImported ? ', настройки импортированы' : ''}`);
+                                Alert.alert(t.restoreComplete,
+                                  `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`);
                                 setSettings(getSettings());
                               },
                             },
@@ -232,51 +234,51 @@ export function SettingsScreen() {
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
                 if (e?.message === 'NO_BACKUP') {
-                  Alert.alert('Нет бэкапа', 'Резервная копия не найдена в Google Drive');
+                  Alert.alert(t.noBackup, t.noBackupMessage);
                   return;
                 }
-                Alert.alert('Ошибка', 'Не удалось восстановить бэкап');
+                Alert.alert(t.error, t.restoreFailed);
               }
             }}
           />
           <SettingsRow
-            label="Экспорт в файл"
+            label={t.exportToFile}
             icon={FileJson}
             onPress={async () => {
               try {
                 const filePath = await exportToJSON();
-                Alert.alert('Готово', `Файл сохранён:\n${filePath}`);
+                Alert.alert(t.done, t.exportDone(filePath));
               } catch (e) {
-                Alert.alert('Ошибка', 'Не удалось экспортировать данные');
+                Alert.alert(t.error, t.exportFailed);
               }
             }}
           />
           <SettingsRow
-            label="Импорт из файла"
+            label={t.importFromFile}
             icon={FileUp}
             onPress={() => {
               Alert.alert(
-                'Импорт из файла',
-                'Выберите режим импорта:',
+                t.importFromFile,
+                t.chooseImportMode,
                 [
                   {
-                    text: 'Отмена',
+                    text: t.cancel,
                     style: 'cancel',
                   },
                   {
-                    text: 'Объединить',
+                    text: t.merge,
                     onPress: () => handleImport('merge'),
                   },
                   {
-                    text: 'Заменить всё',
+                    text: t.replaceAll,
                     style: 'destructive',
                     onPress: () => {
                       Alert.alert(
-                        'Заменить всё?',
-                        'Все текущие данные будут удалены и заменены данными из файла. Это действие нельзя отменить.',
+                        t.replaceAllConfirm,
+                        t.replaceAllWarning,
                         [
-                          { text: 'Отмена', style: 'cancel' },
-                          { text: 'Заменить', style: 'destructive', onPress: () => handleImport('replace') },
+                          { text: t.cancel, style: 'cancel' },
+                          { text: t.replace, style: 'destructive', onPress: () => handleImport('replace') },
                         ],
                       );
                     },
@@ -289,10 +291,10 @@ export function SettingsScreen() {
 
         {/* About */}
         <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
-          О ПРИЛОЖЕНИИ
+          {t.sectionAbout}
         </Text>
         <View style={[styles.section, { borderColor: text + '20' }]}>
-          <SettingsRow label="Версия" icon={Info}>
+          <SettingsRow label={t.version} icon={Info}>
             <Text variant="body" style={{ color: text + '60' }}>
               {APP_VERSION}
             </Text>

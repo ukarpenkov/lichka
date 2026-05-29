@@ -7,7 +7,7 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
@@ -42,6 +42,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function MessageComposer({ chatId, onSent }: Props) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
   const [body, setBody] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -99,7 +100,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const sendMessage = useCallback(
     (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number; payload?: string }) => {
-      const textBody = type === 'simple' ? body.trim() : body.trim() || '(без текста)';
+      const textBody = type === 'simple' ? body.trim() : body.trim() || t.noText;
       if (!textBody && type === 'simple') return;
 
       const msg = createMessage(chatId, type, textBody, opts?.scheduledAt ?? null, opts?.intervalMinutes ?? null, opts?.payload ?? null);
@@ -198,7 +199,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
       const relativeUri = result.uri.replace(`${DocumentDirectoryPath}/`, '');
       const payload = JSON.stringify({ uri: relativeUri });
       const durationSec = Math.round(result.durationMs / 1000);
-      createMessage(chatId, 'simple', `[Голосовое ${durationSec}с]`, null, null, payload);
+      createMessage(chatId, 'simple', t.voiceMessage(durationSec), null, null, payload);
       onSent?.();
     }
   }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity]);
@@ -216,7 +217,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
         <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <View style={styles.recordingIndicator}>
             <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
-            <Text variant="body">Запись {formatDuration(durationMs)}</Text>
+            <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
           </View>
           <View style={styles.recordingActions}>
             <IconButton icon={X} size={22} color={`${text}99`} onPress={handleCancelRecord} />
@@ -234,7 +235,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
       <View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
         <TextInput
           style={[styles.input, { color: text, borderColor: `${text}33` }]}
-          placeholder="Сообщение..."
+          placeholder={t.messageInput}
           placeholderTextColor={`${text}66`}
           multiline
           value={body}

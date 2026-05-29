@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
 
 import { useTheme } from '../shared/config/ThemeProvider';
+import { useLocale } from '../shared/config/LocaleProvider';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
@@ -50,6 +51,7 @@ function ChatStackScreen() {
 
 function SettingsStackScreen() {
   const { text, background } = useTheme();
+  const { t } = useLocale();
 
   return (
     <SettingsStack.Navigator
@@ -66,7 +68,7 @@ function SettingsStackScreen() {
       <SettingsStack.Screen
         name="ThemePicker"
         component={ThemePickerScreen}
-        options={{ title: 'Тема оформления' }}
+        options={{ title: t.themeTitle }}
       />
     </SettingsStack.Navigator>
   );

@@ -11,7 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from 'lucide-react-native';
 
 import { Text, IconButton, HighlightedBody } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale, formatShortMonth } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
 
@@ -25,6 +25,7 @@ type Props = {
 export function GlobalSearch({ visible, onClose }: Props) {
   const navigation = useNavigation<Nav>();
   const { text, background } = useTheme();
+  const { t, locale } = useLocale();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<TextInput>(null);
@@ -72,9 +73,9 @@ export function GlobalSearch({ visible, onClose }: Props) {
       return time;
     }
 
-    const month = d.toLocaleString('ru-RU', { month: 'short' });
+    const month = formatShortMonth(d, locale);
     return `${d.getDate()} ${month}, ${time}`;
-  }, []);
+  }, [locale]);
 
   if (!visible) return null;
 
@@ -90,7 +91,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
           ref={inputRef}
           value={query}
           onChangeText={setQuery}
-          placeholder="Поиск по сообщениям..."
+          placeholder={t.searchMessages}
           placeholderTextColor={text + '55'}
           style={[styles.input, { color: text, borderColor: text + '33' }]}
           returnKeyType="search"
@@ -134,7 +135,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
           query.trim() ? (
             <View style={styles.emptyResult}>
               <Text variant="body" style={{ color: text + '60' }}>
-                Ничего не найдено
+                {t.nothingFound}
               </Text>
             </View>
           ) : null

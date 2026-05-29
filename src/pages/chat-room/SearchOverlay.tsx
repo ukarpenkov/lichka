@@ -3,7 +3,7 @@ import { View, FlatList, Pressable, TextInput, StyleSheet } from 'react-native';
 import { X } from 'lucide-react-native';
 
 import { Text, IconButton, HighlightedBody } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 
 type Props = {
@@ -14,6 +14,7 @@ type Props = {
 
 export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<TextInput>(null);
@@ -53,7 +54,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
           ref={inputRef}
           value={query}
           onChangeText={setQuery}
-          placeholder="Поиск по чату..."
+          placeholder={t.searchInChat}
           placeholderTextColor={text + '55'}
           style={[styles.input, { color: text, borderColor: text + '33' }]}
           returnKeyType="search"
@@ -89,7 +90,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
           query.trim() ? (
             <View style={styles.emptyResult}>
               <Text variant="body" style={{ color: text + '60' }}>
-                Ничего не найдено
+                {t.nothingFound}
               </Text>
             </View>
           ) : null

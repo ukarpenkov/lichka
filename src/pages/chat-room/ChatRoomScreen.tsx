@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
   getVisibleMessagesByChatId,
@@ -57,6 +57,7 @@ export function ChatRoomScreen() {
   const route = useRoute<ChatRoomRoute>();
   const { chatId, messageId } = route.params;
   const { background } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
 
   const [chat, setChat] = useState<Chat | null>(null);
@@ -135,10 +136,10 @@ export function ChatRoomScreen() {
 
   const handleDeleteMessage = useCallback(() => {
     if (!menuMessage) return;
-    Alert.alert('Удалить сообщение', 'Удалить без возможности восстановления?', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t.deleteMessage, t.deleteMessageConfirm, [
+      { text: t.cancel, style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t.delete,
         style: 'destructive',
         onPress: () => {
           deleteMessage(menuMessage.id);

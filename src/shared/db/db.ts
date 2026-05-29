@@ -45,6 +45,11 @@ const MIGRATIONS: Record<number, string> = {
       value TEXT
     );
   `,
+  4: `
+    UPDATE messages
+    SET body = '[voice:' || CAST(CAST(SUBSTR(body, INSTR(body, ' ') + 1) AS INTEGER) AS TEXT) || ']'
+    WHERE body LIKE '[Голосовое %';
+  `,
 };
 
 let dbInstance: DB | null = null;

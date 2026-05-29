@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, View, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { IconButton } from '../../shared/ui';
 import { X } from 'lucide-react-native';
@@ -15,6 +15,7 @@ type Props = {
 
 export function DateTimePickerModal({ visible, value, onConfirm, onCancel }: Props) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
   const [step, setStep] = useState<'date' | 'time'>('date');
   const [selected, setSelected] = useState(value);
 
@@ -45,7 +46,7 @@ export function DateTimePickerModal({ visible, value, onConfirm, onCancel }: Pro
         <Pressable style={[styles.card, { backgroundColor: background }]} onPress={() => {}}>
           <View style={styles.header}>
             <Text variant="body">
-              {step === 'date' ? 'Выберите дату' : 'Выберите время'}
+              {step === 'date' ? t.selectDate : t.selectTime}
             </Text>
             <IconButton icon={X} size={20} onPress={handleCancel} />
           </View>
@@ -63,19 +64,19 @@ export function DateTimePickerModal({ visible, value, onConfirm, onCancel }: Pro
           <View style={styles.buttons}>
             {step === 'date' ? (
               <Pressable style={[styles.btn, { borderColor: `${text}33` }]} onPress={handleNext}>
-                <Text variant="body">Далее</Text>
+                <Text variant="body">{t.next}</Text>
               </Pressable>
             ) : (
               <>
                 <Pressable
                   style={[styles.btn, { borderColor: `${text}33` }]}
                   onPress={() => setStep('date')}>
-                  <Text variant="body">Назад</Text>
+                  <Text variant="body">{t.back}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.btn, { borderColor: `${text}33`, marginLeft: 8 }]}
                   onPress={handleConfirm}>
-                  <Text variant="body">Готово</Text>
+                  <Text variant="body">{t.done}</Text>
                 </Pressable>
               </>
             )}

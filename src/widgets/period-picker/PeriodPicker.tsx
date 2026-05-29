@@ -8,18 +8,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 
 const ACCENT = '#4A9EFF';
-
-const PRESETS = [
-  { label: 'Каждые 5 мин', value: 5 },
-  { label: 'Каждые 10 мин', value: 10 },
-  { label: 'Каждые 15 мин', value: 15 },
-  { label: 'Каждый час', value: 60 },
-  { label: 'Каждый день', value: 1440 },
-] as const;
 
 type Props = {
   visible: boolean;
@@ -30,6 +22,15 @@ type Props = {
 
 export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
+
+  const PRESETS = [
+    { label: t.every5Min, value: 5 },
+    { label: t.every10Min, value: 10 },
+    { label: t.every15Min, value: 15 },
+    { label: t.everyHour, value: 60 },
+    { label: t.everyDay, value: 1440 },
+  ] as const;
 
   const [selected, setSelected] = useState<number | null>(value ?? null);
   const [customText, setCustomText] = useState('');
@@ -80,7 +81,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
         <Pressable style={styles.overlay} onPress={onCancel}>
           <Pressable style={[styles.card, { backgroundColor: background }]} onPress={() => {}}>
             <Text variant="body" style={[styles.title, { color: text }]}>
-              Периодичность
+              {t.periodicity}
             </Text>
 
             {/* Presets */}
@@ -113,34 +114,34 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
             {/* Custom interval */}
             <View style={styles.customRow}>
               <Text variant="body" style={{ color: `${text}99` }}>
-                Свой интервал:
+                {t.customInterval}
               </Text>
               <View style={styles.inputWrap}>
                 <TextInput
                   ref={inputRef}
                   value={customText}
                   onChangeText={handleCustomChange}
-                  placeholder="мин"
+                  placeholder={t.minutes}
                   placeholderTextColor={`${text}40`}
                   keyboardType="number-pad"
                   style={[styles.input, { color: text, borderColor: customText ? ACCENT : text + '33' }]}
                   maxLength={4}
                 />
-                <Text variant="caption" style={{ color: `${text}66`, marginLeft: 6 }}>мин</Text>
+                <Text variant="caption" style={{ color: `${text}66`, marginLeft: 6 }}>{t.minutes}</Text>
               </View>
             </View>
 
             {/* Buttons */}
             <View style={styles.buttons}>
               <Pressable onPress={onCancel} style={styles.btn}>
-                <Text variant="body" style={{ color: `${text}99` }}>Отмена</Text>
+                <Text variant="body" style={{ color: `${text}99` }}>{t.cancel}</Text>
               </Pressable>
               <Pressable
                 onPress={handleConfirm}
                 style={[styles.btn, { opacity: canConfirm ? 1 : 0.4 }]}
                 disabled={!canConfirm}
               >
-                <Text variant="body" style={{ color: ACCENT, fontWeight: '700' }}>Готово</Text>
+                <Text variant="body" style={{ color: ACCENT, fontWeight: '700' }}>{t.done}</Text>
               </Pressable>
             </View>
           </Pressable>

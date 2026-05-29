@@ -6,3 +6,25 @@ export {
   getTheme,
 } from './theme';
 export { ThemeProvider, useTheme } from './ThemeProvider';
+
+export {
+  type Locale,
+  type LocaleDictionary,
+  ru,
+  en,
+  dictionaries,
+  SUPPORTED_LOCALES,
+  getDictionary,
+  getSystemLocale,
+} from './locale';
+export { LocaleProvider, useLocale } from './LocaleProvider';
+export {
+  getMonthLabels,
+  getFullMonthNames,
+  formatDateLabel,
+  formatTime,
+  formatScheduledAt,
+  formatRelativeDate,
+  formatInterval,
+  formatShortMonth,
+} from './dateUtils';

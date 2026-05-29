@@ -13,9 +13,9 @@ type VoiceMessageProps = {
   message: Message;
 };
 
-/** Extract duration in seconds from body like "[Голосовое 5с]" */
+/** Extract duration in seconds from body like "[voice:5]" (neutral format) */
 function parseDuration(body: string): number {
-  const match = body.match(/\[(\d+)с?\]/);
+  const match = body.match(/\[voice:(\d+)\]/);
   return match ? parseInt(match[1], 10) : 0;
 }
 

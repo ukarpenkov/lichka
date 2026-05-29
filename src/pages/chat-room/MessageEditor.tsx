@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, View, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale, formatScheduledAt, formatInterval } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
@@ -15,24 +15,9 @@ type Props = {
   onClose: () => void;
 };
 
-function formatScheduledAt(iso: string): string {
-  const d = new Date(iso);
-  const day = d.getDate().toString().padStart(2, '0');
-  const month = (d.getMonth() + 1).toString().padStart(2, '0');
-  const year = d.getFullYear();
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `${day}.${month}.${year} ${h}:${m}`;
-}
-
-function formatInterval(minutes: number): string {
-  if (minutes < 60) return `${minutes} мин`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} ч ${minutes % 60 ? minutes % 60 + ' мин' : ''}`.trim();
-  return `${Math.floor(minutes / 1440)} дн`;
-}
-
 export function MessageEditor({ visible, message, onSave, onClose }: Props) {
   const { text, background } = useTheme();
+  const { t, locale } = useLocale();
 
   const [body, setBody] = useState('');
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
@@ -87,7 +72,7 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
         <Pressable style={styles.backdrop} onPress={onClose}>
           <Pressable style={[styles.card, { backgroundColor: background }]} onPress={() => {}}>
             <Text variant="body" style={[styles.title, { color: text }]}>
-              Редактировать
+              {t.editMessage}
             </Text>
 
             <TextInput
@@ -96,7 +81,7 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
               onChangeText={setBody}
               multiline
               maxLength={4000}
-              placeholder="Текст сообщения..."
+              placeholder={t.messagePlaceholder}
               placeholderTextColor={`${text}66`}
               autoFocus
             />
@@ -106,11 +91,11 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
                 <View style={styles.timeInfo}>
                   <CalendarClock size={16} color={`${text}99`} />
                   <Text variant="caption" style={{ color: `${text}99` }}>
-                    {scheduledAt ? formatScheduledAt(scheduledAt) : 'Не задано'}
+                    {scheduledAt ? formatScheduledAt(scheduledAt, locale) : t.notSet}
                   </Text>
                 </View>
                 <Pressable onPress={() => setDatePickerVisible(true)} style={styles.changeBtn}>
-                  <Text variant="caption" style={{ color: '#4A9EFF' }}>Изменить</Text>
+                  <Text variant="caption" style={{ color: '#4A9EFF' }}>{t.change}</Text>
                 </Pressable>
               </View>
             )}
@@ -120,21 +105,21 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
                 <View style={styles.timeInfo}>
                   <Repeat size={16} color={`${text}99`} />
                   <Text variant="caption" style={{ color: `${text}99` }}>
-                    {intervalMinutes ? formatInterval(intervalMinutes) : 'Не задано'}
+                    {intervalMinutes ? formatInterval(intervalMinutes, t) : t.notSet}
                   </Text>
                 </View>
                 <Pressable onPress={() => setPeriodPickerVisible(true)} style={styles.changeBtn}>
-                  <Text variant="caption" style={{ color: '#4A9EFF' }}>Изменить</Text>
+                  <Text variant="caption" style={{ color: '#4A9EFF' }}>{t.change}</Text>
                 </Pressable>
               </View>
             )}
 
             <View style={styles.buttons}>
               <Pressable onPress={onClose} style={styles.btn}>
-                <Text variant="body" style={{ color: `${text}99` }}>Отмена</Text>
+                <Text variant="body" style={{ color: `${text}99` }}>{t.cancel}</Text>
               </Pressable>
               <Pressable onPress={handleSave} style={styles.btn}>
-                <Text variant="body" style={{ color: '#4A9EFF', fontWeight: '700' }}>Сохранить</Text>
+                <Text variant="body" style={{ color: '#4A9EFF', fontWeight: '700' }}>{t.save}</Text>
               </Pressable>
             </View>
           </Pressable>

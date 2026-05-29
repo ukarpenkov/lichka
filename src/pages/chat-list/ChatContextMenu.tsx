@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Pressable, View, StyleSheet } from 'react-native';
 import { Pencil, Trash2 } from 'lucide-react-native';
 import { Text } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 
 export type ChatContextMenuProps = {
   visible: boolean;
@@ -13,6 +13,7 @@ export type ChatContextMenuProps = {
 
 export function ChatContextMenu({ visible, onEdit, onDelete, onClose }: ChatContextMenuProps) {
   const { background, text } = useTheme();
+  const { t } = useLocale();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -22,14 +23,14 @@ export function ChatContextMenu({ visible, onEdit, onDelete, onClose }: ChatCont
             onPress={() => { onClose(); onEdit(); }}
             style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
             <Pencil size={18} color={text} />
-            <Text>Редактировать</Text>
+            <Text>{t.edit}</Text>
           </Pressable>
           <View style={[styles.divider, { backgroundColor: text + '20' }]} />
           <Pressable
             onPress={() => { onClose(); onDelete(); }}
             style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
             <Trash2 size={18} color="#FF3B30" />
-            <Text style={{ color: '#FF3B30' }}>Удалить</Text>
+            <Text style={{ color: '#FF3B30' }}>{t.delete}</Text>
           </Pressable>
         </View>
       </Pressable>

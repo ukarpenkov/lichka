@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Plus, Search } from 'lucide-react-native';
 
 import { Screen, Text, IconButton } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
 import { ChatForm } from '../../widgets/chat-form';
@@ -19,6 +19,7 @@ type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
 export function ChatListScreen() {
   const navigation = useNavigation<Nav>();
   const { text, background } = useTheme();
+  const { t, locale } = useLocale();
   const [chats, setChats] = useState<Chat[]>([]);
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
   const [formVisible, setFormVisible] = useState(false);
@@ -37,10 +38,10 @@ export function ChatListScreen() {
 
   const handleDelete = useCallback(() => {
     if (!menuChat) return;
-    Alert.alert('Удалить чат', `Удалить «${menuChat.title}»?`, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t.deleteChat, t.deleteChatConfirm(menuChat.title), [
+      { text: t.cancel, style: 'cancel' },
       {
-        text: 'Удалить',
+        text: t.delete,
         style: 'destructive',
         onPress: () => {
           deleteChat(menuChat.id);
@@ -71,7 +72,7 @@ export function ChatListScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: text + '20' }]}>
         <Text variant="body" style={{ fontWeight: '600', color: text }}>
-          Чаты
+          {t.chats}
         </Text>
         <IconButton
           icon={Search}
@@ -83,7 +84,7 @@ export function ChatListScreen() {
       {chats.length === 0 ? (
         <View style={styles.empty}>
           <Text variant="body" style={{ color: text + '80' }}>
-            Создайте первый чат
+            {t.createFirstChat}
           </Text>
         </View>
       ) : (

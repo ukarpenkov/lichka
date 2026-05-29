@@ -12,7 +12,7 @@ import {
   runOnJS,
   withSpring,
 } from 'react-native-reanimated';
-import { useTheme } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { DayRing, DAY_STEP, DAY_SEGMENTS, DAY_RING_INNER, DAY_RING_OUTER } from './DayRing';
 import { MonthRing, MONTH_STEP, MONTH_SEGMENTS, MONTH_RING_INNER, MONTH_RING_OUTER } from './MonthRing';
@@ -33,6 +33,7 @@ type Props = {
 
 export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const { text, background } = useTheme();
+  const { t } = useLocale();
 
   const [year, setYear] = useState(value.getUTCFullYear());
   const [month, setMonth] = useState(value.getUTCMonth());
@@ -235,7 +236,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
           <View style={styles.buttons}>
             <Pressable onPress={handleCancel} style={styles.btn}>
               <Text variant="body" style={{ color: `${text}99` }}>
-                Отмена
+                {t.cancel}
               </Text>
             </Pressable>
             <Pressable onPress={handleConfirm} style={styles.btn}>
@@ -243,7 +244,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 variant="body"
                 style={{ color: ACCENT, fontWeight: '700' }}
               >
-                Готово
+                {t.done}
               </Text>
             </Pressable>
           </View>

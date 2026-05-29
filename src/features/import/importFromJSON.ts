@@ -1,7 +1,8 @@
 import { getDatabase } from '../../shared/db';
 import { getChatById } from '../../entities/chat';
 import { getMessageById } from '../../entities/message';
-import { updateSettings, type AppSettings } from '../../entities/settings';
+import { updateSettings, type AppSettings, getSettings } from '../../entities/settings';
+import { getDictionary } from '../../shared/config/locale';
 
 export type ImportMode = 'merge' | 'replace';
 
@@ -17,7 +18,8 @@ export function importFromJSON(json: string, mode: ImportMode): ImportResult {
   const data = JSON.parse(json);
 
   if (!data.schema_version || !Array.isArray(data.chats)) {
-    throw new Error('Некорректный формат файла');
+    const t = getDictionary(getSettings().locale);
+    throw new Error(t.invalidFormat);
   }
 
   const db = getDatabase();
