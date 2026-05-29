@@ -6,9 +6,11 @@ import { ThemeProvider } from './src/shared/config/ThemeProvider';
 import { LocaleProvider } from './src/shared/config/LocaleProvider';
 import { runMigrations } from './src/shared/db';
 import { registerNotificationChannels, cleanupOrphanMedia } from './src/shared/lib';
+import { seedDefaultChat } from './src/entities/chat';
 import { AppNavigator } from './src/app/AppNavigator';
 
 runMigrations();
+seedDefaultChat();
 registerNotificationChannels();
 cleanupOrphanMedia();
 

@@ -9,12 +9,35 @@ export type AvatarProps = {
   size?: number;
 };
 
+function isEmojiAvatar(path: string): boolean {
+  return !path.includes('/') && !path.includes('\\') && !path.startsWith('file:');
+}
+
 export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
   const { text } = useTheme();
   const radius = size / 2;
   const letter = title.charAt(0).toUpperCase() || '?';
 
   if (avatarPath) {
+    if (isEmojiAvatar(avatarPath)) {
+      return (
+        <View
+          style={[
+            styles.emoji,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius,
+              backgroundColor: text + '15',
+            },
+          ]}>
+          <Text style={{ fontSize: size * 0.5, lineHeight: size }}>
+            {avatarPath}
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <Image
         source={{ uri: `file://${avatarPath}` }}
@@ -44,6 +67,10 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
 const styles = StyleSheet.create({
   image: {
     resizeMode: 'cover',
+  },
+  emoji: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   fallback: {
     alignItems: 'center',

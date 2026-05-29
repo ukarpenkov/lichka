@@ -50,6 +50,9 @@ const MIGRATIONS: Record<number, string> = {
     SET body = '[voice:' || CAST(CAST(SUBSTR(body, INSTR(body, ' ') + 1) AS INTEGER) AS TEXT) || ']'
     WHERE body LIKE '[Голосовое %';
   `,
+  5: `
+    ALTER TABLE chats ADD COLUMN is_system INTEGER NOT NULL DEFAULT 0;
+  `,
 };
 
 let dbInstance: DB | null = null;

@@ -5,4 +5,5 @@ export {
   getChatById,
   updateChat,
   deleteChat,
+  seedDefaultChat,
 } from './model/chatRepository';

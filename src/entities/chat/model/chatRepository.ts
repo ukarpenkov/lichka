@@ -2,24 +2,33 @@ import { getDatabase } from '../../../shared/db';
 import { generateId } from '../../../shared/lib';
 import type { Chat } from './types';
 
-export function createChat(title: string, avatarPath?: string | null): Chat {
+const DEFAULT_CHAT_ID = 'saved-messages';
+const DEFAULT_CHAT_TITLE = 'Saved messages';
+const DEFAULT_CHAT_EMOJI = '🔖';
+
+export function createChat(
+  title: string,
+  avatarPath?: string | null,
+  options?: { id?: string; isSystem?: boolean },
+): Chat {
   const db = getDatabase();
-  const id = generateId();
+  const id = options?.id ?? generateId();
   const now = new Date().toISOString();
   const path = avatarPath ?? null;
+  const isSystem = options?.isSystem ? 1 : 0;
 
   db.executeSync(
-    'INSERT INTO chats (id, title, avatar_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-    [id, title, path, now, now],
+    'INSERT INTO chats (id, title, avatar_path, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, title, path, isSystem, now, now],
   );
 
-  return { id, title, avatarPath: path, createdAt: now, updatedAt: now };
+  return { id, title, avatarPath: path, isSystem: !!isSystem, createdAt: now, updatedAt: now };
 }
 
 export function getChats(): Chat[] {
   const db = getDatabase();
   const result = db.executeSync(
-    'SELECT id, title, avatar_path, created_at, updated_at FROM chats ORDER BY updated_at DESC',
+    'SELECT id, title, avatar_path, is_system, created_at, updated_at FROM chats ORDER BY updated_at DESC',
   );
 
   return result.rows.map(mapRow);
@@ -28,7 +37,7 @@ export function getChats(): Chat[] {
 export function getChatById(id: string): Chat | null {
   const db = getDatabase();
   const result = db.executeSync(
-    'SELECT id, title, avatar_path, created_at, updated_at FROM chats WHERE id = ?',
+    'SELECT id, title, avatar_path, is_system, created_at, updated_at FROM chats WHERE id = ?',
     [id],
   );
 
@@ -54,13 +63,14 @@ export function updateChat(
     [title, avatarPath, now, id],
   );
 
-  return { id, title, avatarPath, createdAt: existing.createdAt, updatedAt: now };
+  return { id, title, avatarPath, isSystem: existing.isSystem, createdAt: existing.createdAt, updatedAt: now };
 }
 
 export function deleteChat(id: string): boolean {
   const db = getDatabase();
   const chat = getChatById(id);
   if (!chat) return false;
+  if (chat.isSystem) return false;
 
   db.executeSync('DELETE FROM chats WHERE id = ?', [id]);
 
@@ -76,11 +86,24 @@ export function deleteChat(id: string): boolean {
   return true;
 }
 
+export function seedDefaultChat(): void {
+  const db = getDatabase();
+  const result = db.executeSync('SELECT COUNT(*) AS cnt FROM chats');
+  const count = result.rows[0]?.cnt as number;
+  if (count > 0) return;
+
+  createChat(DEFAULT_CHAT_TITLE, DEFAULT_CHAT_EMOJI, {
+    id: DEFAULT_CHAT_ID,
+    isSystem: true,
+  });
+}
+
 function mapRow(row: Record<string, unknown>): Chat {
   return {
     id: row.id as string,
     title: row.title as string,
     avatarPath: row.avatar_path as string | null,
+    isSystem: (row.is_system as number) === 1,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

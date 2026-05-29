@@ -4,6 +4,7 @@ import {
   getChatById,
   updateChat,
   deleteChat,
+  seedDefaultChat,
 } from '../model/chatRepository';
 
 const mockExecuteSync = jest.fn();
@@ -12,6 +13,10 @@ jest.mock('../../../shared/db', () => ({
   getDatabase: () => ({
     executeSync: mockExecuteSync,
   }),
+}));
+
+jest.mock('../../../shared/lib', () => ({
+  generateId: () => 'test-uuid',
 }));
 
 describe('chatRepository', () => {
@@ -27,6 +32,7 @@ describe('chatRepository', () => {
       expect(chat.id).toBeDefined();
       expect(chat.title).toBe('Test Chat');
       expect(chat.avatarPath).toBeNull();
+      expect(chat.isSystem).toBe(false);
       expect(chat.createdAt).toBeDefined();
       expect(chat.updatedAt).toBeDefined();
     });
@@ -36,8 +42,8 @@ describe('chatRepository', () => {
       const chat = createChat('My Chat', '/path/to/avatar.jpg');
 
       expect(mockExecuteSync).toHaveBeenCalledWith(
-        'INSERT INTO chats (id, title, avatar_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
-        [chat.id, 'My Chat', '/path/to/avatar.jpg', chat.createdAt, chat.updatedAt],
+        'INSERT INTO chats (id, title, avatar_path, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [chat.id, 'My Chat', '/path/to/avatar.jpg', 0, chat.createdAt, chat.updatedAt],
       );
     });
 
@@ -54,6 +60,18 @@ describe('chatRepository', () => {
 
       expect(chat.avatarPath).toBeNull();
     });
+
+    it('should create system chat with fixed id', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const chat = createChat('Saved messages', '🔖', {
+        id: 'saved-messages',
+        isSystem: true,
+      });
+
+      expect(chat.id).toBe('saved-messages');
+      expect(chat.isSystem).toBe(true);
+      expect(chat.avatarPath).toBe('🔖');
+    });
   });
 
   describe('getChats', () => {
@@ -64,6 +82,7 @@ describe('chatRepository', () => {
             id: '1',
             title: 'Chat 1',
             avatar_path: '/a.jpg',
+            is_system: 0,
             created_at: '2026-01-01T00:00:00.000Z',
             updated_at: '2026-01-02T00:00:00.000Z',
           },
@@ -71,6 +90,7 @@ describe('chatRepository', () => {
             id: '2',
             title: 'Chat 2',
             avatar_path: null,
+            is_system: 0,
             created_at: '2026-01-03T00:00:00.000Z',
             updated_at: '2026-01-03T00:00:00.000Z',
           },
@@ -84,6 +104,7 @@ describe('chatRepository', () => {
         id: '1',
         title: 'Chat 1',
         avatarPath: '/a.jpg',
+        isSystem: false,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-02T00:00:00.000Z',
       });
@@ -105,6 +126,7 @@ describe('chatRepository', () => {
             id: 'abc',
             title: 'Found',
             avatar_path: null,
+            is_system: 0,
             created_at: '2026-01-01T00:00:00.000Z',
             updated_at: '2026-01-01T00:00:00.000Z',
           },
@@ -117,6 +139,7 @@ describe('chatRepository', () => {
         id: 'abc',
         title: 'Found',
         avatarPath: null,
+        isSystem: false,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
       });
@@ -138,6 +161,7 @@ describe('chatRepository', () => {
               id: '1',
               title: 'Old',
               avatar_path: null,
+              is_system: 0,
               created_at: '2026-01-01T00:00:00.000Z',
               updated_at: '2026-01-01T00:00:00.000Z',
             },
@@ -160,6 +184,7 @@ describe('chatRepository', () => {
               id: '1',
               title: 'Chat',
               avatar_path: null,
+              is_system: 0,
               created_at: '2026-01-01T00:00:00.000Z',
               updated_at: '2026-01-01T00:00:00.000Z',
             },
@@ -180,6 +205,7 @@ describe('chatRepository', () => {
               id: '1',
               title: 'Chat',
               avatar_path: '/old.jpg',
+              is_system: 0,
               created_at: '2026-01-01T00:00:00.000Z',
               updated_at: '2026-01-01T00:00:00.000Z',
             },
@@ -208,6 +234,7 @@ describe('chatRepository', () => {
               id: '1',
               title: 'To Delete',
               avatar_path: null,
+              is_system: 0,
               created_at: '2026-01-01T00:00:00.000Z',
               updated_at: '2026-01-01T00:00:00.000Z',
             },
@@ -226,6 +253,52 @@ describe('chatRepository', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
 
       expect(deleteChat('missing')).toBe(false);
+    });
+
+    it('should return false for system chat', () => {
+      mockExecuteSync.mockReturnValue({
+        rows: [
+          {
+            id: 'saved-messages',
+            title: 'Saved messages',
+            avatar_path: '🔖',
+            is_system: 1,
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      });
+
+      expect(deleteChat('saved-messages')).toBe(false);
+    });
+  });
+
+  describe('seedDefaultChat', () => {
+    it('should create default chat when no chats exist', () => {
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [{ cnt: 0 }] })
+        .mockReturnValueOnce({ rows: [] });
+
+      seedDefaultChat();
+
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'SELECT COUNT(*) AS cnt FROM chats',
+      );
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'INSERT INTO chats (id, title, avatar_path, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ['saved-messages', 'Saved messages', '🔖', 1, expect.any(String), expect.any(String)],
+      );
+    });
+
+    it('should not create chat when chats already exist', () => {
+      mockExecuteSync.mockReturnValueOnce({ rows: [{ cnt: 3 }] });
+
+      seedDefaultChat();
+
+      expect(mockExecuteSync).toHaveBeenCalledTimes(1);
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'SELECT COUNT(*) AS cnt FROM chats',
+      );
     });
   });
 });

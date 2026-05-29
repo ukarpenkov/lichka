@@ -116,6 +116,7 @@ export function ChatListScreen() {
 
       <ChatContextMenu
         visible={menuChat !== null}
+        canDelete={menuChat ? !menuChat.isSystem : false}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onClose={() => setMenuChat(null)}
