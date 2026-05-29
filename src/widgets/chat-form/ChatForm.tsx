@@ -72,7 +72,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         mediaType: 'photo',
         maxWidth: 512,
         maxHeight: 512,
-        quality: 0.85,
+        quality: 0.85 as import('react-native-image-picker').PhotoQuality,
       },
       (response) => {
         if (response.didCancel) return;

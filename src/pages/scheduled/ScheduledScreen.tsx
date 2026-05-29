@@ -34,10 +34,10 @@ export function ScheduledScreen() {
 
   const handlePress = useCallback(
     (entry: ScheduledEntry) => {
-      navigation.navigate('ChatsTab', {
+      (navigation as any).navigate('ChatsTab', {
         screen: 'ChatRoom',
         params: { chatId: entry.message.chatId, messageId: entry.message.id },
-      } as never);
+      });
     },
     [navigation],
   );
