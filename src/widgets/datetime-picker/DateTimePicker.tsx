@@ -1,28 +1,42 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
   Pressable,
   StyleSheet,
   Dimensions,
+  AccessibilityInfo,
 } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import {
+import Animated, {
   useSharedValue,
-  runOnJS,
+  useAnimatedStyle,
   withSpring,
+  withTiming,
+  runOnJS,
+  FadeIn,
+  FadeOut,
 } from 'react-native-reanimated';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, getMonthLabels, getFullMonthNames } from '../../shared/config';
 import { Text } from '../../shared/ui';
-import { DayRing, DAY_STEP, DAY_SEGMENTS, DAY_RING_INNER, DAY_RING_OUTER } from './DayRing';
-import { MonthRing, MONTH_STEP, MONTH_SEGMENTS, MONTH_RING_INNER, MONTH_RING_OUTER } from './MonthRing';
+import { hapticTap } from '../../shared/lib';
+import { getSettings } from '../../entities/settings';
+import { Bezel } from './Bezel';
 import { TimeScroller } from './TimeScroller';
 import { YearPicker } from './YearPicker';
+import { makeGeometry } from './geometry';
 import { daysInMonth } from './circularMath';
 
 const ACCENT = '#4A9EFF';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const RING_SIZE = Math.min(SCREEN_WIDTH - 48, 300);
+const RING_SIZE = Math.min(SCREEN_WIDTH - 40, 312);
+const GEO = makeGeometry(RING_SIZE);
+const MONTH_COUNT = 12;
+const MONTH_STEP = 360 / MONTH_COUNT;
+
+const RING_DAY = 1;
+const RING_MONTH = 0;
+const RING_NONE = -1;
 
 type Props = {
   visible: boolean;
@@ -31,219 +45,344 @@ type Props = {
   onCancel: () => void;
 };
 
+function dayStep(count: number): number {
+  return 360 / count;
+}
+
 export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const { text, background } = useTheme();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+
+  const monthShort = useMemo(() => getMonthLabels(locale), [locale]);
+  const monthFull = useMemo(() => getFullMonthNames(locale), [locale]);
 
   const [year, setYear] = useState(value.getUTCFullYear());
   const [month, setMonth] = useState(value.getUTCMonth());
   const [day, setDay] = useState(value.getUTCDate());
   const [hour, setHour] = useState(value.getUTCHours());
   const [minute, setMinute] = useState(value.getUTCMinutes());
+  const [interacting, setInteracting] = useState<'day' | 'month' | null>(null);
+
+  const dayCount = daysInMonth(year, month + 1);
+  const dayLabels = useMemo(
+    () => Array.from({ length: dayCount }, (_, i) => `${i + 1}`),
+    [dayCount],
+  );
 
   const dayRotation = useSharedValue(0);
   const monthRotation = useSharedValue(0);
-  const activeRing = useSharedValue(-1); // -1=none, 0=month, 1=day
+  const activeRing = useSharedValue(RING_NONE);
   const lastAngle = useSharedValue(0);
+  const lastDayIdx = useSharedValue(0);
+  const lastMonthIdx = useSharedValue(0);
+  const dayCountSV = useSharedValue(dayCount);
 
-  const cx = RING_SIZE / 2;
-  const cy = RING_SIZE / 2;
-
-  const initRotations = useCallback(
-    (d: number, m: number) => {
-      dayRotation.value = -(d - 1) * DAY_STEP;
-      monthRotation.value = -m * MONTH_STEP;
-    },
-    [dayRotation, monthRotation],
-  );
-
+  const reduceMotionRef = useRef(false);
   useEffect(() => {
-    if (visible) {
-      const d = value.getUTCDate();
-      const m = value.getUTCMonth();
-      setYear(value.getUTCFullYear());
-      setMonth(m);
-      setDay(d);
-      setHour(value.getUTCHours());
-      setMinute(value.getUTCMinutes());
-      initRotations(d, m);
-    }
-  }, [visible, value, initRotations]);
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      reduceMotionRef.current = v;
+    });
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => {
+      reduceMotionRef.current = v;
+    });
+    return () => sub.remove();
+  }, []);
+
+  const triggerHaptic = useCallback(() => {
+    if (reduceMotionRef.current) return;
+    if (!getSettings().hapticEnabled) return;
+    hapticTap();
+  }, []);
+
+  const cx = GEO.cx;
+
+  // Инициализация поворотов из value при открытии
+  useEffect(() => {
+    if (!visible) return;
+    const d = value.getUTCDate();
+    const m = value.getUTCMonth();
+    const y = value.getUTCFullYear();
+    const count = daysInMonth(y, m + 1);
+    setYear(y);
+    setMonth(m);
+    setDay(d);
+    setHour(value.getUTCHours());
+    setMinute(value.getUTCMinutes());
+    setInteracting(null);
+    dayCountSV.value = count;
+    dayRotation.value = -(d - 1) * dayStep(count);
+    monthRotation.value = -m * MONTH_STEP;
+  }, [visible, value, dayRotation, monthRotation, dayCountSV]);
+
+  // Пересчёт поворота дней при смене месяца/года (число дней меняется)
+  useEffect(() => {
+    dayCountSV.value = dayCount;
+    const clamped = Math.min(day, dayCount);
+    if (clamped !== day) setDay(clamped);
+    const target = -(clamped - 1) * dayStep(dayCount);
+    dayRotation.value = withSpring(target, { damping: 22, stiffness: 220 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayCount]);
 
   const handleYearChange = useCallback(
     (y: number) => {
       setYear(y);
-      const max = daysInMonth(y, month + 1);
-      if (day > max) setDay(max);
     },
-    [month, day],
+    [],
   );
 
-  const handleDayFromRotation = useCallback(
-    (rot: number) => {
-      const norm = ((rot % 360) + 360) % 360;
-      const idx = (DAY_SEGMENTS - (Math.round(norm / DAY_STEP) % DAY_SEGMENTS)) % DAY_SEGMENTS;
-      const d = idx + 1;
-      const max = daysInMonth(year, month + 1);
-      const clamped = Math.min(d, max);
-      setDay(clamped);
+  const onStepDay = useCallback(
+    (idx: number) => {
+      triggerHaptic();
+      setDay(Math.min(idx + 1, dayCount));
     },
-    [year, month],
+    [triggerHaptic, dayCount],
   );
 
-  const handleMonthFromRotation = useCallback(
-    (rot: number) => {
-      const norm = ((rot % 360) + 360) % 360;
-      const idx = (MONTH_SEGMENTS - (Math.round(norm / MONTH_STEP) % MONTH_SEGMENTS)) % MONTH_SEGMENTS;
+  const onStepMonth = useCallback(
+    (idx: number) => {
+      triggerHaptic();
       setMonth(idx);
-      const max = daysInMonth(year, idx + 1);
-      if (day > max) setDay(max);
     },
-    [year, day],
+    [triggerHaptic],
   );
+
+  const setInteractingJS = useCallback((v: 'day' | 'month' | null) => {
+    setInteracting(v);
+  }, []);
 
   const onGestureEnd = useCallback(
-    (ring: number, rot: number) => {
-      if (ring === 0) {
-        handleMonthFromRotation(rot);
+    (ring: number, idx: number) => {
+      if (ring === RING_DAY) {
+        setDay(Math.min(idx + 1, dayCount));
       } else {
-        handleDayFromRotation(rot);
+        setMonth(idx);
       }
+      setInteracting(null);
     },
-    [handleMonthFromRotation, handleDayFromRotation],
+    [dayCount],
   );
 
   const ringGesture = Gesture.Manual()
     .onTouchesDown((e, manager) => {
       'worklet';
       const touch = e.changedTouches[0];
-      const dist = Math.sqrt((touch.x - cx) ** 2 + (touch.y - cy) ** 2);
-      if (dist >= DAY_RING_INNER && dist <= DAY_RING_OUTER) {
-        activeRing.value = 1; // day ring
-        lastAngle.value =
-          (Math.atan2(touch.y - cy, touch.x - cx) * 180) / Math.PI + 90;
-        manager.activate();
-      } else if (dist >= MONTH_RING_INNER && dist <= MONTH_RING_OUTER) {
-        activeRing.value = 0; // month ring
-        lastAngle.value =
-          (Math.atan2(touch.y - cy, touch.x - cx) * 180) / Math.PI + 90;
-        manager.activate();
-      } else {
+      const dist = Math.sqrt((touch.x - cx) ** 2 + (touch.y - cx) ** 2);
+
+      if (dist < GEO.day.inner) {
+        // Центр — скролл времени, кольца не активируем
         manager.fail();
+        return;
       }
+
+      const midband = (GEO.day.outer + GEO.month.inner) / 2;
+      const isDay = dist <= midband;
+      activeRing.value = isDay ? RING_DAY : RING_MONTH;
+      lastAngle.value =
+        (Math.atan2(touch.y - cx, touch.x - cx) * 180) / Math.PI + 90;
+
+      const step = isDay ? dayStep(dayCountSV.value) : MONTH_STEP;
+      const count = isDay ? dayCountSV.value : MONTH_COUNT;
+      const rot = isDay ? dayRotation.value : monthRotation.value;
+      const idx = ((Math.round(-rot / step) % count) + count) % count;
+      if (isDay) lastDayIdx.value = idx;
+      else lastMonthIdx.value = idx;
+
+      runOnJS(setInteractingJS)(isDay ? 'day' : 'month');
+      manager.activate();
     })
-    .onTouchesMove((e, manager) => {
+    .onTouchesMove((e) => {
       'worklet';
-      if (activeRing.value === -1) return;
+      if (activeRing.value === RING_NONE) return;
       const touch = e.changedTouches[0];
       const angle =
-        (Math.atan2(touch.y - cy, touch.x - cx) * 180) / Math.PI + 90;
+        (Math.atan2(touch.y - cx, touch.x - cx) * 180) / Math.PI + 90;
       let delta = angle - lastAngle.value;
       if (delta > 180) delta -= 360;
       if (delta < -180) delta += 360;
+      lastAngle.value = angle;
 
-      if (activeRing.value === 1) {
+      const isDay = activeRing.value === RING_DAY;
+      if (isDay) {
         dayRotation.value += delta;
       } else {
         monthRotation.value += delta;
       }
-      lastAngle.value = angle;
+
+      const step = isDay ? dayStep(dayCountSV.value) : MONTH_STEP;
+      const count = isDay ? dayCountSV.value : MONTH_COUNT;
+      const rot = isDay ? dayRotation.value : monthRotation.value;
+      const idx = ((Math.round(-rot / step) % count) + count) % count;
+
+      if (isDay) {
+        if (idx !== lastDayIdx.value) {
+          lastDayIdx.value = idx;
+          runOnJS(onStepDay)(idx);
+        }
+      } else if (idx !== lastMonthIdx.value) {
+        lastMonthIdx.value = idx;
+        runOnJS(onStepMonth)(idx);
+      }
     })
     .onTouchesUp((_e, manager) => {
       'worklet';
-      if (activeRing.value === -1) return;
-      const isDay = activeRing.value === 1;
-      const step = isDay ? DAY_STEP : MONTH_STEP;
+      if (activeRing.value === RING_NONE) {
+        manager.end();
+        return;
+      }
+      const isDay = activeRing.value === RING_DAY;
+      const step = isDay ? dayStep(dayCountSV.value) : MONTH_STEP;
+      const count = isDay ? dayCountSV.value : MONTH_COUNT;
       const rot = isDay ? dayRotation : monthRotation;
       const snapped = Math.round(rot.value / step) * step;
-      rot.value = withSpring(snapped, { damping: 20, stiffness: 200 });
-      runOnJS(onGestureEnd)(isDay ? 1 : 0, snapped);
-      activeRing.value = -1;
+      rot.value = withSpring(snapped, { damping: 22, stiffness: 220 });
+      const idx = ((Math.round(-snapped / step) % count) + count) % count;
+      runOnJS(onGestureEnd)(isDay ? RING_DAY : RING_MONTH, idx);
+      activeRing.value = RING_NONE;
       manager.end();
     })
     .onTouchesCancelled((_e, manager) => {
       'worklet';
-      activeRing.value = -1;
+      activeRing.value = RING_NONE;
+      runOnJS(setInteractingJS)(null);
       manager.end();
     });
 
   const handleConfirm = useCallback(() => {
-    const result = new Date(Date.UTC(year, month, day, hour, minute));
-    onConfirm(result);
+    onConfirm(new Date(Date.UTC(year, month, day, hour, minute)));
   }, [year, month, day, hour, minute, onConfirm]);
 
-  const handleCancel = useCallback(() => {
-    onCancel();
-  }, [onCancel]);
+  // Анимация заголовка: при работе с месяцами строка даты чуть уезжает вверх
+  const headerStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: withTiming(interacting === 'month' ? -6 : 0, {
+          duration: 220,
+        }),
+      },
+    ],
+  }));
 
-  const dateStr = `${day}.${String(month + 1).padStart(2, '0')}.${year}  ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const dayActive = interacting === 'day';
+  const monthActive = interacting === 'month';
+
+  const previewLabel = monthActive ? monthFull[month] : `${day}`;
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={handleCancel}
+      onRequestClose={onCancel}
     >
-      <Pressable style={styles.overlay} onPress={handleCancel}>
+      <Pressable style={styles.overlay} onPress={onCancel}>
         <Pressable
           style={[styles.card, { backgroundColor: background }]}
           onPress={() => {}}
         >
-          {/* Year picker row */}
-          <View style={styles.yearRow}>
-            <Text variant="body" style={{ color: `${text}66` }}>
-              {dateStr}
-            </Text>
+          {/* Заголовок: выбранная дата + год */}
+          <Animated.View style={[styles.header, headerStyle]}>
+            <View style={styles.dateLine}>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '700',
+                  color: dayActive ? ACCENT : text,
+                }}
+              >
+                {day}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: '700',
+                  color: monthActive ? ACCENT : text,
+                  marginLeft: 8,
+                }}
+              >
+                {monthFull[month]}
+              </Text>
+            </View>
             <YearPicker
               year={year}
               textColor={text}
               accentColor={ACCENT}
               onChange={handleYearChange}
             />
+          </Animated.View>
+
+          {/* Плавающее значение над внешним кругом при прокрутке */}
+          <View style={styles.previewRow} pointerEvents="none">
+            {interacting !== null && (
+              <Animated.View
+                entering={FadeIn.duration(160)}
+                exiting={FadeOut.duration(160)}
+              >
+                <Text style={[styles.previewText, { color: ACCENT }]}>
+                  {previewLabel}
+                </Text>
+              </Animated.View>
+            )}
           </View>
 
-          {/* Concentric rings */}
-          <GestureDetector gesture={ringGesture}>
-            <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
-              <DayRing
-                rotation={dayRotation}
-                textColor={text}
-                accentColor={ACCENT}
-                size={RING_SIZE}
-              />
-              <MonthRing
-                rotation={monthRotation}
-                textColor={text}
-                accentColor={ACCENT}
-                size={RING_SIZE}
-              />
-              {/* Center: vertical time scroller */}
-              <View style={styles.timeCenter} pointerEvents="box-none">
-                <TimeScroller
-                  hour={hour}
-                  minute={minute}
+          {/* Кольца */}
+          <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
+            {/* Маркер слота выбора (12 часов) */}
+            <View
+              style={[styles.marker, { borderTopColor: ACCENT }]}
+              pointerEvents="none"
+            />
+
+            <GestureDetector gesture={ringGesture}>
+              <View style={StyleSheet.absoluteFill}>
+                <Bezel
+                  count={MONTH_COUNT}
+                  labels={monthShort}
+                  rotation={monthRotation}
+                  center={GEO.month.center}
+                  width={GEO.month.width}
+                  size={RING_SIZE}
                   textColor={text}
                   accentColor={ACCENT}
-                  onHourChange={setHour}
-                  onMinuteChange={setMinute}
+                  fontSize={13}
                 />
-              </View>
-            </View>
-          </GestureDetector>
+                <Bezel
+                  count={dayCount}
+                  labels={dayLabels}
+                  rotation={dayRotation}
+                  center={GEO.day.center}
+                  width={GEO.day.width}
+                  size={RING_SIZE}
+                  textColor={text}
+                  accentColor={ACCENT}
+                  fontSize={13}
+                />
 
-          {/* Buttons */}
+                {/* Центр: вертикальный скролл времени */}
+                <View style={styles.timeCenter} pointerEvents="box-none">
+                  <TimeScroller
+                    hour={hour}
+                    minute={minute}
+                    textColor={text}
+                    accentColor={ACCENT}
+                    onHourChange={setHour}
+                    onMinuteChange={setMinute}
+                    onTick={triggerHaptic}
+                  />
+                </View>
+              </View>
+            </GestureDetector>
+          </View>
+
+          {/* Кнопки */}
           <View style={styles.buttons}>
-            <Pressable onPress={handleCancel} style={styles.btn}>
+            <Pressable onPress={onCancel} style={styles.btn}>
               <Text variant="body" style={{ color: `${text}99` }}>
                 {t.cancel}
               </Text>
             </Pressable>
             <Pressable onPress={handleConfirm} style={styles.btn}>
-              <Text
-                variant="body"
-                style={{ color: ACCENT, fontWeight: '700' }}
-              >
+              <Text variant="body" style={{ color: ACCENT, fontWeight: '700' }}>
                 {t.done}
               </Text>
             </Pressable>
@@ -262,21 +401,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    width: '90%',
-    borderRadius: 16,
-    padding: 20,
+    width: '92%',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
     alignItems: 'center',
   },
-  yearRow: {
+  header: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  dateLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   ringArea: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  previewRow: {
+    height: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewText: {
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  marker: {
+    position: 'absolute',
+    top: 1,
+    alignSelf: 'center',
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    zIndex: 6,
   },
   timeCenter: {
     position: 'absolute',
@@ -291,7 +458,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     width: '100%',
-    marginTop: 20,
+    marginTop: 16,
     gap: 24,
   },
   btn: {

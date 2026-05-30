@@ -1,12 +1,19 @@
 import React, { useRef, useCallback } from 'react';
-import { View, FlatList, Pressable, StyleSheet } from 'react-native';
+import {
+  View,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from 'react-native';
 import { Text } from '../../shared/ui';
 
-const ITEM_HEIGHT = 40;
+const ITEM_HEIGHT = 34;
 const VISIBLE_ITEMS = 3;
 const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
-const SNAP_INTERVAL = ITEM_HEIGHT;
 const HALF_PADDING = (LIST_HEIGHT - ITEM_HEIGHT) / 2;
+const COL_WIDTH = 46;
 
 function getIs24Hour(): boolean {
   try {
@@ -24,6 +31,8 @@ type Props = {
   accentColor: string;
   onHourChange: (h: number) => void;
   onMinuteChange: (m: number) => void;
+  /** Лёгкий тик на каждое изменение значения */
+  onTick?: () => void;
 };
 
 export function TimeScroller({
@@ -33,10 +42,13 @@ export function TimeScroller({
   accentColor,
   onHourChange,
   onMinuteChange,
+  onTick,
 }: Props) {
   const is24 = useRef(getIs24Hour()).current;
   const hourListRef = useRef<FlatList<number>>(null);
   const minListRef = useRef<FlatList<number>>(null);
+  const lastHourIdx = useRef(hour);
+  const lastMinIdx = useRef(minute);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const minutes = Array.from({ length: 60 }, (_, i) => i);
@@ -53,28 +65,53 @@ export function TimeScroller({
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
 
   const scrollToIndex = useCallback(
-    (ref: React.RefObject<FlatList<number> | null>, index: number, animated: boolean) => {
-      ref.current?.scrollToOffset({
-        offset: index * ITEM_HEIGHT,
-        animated,
-      });
+    (
+      ref: React.RefObject<FlatList<number> | null>,
+      index: number,
+      animated: boolean,
+    ) => {
+      ref.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated });
     },
     [],
   );
 
+  // Тики во время прокрутки — на каждое пересечение значения
+  const handleHourScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+      const clamped = Math.max(0, Math.min(23, idx));
+      if (clamped !== lastHourIdx.current) {
+        lastHourIdx.current = clamped;
+        onTick?.();
+      }
+    },
+    [onTick],
+  );
+
+  const handleMinuteScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+      const clamped = Math.max(0, Math.min(59, idx));
+      if (clamped !== lastMinIdx.current) {
+        lastMinIdx.current = clamped;
+        onTick?.();
+      }
+    },
+    [onTick],
+  );
+
   const handleHourScrollEnd = useCallback(
-    (e: any) => {
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(23, idx));
       if (clamped !== hour) onHourChange(clamped);
-      // Re-snap in case of slight misalignment
       scrollToIndex(hourListRef, clamped, true);
     },
     [hour, onHourChange, scrollToIndex],
   );
 
   const handleMinuteScrollEnd = useCallback(
-    (e: any) => {
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(59, idx));
       if (clamped !== minute) onMinuteChange(clamped);
@@ -86,17 +123,19 @@ export function TimeScroller({
   const handleHourPress = useCallback(
     (idx: number) => {
       onHourChange(idx);
+      onTick?.();
       scrollToIndex(hourListRef, idx, true);
     },
-    [onHourChange, scrollToIndex],
+    [onHourChange, onTick, scrollToIndex],
   );
 
   const handleMinutePress = useCallback(
     (idx: number) => {
       onMinuteChange(idx);
+      onTick?.();
       scrollToIndex(minListRef, idx, true);
     },
-    [onMinuteChange, scrollToIndex],
+    [onMinuteChange, onTick, scrollToIndex],
   );
 
   const renderItem = useCallback(
@@ -112,9 +151,9 @@ export function TimeScroller({
       >
         <Text
           style={{
-            fontSize: isSelected ? 22 : 15,
-            fontWeight: isSelected ? '700' : '400',
-            color: isSelected ? accentColor : `${textColor}44`,
+            fontSize: isSelected ? 26 : 14,
+            fontWeight: isSelected ? '700' : '500',
+            color: isSelected ? accentColor : `${textColor}40`,
             textAlign: 'center',
             lineHeight: ITEM_HEIGHT,
           }}
@@ -128,7 +167,6 @@ export function TimeScroller({
 
   return (
     <View style={styles.container}>
-      {/* Hours column */}
       <FlatList
         ref={hourListRef}
         data={hours}
@@ -137,12 +175,12 @@ export function TimeScroller({
           renderItem(item, item === hour, formatHour, handleHourPress)
         }
         showsVerticalScrollIndicator={false}
-        snapToInterval={SNAP_INTERVAL}
+        snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         disableIntervalMomentum
-        contentContainerStyle={{
-          paddingVertical: HALF_PADDING,
-        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingVertical: HALF_PADDING }}
+        onScroll={handleHourScroll}
         onMomentumScrollEnd={handleHourScrollEnd}
         onScrollEndDrag={handleHourScrollEnd}
         getItemLayout={(_, index) => ({
@@ -156,18 +194,16 @@ export function TimeScroller({
 
       <Text
         style={{
-          fontSize: 22,
+          fontSize: 24,
           fontWeight: '700',
-          color: textColor,
-          marginHorizontal: 6,
+          color: accentColor,
+          marginHorizontal: 2,
           lineHeight: LIST_HEIGHT,
-          textAlignVertical: 'center',
         }}
       >
         :
       </Text>
 
-      {/* Minutes column */}
       <FlatList
         ref={minListRef}
         data={minutes}
@@ -176,12 +212,12 @@ export function TimeScroller({
           renderItem(item, item === minute, formatMinute, handleMinutePress)
         }
         showsVerticalScrollIndicator={false}
-        snapToInterval={SNAP_INTERVAL}
+        snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         disableIntervalMomentum
-        contentContainerStyle={{
-          paddingVertical: HALF_PADDING,
-        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingVertical: HALF_PADDING }}
+        onScroll={handleMinuteScroll}
         onMomentumScrollEnd={handleMinuteScrollEnd}
         onScrollEndDrag={handleMinuteScrollEnd}
         getItemLayout={(_, index) => ({
@@ -197,8 +233,8 @@ export function TimeScroller({
         <Text
           style={{
             color: `${textColor}66`,
-            fontSize: 11,
-            marginLeft: 4,
+            fontSize: 10,
+            marginLeft: 3,
             alignSelf: 'center',
           }}
         >
@@ -217,12 +253,12 @@ const styles = StyleSheet.create({
     height: LIST_HEIGHT,
   },
   list: {
-    width: 52,
+    width: COL_WIDTH,
     height: LIST_HEIGHT,
   },
   item: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 52,
+    width: COL_WIDTH,
   },
 });
