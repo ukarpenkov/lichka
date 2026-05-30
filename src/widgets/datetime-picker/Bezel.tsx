@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { BezelLabel } from './BezelLabel';
 
 type Props = {
@@ -37,16 +37,25 @@ export function Bezel({
   const circumference = 2 * Math.PI * center;
   const arcLen = (step / 360) * circumference;
   const dashOffset = circumference * 0.25 - arcLen / 2;
+  const gradId = `bezel-grad-${center}`;
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
-        {/* Фоновое кольцо */}
+        <Defs>
+          {/* Вертикальный градиент даёт эффект объёма (светлее сверху, темнее снизу) */}
+          <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={textColor} stopOpacity={0.06} />
+            <Stop offset="0.5" stopColor={textColor} stopOpacity={0.13} />
+            <Stop offset="1" stopColor={textColor} stopOpacity={0.2} />
+          </LinearGradient>
+        </Defs>
+        {/* Фоновое кольцо с градиентом-объёмом */}
         <Circle
           cx={cx}
           cy={cx}
           r={center}
-          stroke={`${textColor}12`}
+          stroke={`url(#${gradId})`}
           strokeWidth={width}
           fill="none"
         />

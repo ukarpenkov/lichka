@@ -393,8 +393,8 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 {t.cancel}
               </Text>
             </Pressable>
-            <Pressable onPress={handleConfirm} style={styles.btn}>
-              <Text variant="body" style={{ color: ACCENT, fontWeight: '700' }}>
+            <Pressable onPress={handleConfirm} style={[styles.btn, styles.doneBtn]}>
+              <Text variant="body" style={{ color: '#FFFFFF', fontWeight: '700' }}>
                 {t.done}
               </Text>
             </Pressable>
@@ -418,10 +418,15 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '92%',
-    borderRadius: 20,
+    borderRadius: 24,
     paddingVertical: 20,
     paddingHorizontal: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 12,
   },
   header: {
     width: '100%',
@@ -468,12 +473,18 @@ const styles = StyleSheet.create({
   buttons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    alignItems: 'center',
     width: '100%',
     marginTop: 16,
-    gap: 24,
+    gap: 16,
   },
   btn: {
     paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
+  },
+  doneBtn: {
+    backgroundColor: ACCENT,
+    borderRadius: 12,
+    paddingHorizontal: 24,
   },
 });
