@@ -290,38 +290,37 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
           style={[styles.card, { backgroundColor: background }]}
           onPress={() => {}}
         >
-          {/* Заголовок: выбранная дата + год */}
+          {/* Заголовок: год → месяц → крупный день (по центру) */}
           <Animated.View style={[styles.header, headerStyle]}>
-            <View style={styles.dateLine}>
-              <Animated.Text
-                style={[
-                  {
-                    fontSize: 24,
-                    fontWeight: '700',
-                    color: dayActive ? ACCENT : text,
-                  },
-                  dayTextStyle,
-                ]}
-              >
-                {day}
-              </Animated.Text>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: '700',
-                  color: monthActive ? ACCENT : text,
-                  marginLeft: 8,
-                }}
-              >
-                {monthFull[month]}
-              </Text>
-            </View>
             <YearPicker
               year={year}
               textColor={text}
               accentColor={ACCENT}
               onChange={handleYearChange}
             />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: '600',
+                color: monthActive ? ACCENT : `${text}99`,
+                marginTop: 2,
+              }}
+            >
+              {monthFull[month]}
+            </Text>
+            <Animated.Text
+              style={[
+                {
+                  fontSize: 34,
+                  fontWeight: '800',
+                  color: dayActive ? ACCENT : text,
+                  lineHeight: 40,
+                },
+                dayTextStyle,
+              ]}
+            >
+              {day}
+            </Animated.Text>
           </Animated.View>
 
           {/* Плавающее значение над внешним кругом при прокрутке */}
@@ -426,15 +425,10 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
     paddingHorizontal: 4,
-  },
-  dateLine: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
   },
   ringArea: {
     alignItems: 'center',
