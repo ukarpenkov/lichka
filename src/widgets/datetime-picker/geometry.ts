@@ -1,6 +1,7 @@
 /**
  * Геометрия концентрических безелей пикера.
- * Внешнее кольцо — месяцы, внутреннее — даты. Грани тонкие.
+ * Внешнее кольцо — месяцы (22px), внутреннее — даты (18px).
+ * Грани тонкие, чтобы TimeScroller вписался во внутренний круг.
  */
 export type RingGeometry = {
   center: number; // радиус центра штриха кольца
@@ -18,10 +19,10 @@ export type PickerGeometry = {
   centerRadius: number;
 };
 
-const MONTH_WIDTH = 30;
-const DAY_WIDTH = 26;
+const MONTH_WIDTH = 22;
+const DAY_WIDTH = 18;
 const EDGE_PADDING = 4;
-const RING_GAP = 9;
+const RING_GAP = 7;
 
 export function makeGeometry(size: number): PickerGeometry {
   const cx = size / 2;

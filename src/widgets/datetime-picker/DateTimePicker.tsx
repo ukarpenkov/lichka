@@ -252,15 +252,20 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     onConfirm(new Date(Date.UTC(year, month, day, hour, minute)));
   }, [year, month, day, hour, minute, onConfirm]);
 
-  // Анимация заголовка: при работе с месяцами строка даты чуть уезжает вверх
+  // Анимация заголовка: при работе с месяцами день плавно сдвигается вверх
   const headerStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: withTiming(interacting === 'month' ? -6 : 0, {
-          duration: 220,
+        translateY: withTiming(interacting === 'month' ? -12 : 0, {
+          duration: 250,
         }),
       },
     ],
+  }));
+
+  // Затемнение дня при выборе месяца
+  const dayTextStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(interacting === 'month' ? 0.45 : 1, { duration: 250 }),
   }));
 
   const dayActive = interacting === 'day';
@@ -283,15 +288,18 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
           {/* Заголовок: выбранная дата + год */}
           <Animated.View style={[styles.header, headerStyle]}>
             <View style={styles.dateLine}>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: '700',
-                  color: dayActive ? ACCENT : text,
-                }}
+              <Animated.Text
+                style={[
+                  {
+                    fontSize: 24,
+                    fontWeight: '700',
+                    color: dayActive ? ACCENT : text,
+                  },
+                  dayTextStyle,
+                ]}
               >
                 {day}
-              </Text>
+              </Animated.Text>
               <Text
                 style={{
                   fontSize: 24,
@@ -344,7 +352,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                   size={RING_SIZE}
                   textColor={text}
                   accentColor={ACCENT}
-                  fontSize={13}
+                  fontSize={11}
                 />
                 <Bezel
                   count={dayCount}
@@ -355,7 +363,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                   size={RING_SIZE}
                   textColor={text}
                   accentColor={ACCENT}
-                  fontSize={13}
+                  fontSize={11}
                 />
 
                 {/* Центр: вертикальный скролл времени */}

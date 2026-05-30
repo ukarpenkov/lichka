@@ -9,11 +9,11 @@ import {
 } from 'react-native';
 import { Text } from '../../shared/ui';
 
-const ITEM_HEIGHT = 34;
+const ITEM_HEIGHT = 28;
 const VISIBLE_ITEMS = 3;
 const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const HALF_PADDING = (LIST_HEIGHT - ITEM_HEIGHT) / 2;
-const COL_WIDTH = 46;
+const COL_WIDTH = 38;
 
 function getIs24Hour(): boolean {
   try {
@@ -151,7 +151,7 @@ export function TimeScroller({
       >
         <Text
           style={{
-            fontSize: isSelected ? 26 : 14,
+            fontSize: isSelected ? 22 : 11,
             fontWeight: isSelected ? '700' : '500',
             color: isSelected ? accentColor : `${textColor}40`,
             textAlign: 'center',
@@ -194,7 +194,7 @@ export function TimeScroller({
 
       <Text
         style={{
-          fontSize: 24,
+          fontSize: 20,
           fontWeight: '700',
           color: accentColor,
           marginHorizontal: 2,
