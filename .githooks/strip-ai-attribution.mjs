@@ -14,8 +14,8 @@ const original = fs.readFileSync(commitMsgFile, 'utf8');
 const filtered = original
   .split(/\r?\n/)
   .filter((line) => {
-    if (/^Co-Authored-By:\s*.+(Claude|anthropic)/i.test(line)) return false;
-    if (/Generated with Claude Code/i.test(line)) return false;
+    if (/^Co-Authored-By:\s*.+(Claude|anthropic|Cursor|cursoragent)/i.test(line)) return false;
+    if (/Generated with (Claude Code|Cursor)/i.test(line)) return false;
     if (/🤖\s*Generated with/i.test(line)) return false;
     return true;
   });
