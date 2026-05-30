@@ -7,7 +7,11 @@ import {
   Dimensions,
   AccessibilityInfo,
 } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import {
+  GestureDetector,
+  Gesture,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -280,6 +284,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       animationType="fade"
       onRequestClose={onCancel}
     >
+      <GestureHandlerRootView style={styles.root}>
       <Pressable style={styles.overlay} onPress={onCancel}>
         <Pressable
           style={[styles.card, { backgroundColor: background }]}
@@ -397,11 +402,15 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
           </View>
         </Pressable>
       </Pressable>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
