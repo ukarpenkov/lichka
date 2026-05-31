@@ -50,6 +50,7 @@ type Props = {
 };
 
 function dayStep(count: number): number {
+  'worklet';
   return 360 / count;
 }
 
