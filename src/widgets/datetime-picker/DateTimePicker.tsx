@@ -61,11 +61,11 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const monthShort = useMemo(() => getMonthLabels(locale), [locale]);
   const monthFull = useMemo(() => getFullMonthNames(locale), [locale]);
 
-  const [year, setYear] = useState(value.getUTCFullYear());
-  const [month, setMonth] = useState(value.getUTCMonth());
-  const [day, setDay] = useState(value.getUTCDate());
-  const [hour, setHour] = useState(value.getUTCHours());
-  const [minute, setMinute] = useState(value.getUTCMinutes());
+  const [year, setYear] = useState(value.getFullYear());
+  const [month, setMonth] = useState(value.getMonth());
+  const [day, setDay] = useState(value.getDate());
+  const [hour, setHour] = useState(value.getHours());
+  const [minute, setMinute] = useState(value.getMinutes());
   const [interacting, setInteracting] = useState<'day' | 'month' | null>(null);
 
   const dayCount = daysInMonth(year, month + 1);
@@ -104,15 +104,15 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   // Инициализация поворотов из value при открытии
   useEffect(() => {
     if (!visible) return;
-    const d = value.getUTCDate();
-    const m = value.getUTCMonth();
-    const y = value.getUTCFullYear();
+    const d = value.getDate();
+    const m = value.getMonth();
+    const y = value.getFullYear();
     const count = daysInMonth(y, m + 1);
     setYear(y);
     setMonth(m);
     setDay(d);
-    setHour(value.getUTCHours());
-    setMinute(value.getUTCMinutes());
+    setHour(value.getHours());
+    setMinute(value.getMinutes());
     setInteracting(null);
     dayCountSV.value = count;
     dayRotation.value = -(d - 1) * dayStep(count);
@@ -254,7 +254,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     });
 
   const handleConfirm = useCallback(() => {
-    onConfirm(new Date(Date.UTC(year, month, day, hour, minute)));
+    onConfirm(new Date(year, month, day, hour, minute));
   }, [year, month, day, hour, minute, onConfirm]);
 
   // Анимация заголовка: при работе с месяцами день плавно сдвигается вверх
@@ -370,21 +370,32 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                   accentColor={ACCENT}
                   fontSize={11}
                 />
-
-                {/* Центр: вертикальный скролл времени */}
-                <View style={styles.timeCenter} pointerEvents="box-none">
-                  <TimeScroller
-                    hour={hour}
-                    minute={minute}
-                    textColor={text}
-                    accentColor={ACCENT}
-                    onHourChange={setHour}
-                    onMinuteChange={setMinute}
-                    onTick={triggerHaptic}
-                  />
-                </View>
               </View>
             </GestureDetector>
+
+            {/* Центр: скролл времени вне жеста колец, чтобы не съезжала вёрстка */}
+            <View style={styles.timeCenter} pointerEvents="box-none">
+              <View
+                style={[
+                  styles.timeScrollerClip,
+                  {
+                    width: GEO.centerRadius * 2,
+                    height: GEO.centerRadius * 2,
+                    borderRadius: GEO.centerRadius,
+                  },
+                ]}
+              >
+                <TimeScroller
+                  hour={hour}
+                  minute={minute}
+                  textColor={text}
+                  accentColor={ACCENT}
+                  onHourChange={setHour}
+                  onMinuteChange={setMinute}
+                  onTick={triggerHaptic}
+                />
+              </View>
+            </View>
           </View>
 
           {/* Кнопки */}
@@ -468,6 +479,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  timeScrollerClip: {
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },

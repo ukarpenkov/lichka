@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -138,6 +138,16 @@ export function TimeScroller({
     [onMinuteChange, onTick, scrollToIndex],
   );
 
+  useEffect(() => {
+    lastHourIdx.current = hour;
+    scrollToIndex(hourListRef, hour, false);
+  }, [hour, scrollToIndex]);
+
+  useEffect(() => {
+    lastMinIdx.current = minute;
+    scrollToIndex(minListRef, minute, false);
+  }, [minute, scrollToIndex]);
+
   const renderItem = useCallback(
     (
       item: number,
@@ -251,10 +261,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: LIST_HEIGHT,
+    alignSelf: 'center',
   },
   list: {
     width: COL_WIDTH,
     height: LIST_HEIGHT,
+    flexGrow: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
   },
   item: {
     alignItems: 'center',
