@@ -15,15 +15,6 @@ const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const HALF_PADDING = (LIST_HEIGHT - ITEM_HEIGHT) / 2;
 const COL_WIDTH = 38;
 
-function getIs24Hour(): boolean {
-  try {
-    const fmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric' });
-    return !fmt.resolvedOptions().hour12;
-  } catch {
-    return true;
-  }
-}
-
 type Props = {
   hour: number;
   minute: number;
@@ -44,7 +35,6 @@ export function TimeScroller({
   onMinuteChange,
   onTick,
 }: Props) {
-  const is24 = useRef(getIs24Hour()).current;
   const hourListRef = useRef<FlatList<number>>(null);
   const minListRef = useRef<FlatList<number>>(null);
   const lastHourIdx = useRef(hour);
@@ -54,12 +44,8 @@ export function TimeScroller({
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   const formatHour = useCallback(
-    (h: number) => {
-      if (is24) return `${h}`.padStart(2, '0');
-      const h12 = h % 12 || 12;
-      return `${h12}`.padStart(2, '0');
-    },
-    [is24],
+    (h: number) => `${h}`.padStart(2, '0'),
+    [],
   );
 
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
@@ -239,18 +225,6 @@ export function TimeScroller({
         onLayout={() => scrollToIndex(minListRef, minute, false)}
       />
 
-      {!is24 && (
-        <Text
-          style={{
-            color: `${textColor}66`,
-            fontSize: 10,
-            marginLeft: 3,
-            alignSelf: 'center',
-          }}
-        >
-          {hour < 12 ? 'AM' : 'PM'}
-        </Text>
-      )}
     </View>
   );
 }
