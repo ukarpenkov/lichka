@@ -110,7 +110,6 @@ export interface LocaleDictionary {
   // Voice
   voiceMessage: (sec: number) => string;
   recording: (duration: string) => string;
-  noText: string;
   messageInput: string;
 
   // Permissions
@@ -233,7 +232,6 @@ export const ru: LocaleDictionary = {
   // Voice
   voiceMessage: (sec) => `[voice:${sec}]`,
   recording: (duration) => `Запись ${duration}`,
-  noText: '(без текста)',
   messageInput: 'Сообщение...',
 
   // Permissions
@@ -356,7 +354,6 @@ export const en: LocaleDictionary = {
   // Voice
   voiceMessage: (sec) => `[voice:${sec}]`,
   recording: (duration) => `Recording ${duration}`,
-  noText: '(no text)',
   messageInput: 'Message...',
 
   // Permissions
