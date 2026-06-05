@@ -100,8 +100,8 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const sendMessage = useCallback(
     (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number; payload?: string }) => {
-      const textBody = type === 'simple' ? body.trim() : body.trim() || t.noText;
-      if (!textBody && type === 'simple') return;
+      const textBody = body.trim();
+      if (!textBody) return;
 
       const msg = createMessage(chatId, type, textBody, opts?.scheduledAt ?? null, opts?.intervalMinutes ?? null, opts?.payload ?? null);
       if (type !== 'simple') {
@@ -244,9 +244,9 @@ export function MessageComposer({ chatId, onSent }: Props) {
         />
         <View style={styles.actions}>
           <IconButton icon={Send} size={22} color={body.trim() ? text : `${text}40`} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} onPressIn={triggerHapticTap} />
-          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} onPressIn={triggerHapticTap} />
+          <IconButton icon={Bell} size={22} color={body.trim() ? `${text}99` : `${text}40`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClock} size={22} color={body.trim() ? `${text}99` : `${text}40`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Repeat} size={22} color={body.trim() ? `${text}99` : `${text}40`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <AnimatedPressable
             style={styles.micBtn}
             onLongPress={handleMicLongPress}
