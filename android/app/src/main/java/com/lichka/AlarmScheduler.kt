@@ -25,7 +25,14 @@ object AlarmScheduler {
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0)
-        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        if (canScheduleExact(alarmManager)) {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent,
+            )
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        }
+        AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis)
     }
 
     fun schedulePeriodicFirst(
@@ -40,7 +47,15 @@ object AlarmScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent =
             buildPendingIntent(context, messageId, chatId, body, chatTitle, intervalMinutes)
-        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        // Используем setAlarmClock — самый надёжный метод, работает даже в Doze
+        val showIntent = Intent(context, MainActivity::class.java).let { intent ->
+            PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        }
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent)
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        AlarmStorage.save(
+            context, messageId, chatId, body, chatTitle, intervalMinutes, triggerAtMillis,
+        )
     }
 
     fun scheduleAlarm(
@@ -64,6 +79,7 @@ object AlarmScheduler {
         }
         val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent)
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis)
     }
 
     fun cancelAlarm(context: Context, messageId: String) {
@@ -79,6 +95,7 @@ object AlarmScheduler {
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
             )
         pendingIntent?.let { alarmManager.cancel(it) }
+        AlarmStorage.remove(context, messageId)
     }
 
     fun cancel(context: Context, messageId: String) {
@@ -92,6 +109,38 @@ object AlarmScheduler {
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
             )
         pendingIntent?.let { alarmManager.cancel(it) }
+        AlarmStorage.remove(context, messageId)
+    }
+
+    fun rescheduleAll(context: Context) {
+        val alarms = AlarmStorage.loadAll(context)
+        val now = System.currentTimeMillis()
+        for (alarm in alarms) {
+            if (alarm.triggerAtMillis <= now) {
+                // Просрочен — удаляем
+                AlarmStorage.remove(context, alarm.messageId)
+                continue
+            }
+            if (alarm.intervalMinutes > 0) {
+                schedulePeriodicFirst(
+                    context, alarm.messageId, alarm.chatId, alarm.body, alarm.chatTitle,
+                    alarm.intervalMinutes, alarm.triggerAtMillis,
+                )
+            } else {
+                scheduleReminder(
+                    context, alarm.messageId, alarm.chatId, alarm.body, alarm.chatTitle,
+                    alarm.triggerAtMillis,
+                )
+            }
+        }
+    }
+
+    private fun canScheduleExact(alarmManager: AlarmManager): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
     }
 
     private fun buildPendingIntent(

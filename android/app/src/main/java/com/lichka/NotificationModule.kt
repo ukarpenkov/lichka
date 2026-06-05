@@ -92,6 +92,22 @@ class NotificationModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun requestScheduleExactAlarm() {
+        // На Android 13+ USE_EXACT_ALARM выдаётся автоматически.
+        // На Android 12 нужно запросить SCHEDULE_EXACT_ALARM вручную.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+        ) {
+            val intent =
+                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                    data = Uri.parse("package:${reactApplicationContext.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            reactApplicationContext.startActivity(intent)
+        }
+    }
+
+    @ReactMethod
     fun requestIgnoreBatteryOptimizations() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val intent =

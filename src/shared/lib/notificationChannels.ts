@@ -59,6 +59,11 @@ export function requestIgnoreBatteryOptimizations(): void {
   NotificationModule.requestIgnoreBatteryOptimizations();
 }
 
+/** Открывает системный экран запроса разрешения SCHEDULE_EXACT_ALARM (Android 12). */
+export function requestScheduleExactAlarm(): void {
+  NotificationModule.requestScheduleExactAlarm();
+}
+
 export function getInitialChatId(): Promise<string | null> {
   return NotificationModule.getInitialChatId();
 }

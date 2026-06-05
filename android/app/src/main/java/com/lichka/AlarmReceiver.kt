@@ -56,6 +56,9 @@ class AlarmReceiver : BroadcastReceiver() {
             AlarmScheduler.schedulePeriodicFirst(
                 context, messageId, chatId, body, chatTitle, intervalMinutes, nextTrigger,
             )
+        } else {
+            // Одноразовое уведомление — удаляем из хранилища
+            AlarmStorage.remove(context, messageId)
         }
     }
 
@@ -73,6 +76,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val snoozeTrigger =
             System.currentTimeMillis() + NotificationHelper.snoozeMinutes() * 60_000L
+        // schedule* уже сохраняют в AlarmStorage, старая запись будет заменена
         if (isAlarm) {
             AlarmScheduler.scheduleAlarm(
                 context, messageId, chatId, body, chatTitle, snoozeTrigger,
