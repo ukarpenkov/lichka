@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Bell, AlarmClock, Repeat } from 'lucide-react-native';
+import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
-import { Text } from '../../shared/ui';
+import { Text, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, formatRelativeDate } from '../../shared/config';
 import type { Message, MessageType } from '../../entities/message';
 
@@ -54,29 +55,31 @@ export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProp
         : '';
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { opacity: pressed ? 0.7 : 1, borderBottomColor: text + '15' },
-      ]}>
-      <View style={styles.iconWrap}>
-        {Icon && <Icon size={20} color={text} />}
-      </View>
-      <View style={styles.content}>
-        <Text numberOfLines={1} style={styles.body}>
-          {message.body}
-        </Text>
-        <View style={styles.meta}>
-          <Text variant="caption" style={{ color: text + '99' }}>
-            {chatTitle}
-          </Text>
-          <Text variant="caption" style={{ color: text + '60' }}>
-            {timeText}
-          </Text>
+    <Animated.View
+      entering={FadeInUp.springify().damping(20).stiffness(200)}
+      layout={Layout.springify().damping(22).stiffness(180)}>
+      <AnimatedPressable
+        onPress={onPress}
+        pressStyle={{ opacity: 0.7 }}
+        style={[styles.row, { borderBottomColor: text + '15' }]}>
+        <View style={styles.iconWrap}>
+          {Icon && <Icon size={20} color={text} />}
         </View>
-      </View>
-    </Pressable>
+        <View style={styles.content}>
+          <Text numberOfLines={1} style={styles.body}>
+            {message.body}
+          </Text>
+          <View style={styles.meta}>
+            <Text variant="caption" style={{ color: text + '99' }}>
+              {chatTitle}
+            </Text>
+            <Text variant="caption" style={{ color: text + '60' }}>
+              {timeText}
+            </Text>
+          </View>
+        </View>
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 

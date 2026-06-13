@@ -1,11 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Platform } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withRepeat,
   withSequence,
+  runOnJS,
+  useAnimatedKeyboard,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 import { useTheme, useLocale } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
@@ -19,7 +24,6 @@ import {
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
 import { hapticTap, hapticLongPress, hapticSuccess, playSendSound } from '../../shared/lib';
-
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
 import { DocumentDirectoryPath } from 'react-native-fs';
@@ -63,7 +67,29 @@ export function MessageComposer({ chatId, onSent }: Props) {
     return () => sub.remove();
   }, []);
 
-  // Animation values for recording indicator
+  // Keyboard animation for smooth composer following
+  const keyboard = useAnimatedKeyboard({
+    isStatusBarTranslucentAndroid: true,
+  });
+
+  const composerStyle = useAnimatedStyle(() => {
+    if (Platform.OS === 'ios') {
+      return {
+        transform: [{ translateY: -keyboard.height.value }],
+      };
+    }
+    const progress = interpolate(
+      keyboard.height.value,
+      [0, 300],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    return {
+      transform: [{ translateY: -keyboard.height.value * progress }],
+    };
+  });
+
+  // Recording indicator animations
   const dotScale = useSharedValue(1);
   const recOpacity = useSharedValue(0);
 
@@ -174,7 +200,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
     const uri = await startRecording();
     if (uri) {
-      // Start pulsating animation
       dotScale.value = withRepeat(
         withSequence(
           withSpring(1.3, { damping: 2, stiffness: 200 }),
@@ -190,7 +215,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const handleMicPressOut = useCallback(async () => {
     if (!isRecording) return;
 
-    // Stop pulsating
     dotScale.value = withSpring(1, { damping: 15, stiffness: 150 });
     recOpacity.value = withSpring(0, { damping: 15, stiffness: 150 });
 
@@ -210,29 +234,64 @@ export function MessageComposer({ chatId, onSent }: Props) {
     await cancelRecording();
   }, [cancelRecording, dotScale, recOpacity]);
 
-  // Recording mode UI
+  // Pan gesture for swipe-to-cancel during recording
+  const panTranslateX = useSharedValue(0);
+  const stopScale = useSharedValue(1);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .onUpdate((e) => {
+      panTranslateX.value = e.translationX;
+      const progress = Math.min(Math.abs(e.translationX) / 100, 1);
+      stopScale.value = 1 - progress * 0.3;
+    })
+    .onEnd((e) => {
+      if (Math.abs(e.translationX) > 100) {
+        panTranslateX.value = withSpring(-300, { damping: 20, stiffness: 200 });
+        runOnJS(handleCancelRecord)();
+      } else {
+        panTranslateX.value = withSpring(0, { damping: 15, stiffness: 200 });
+      }
+      stopScale.value = withSpring(1, { damping: 15, stiffness: 200 });
+    });
+
+  const panStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: panTranslateX.value }],
+  }));
+
+  const stopBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: stopScale.value }],
+  }));
+
   if (isRecording) {
     return (
-      <View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }, composerStyle]}>
         <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
-          <View style={styles.recordingIndicator}>
-            <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
-            <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
-          </View>
+          <GestureDetector gesture={panGesture}>
+            <Animated.View style={[styles.recordingIndicator, panStyle]}>
+              <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
+              <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
+              <Text variant="caption" style={{ color: text + '50', marginLeft: 8 }}>
+                ← {t.cancel}
+              </Text>
+            </Animated.View>
+          </GestureDetector>
           <View style={styles.recordingActions}>
             <IconButton icon={X} size={22} color={`${text}99`} onPress={handleCancelRecord} />
-            <Pressable style={[styles.stopBtn, { backgroundColor: text }]} onPress={handleMicPressOut}>
-              <Square size={16} color={background} fill={background} />
-            </Pressable>
+            <Animated.View style={stopBtnStyle}>
+              <Pressable style={[styles.stopBtn, { backgroundColor: text }]} onPress={handleMicPressOut}>
+                <Square size={16} color={background} fill={background} />
+              </Pressable>
+            </Animated.View>
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     );
   }
 
   return (
     <>
-      <View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }, composerStyle]}>
         <TextInput
           style={[styles.input, { color: text, borderColor: `${text}33` }]}
           placeholder={t.messageInput}
@@ -248,14 +307,13 @@ export function MessageComposer({ chatId, onSent }: Props) {
           <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <AnimatedPressable
-            style={styles.micBtn}
             onLongPress={handleMicLongPress}
             delayLongPress={300}
-          >
+            style={styles.micBtn}>
             <Mic size={22} color={`${text}99`} />
           </AnimatedPressable>
         </View>
-      </View>
+      </Animated.View>
 
       <DateTimePicker
         visible={pickerMode !== null}

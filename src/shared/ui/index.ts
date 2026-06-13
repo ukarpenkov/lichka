@@ -5,3 +5,5 @@ export { Screen, type ScreenProps } from './Screen';
 export { Input, type InputProps } from './Input';
 export { Avatar, type AvatarProps } from './Avatar';
 export { HighlightedBody, parseHighlights } from './HighlightedBody';
+export { AnimatedPressable } from './AnimatedPressable';
+export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';

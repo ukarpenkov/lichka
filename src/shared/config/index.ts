@@ -28,3 +28,4 @@ export {
   formatInterval,
   formatShortMonth,
 } from './dateUtils';
+export { FEATURE_FLAGS, type FeatureFlag } from './featureFlags';

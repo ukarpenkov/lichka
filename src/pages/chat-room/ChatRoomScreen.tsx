@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, Alert, StyleSheet, type ViewToken, type LayoutChangeEvent } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  withSpring,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -31,6 +39,10 @@ type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
 type ListItem =
   | { kind: 'date'; key: string; date: string }
   | { kind: 'message'; key: string; message: Message };
+
+const AnimatedFlatList = Animated.createAnimatedComponent(
+  FlatList as any,
+) as any;
 
 function getDayKey(iso: string): string {
   return iso.slice(0, 10);
@@ -69,8 +81,22 @@ export function ChatRoomScreen() {
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const stickyDateStyle = useAnimatedStyle(() => {
+    const opacity = withSpring(1, { damping: 20, stiffness: 200 });
+    return {
+      opacity,
+      transform: [{ translateY: 0 }],
+    };
+  });
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId));
@@ -100,6 +126,8 @@ export function ChatRoomScreen() {
     }, 200);
     return () => clearTimeout(timer);
   }, [messageId, listItems]);
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -195,7 +223,6 @@ export function ChatRoomScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: background }]}>
-      {/* Header area (safe area + header + search) — measured for sticky positioning */}
       <View onLayout={handleHeaderLayout}>
         <View style={{ height: insets.top, backgroundColor: background }} />
         <ChatHeader
@@ -206,7 +233,6 @@ export function ChatRoomScreen() {
         />
       </View>
 
-      {/* Search overlay */}
       {searchVisible && (
         <SearchOverlay
           chatId={chatId}
@@ -215,20 +241,22 @@ export function ChatRoomScreen() {
         />
       )}
 
-      {/* Sticky date header */}
       {stickyDate && (
-        <View
+        <Animated.View
+          key={stickyDate}
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(150)}
           style={[
             styles.stickyDate,
+            stickyDateStyle,
             { top: headerAreaHeight, backgroundColor: background },
           ]}>
           <DateSeparator date={stickyDate} />
-        </View>
+        </Animated.View>
       )}
 
-      {/* Message list */}
-      <FlatList
-        ref={flatListRef}
+      <AnimatedFlatList
+        ref={flatListRef as any}
         data={listItems}
         renderItem={renderListItem}
         keyExtractor={keyExtractor}
@@ -237,7 +265,9 @@ export function ChatRoomScreen() {
         contentContainerStyle={styles.listContent}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        onScrollToIndexFailed={(info) => {
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        onScrollToIndexFailed={(info: any) => {
           setTimeout(() => {
             flatListRef.current?.scrollToIndex({
               index: info.index,
@@ -248,10 +278,8 @@ export function ChatRoomScreen() {
         }}
       />
 
-      {/* Message composer */}
       <MessageComposer chatId={chatId} onSent={loadData} />
 
-      {/* Context menu */}
       <MessageContextMenu
         visible={menuMessage !== null}
         onEdit={handleEditMessage}
@@ -259,7 +287,6 @@ export function ChatRoomScreen() {
         onClose={() => setMenuMessage(null)}
       />
 
-      {/* Message editor */}
       <MessageEditor
         visible={editMessage !== null}
         message={editMessage}
@@ -267,7 +294,6 @@ export function ChatRoomScreen() {
         onClose={() => setEditMessage(null)}
       />
 
-      {/* Chat edit form */}
       <ChatForm
         visible={editFormVisible}
         onClose={() => setEditFormVisible(false)}

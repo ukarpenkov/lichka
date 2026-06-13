@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { ArrowLeft, Search } from 'lucide-react-native';
-import { Text, Avatar, IconButton } from '../../shared/ui';
+import { Text, SharedElementAvatar, IconButton } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
@@ -20,7 +20,7 @@ export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderP
       <IconButton icon={ArrowLeft} size={24} onPress={onBack} />
 
       <Pressable style={styles.titleRow} onPress={onTitlePress}>
-        <Avatar title={chat.title} avatarPath={chat.avatarPath} size={36} />
+        <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} size={36} />
         <Text variant="body" style={styles.title} numberOfLines={1}>
           {chat.title}
         </Text>

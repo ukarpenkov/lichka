@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, FlatList, Pressable, TextInput, StyleSheet } from 'react-native';
+import { View, FlatList, TextInput, StyleSheet } from 'react-native';
+import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { X } from 'lucide-react-native';
 
-import { Text, IconButton, HighlightedBody } from '../../shared/ui';
+import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 
@@ -47,7 +48,10 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: background }]}>
+    <Animated.View
+      entering={SlideInDown.duration(200).springify().damping(20).stiffness(200)}
+      exiting={FadeOut.duration(150)}
+      style={[styles.container, { backgroundColor: background }]}>
       {/* Search input */}
       <View style={[styles.inputRow, { borderBottomColor: text + '20' }]}>
         <TextInput
@@ -68,14 +72,8 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
         data={results}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.resultItem,
-              {
-                backgroundColor: pressed ? text + '10' : 'transparent',
-                borderBottomColor: text + '10',
-              },
-            ]}
+          <AnimatedPressable
+            style={[styles.resultItem, { borderBottomColor: text + '10' }]}
             onPress={() => handleSelect(item)}>
             <HighlightedBody
               text={item.highlighted}
@@ -84,7 +82,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
             <Text variant="caption" style={{ color: text + '40', marginTop: 2 }}>
               {formatTime(item.created_at)}
             </Text>
-          </Pressable>
+          </AnimatedPressable>
         )}
         ListEmptyComponent={
           query.trim() ? (
@@ -97,7 +95,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
         }
         keyboardShouldPersistTaps="handled"
       />
-    </View>
+    </Animated.View>
   );
 }
 

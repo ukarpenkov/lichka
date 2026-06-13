@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
-import { Text, Avatar } from '../../shared/ui';
+import { View, StyleSheet } from 'react-native';
+import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
+import { Text, SharedElementAvatar, AnimatedPressable } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
@@ -14,18 +15,20 @@ export function ChatListItem({ chat, onPress, onLongPress }: ChatListItemProps) 
   const { text } = useTheme();
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.row,
-        { opacity: pressed ? 0.7 : 1, borderBottomColor: text + '15' },
-      ]}>
-      <Avatar title={chat.title} avatarPath={chat.avatarPath} />
-      <Text numberOfLines={1} style={styles.title}>
-        {chat.title}
-      </Text>
-    </Pressable>
+    <Animated.View
+      entering={FadeInUp.springify().damping(20).stiffness(200)}
+      layout={Layout.springify().damping(22).stiffness(180)}>
+      <AnimatedPressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        pressStyle={{ opacity: 0.7 }}
+        style={[styles.row, { borderBottomColor: text + '15' }]}>
+        <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
+        <Text numberOfLines={1} style={styles.title}>
+          {chat.title}
+        </Text>
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 

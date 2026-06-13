@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { FlatList, Pressable, Alert, View, StyleSheet } from 'react-native';
+import { FlatList, Alert, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Plus, Search } from 'lucide-react-native';
 
-import { Screen, Text, IconButton } from '../../shared/ui';
+import { Screen, Text, IconButton, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
@@ -102,17 +102,12 @@ export function ChatListScreen() {
       )}
 
       {/* FAB */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            backgroundColor: text,
-            opacity: pressed ? 0.7 : 1,
-          },
-        ]}
-        onPress={handleCreate}>
+      <AnimatedPressable
+        style={[styles.fab, { backgroundColor: text }]}
+        onPress={handleCreate}
+        scaleTo={0.9}>
         <Plus size={24} color={background} />
-      </Pressable>
+      </AnimatedPressable>
 
       <ChatContextMenu
         visible={menuChat !== null}

@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { Text } from '../../shared/ui';
 import { useTheme, useLocale, formatDateLabel } from '../../shared/config';
 
 type DateSeparatorProps = {
-  date: string; // ISO string
+  date: string;
 };
 
 export function DateSeparator({ date }: DateSeparatorProps) {
@@ -12,13 +13,15 @@ export function DateSeparator({ date }: DateSeparatorProps) {
   const { locale, t } = useLocale();
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.line, { backgroundColor: text + '20' }]} />
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      style={styles.container}>
+      <Animated.View style={[styles.line, { backgroundColor: text + '20' }]} />
       <Text variant="caption" style={[styles.label, { color: text + '70' }]}>
         {formatDateLabel(date, locale, t)}
       </Text>
-      <View style={[styles.line, { backgroundColor: text + '20' }]} />
-    </View>
+      <Animated.View style={[styles.line, { backgroundColor: text + '20' }]} />
+    </Animated.View>
   );
 }
 

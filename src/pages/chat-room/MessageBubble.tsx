@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, AccessibilityInfo } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
 import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
@@ -57,7 +57,10 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
   }, [message, onLongPress]);
 
   return (
-    <Animated.View entering={FadeInUp.duration(250)}>
+    <Animated.View
+      entering={FadeInUp.springify().damping(18).stiffness(220)}
+      exiting={FadeOutDown.duration(200)}
+      layout={Layout.springify().damping(20).stiffness(200)}>
       <Pressable
         onLongPress={handleLongPress}
         delayLongPress={300}
