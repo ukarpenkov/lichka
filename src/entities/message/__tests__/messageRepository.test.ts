@@ -1,3 +1,11 @@
+jest.mock('react-native-fs', () => ({
+  DocumentDirectoryPath: '/mock/docs',
+  mkdir: jest.fn(),
+  exists: jest.fn().mockResolvedValue(false),
+  readDir: jest.fn().mockResolvedValue([]),
+  unlink: jest.fn().mockResolvedValue(undefined),
+}));
+
 import {
   createMessage,
   getMessagesByChatId,
