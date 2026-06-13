@@ -102,16 +102,13 @@ describe('dateUtils', () => {
     it('should format date and time for ru', () => {
       const date = new Date(2024, 0, 15, 14, 30);
       const result = formatScheduledAt(date.toISOString(), 'ru');
-      expect(result).toContain('15');
-      expect(result).toContain('01');
-      expect(result).toContain('2024');
-      expect(result).toContain('14:30');
+      expect(result).toBe('15.01.2024 14:30');
     });
 
     it('should format date and time for en', () => {
       const date = new Date(2024, 0, 15, 14, 30);
       const result = formatScheduledAt(date.toISOString(), 'en');
-      expect(result).toContain('14:30');
+      expect(result).toBe('01/15/2024 14:30');
     });
   });
 

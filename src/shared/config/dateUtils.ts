@@ -87,19 +87,16 @@ export function formatTime(iso: string): string {
  */
 export function formatScheduledAt(iso: string, locale: Locale): string {
   const d = new Date(iso);
-  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
+  const dd = d.getDate().toString().padStart(2, '0');
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mi = d.getMinutes().toString().padStart(2, '0');
 
-  const dateStr = d.toLocaleDateString(localeTag, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-  const timeStr = d.toLocaleTimeString(localeTag, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  return `${dateStr} ${timeStr}`;
+  if (locale === 'ru') {
+    return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
+  }
+  return `${mm}/${dd}/${yyyy} ${hh}:${mi}`;
 }
 
 /**
