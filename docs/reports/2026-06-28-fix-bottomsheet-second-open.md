@@ -1,30 +1,41 @@
-# Исправление: BottomSheet не открывается第二次 + не на весь экран
+# Исправление: BottomSheet — клавиатура, галерея, эмодзи
 
 **Дата:** 2026-06-28
-**Промпт/задача:** При второй попытке открыть bottom sheet по созданию нового чата ошибка — кнопка нажимается, а bottom-sheet не выезжает. Также надо сделать чтобы он выезжал полностью на весь экран.
+**Промпт/задача:** Bottom sheet не работает с клавиатурой, не открывается галерея для выбора фото, эмодзи обрезаны сверху и снизу.
 
 ## Что сделано
 
-- Заменён `wasVisible` ref на `isPresenting` ref с обратной логикой: ref устанавливается в `true` при `present()` и сбрасывается в `false` при `dismiss()` (в useEffect и в `onDismiss`)
-- `snapPoints` изменён с `[90]` (90% высоты) на `['100%']` (полный экран)
-- В `onDismiss` callback добавлен сброс `isPresenting.current = false` до вызова `onClose()`, чтобы предотвратить повторный вызов `dismiss()` из useEffect
+### 1. Клавиатура (Keyboard)
+- Добавлен `keyboardBehavior="interactive"` — sheet сдвигается вверх при появлении клавиатуры
+- Добавлен `android_keyboardInputMode="adjustResize"` — вместо `adjustPan` (по умолчанию), теперь sheet корректно подстраивается под клавиатуру на Android
 
-## Почему была ошибка
+### 2. Галерея фото (Image Picker)
+- На Android `BottomSheetModal` (нативный Modal) конфликтует с `launchImageLibrary` (нативная Activity)
+- Решение: перед открытием галереи dismiss sheet → ждём 300ms → открываем галерею → после выбора/отмены re-present sheet
+- Добавлен `isPickingImage` ref, чтобы `onDismiss` callback не вызывал `onClose()` во время выбора фото
 
-### Второй клик
-Старая логика с `wasVisible` ref имела гонку: при свайпе вниз `onDismiss` вызывал `onClose()`, что ставило `visible=false`. Но `wasVisible.current` обновлялся через `wasVisible.current = visible` в конце useEffect. Если пользователь быстро нажимал "+" снова, `wasVisible` мог залипнуть в `true`, и условие `visible && !wasVisible.current` не выполнялось → `present()` не вызывался.
+### 3. EmojiGrid обрезка
+- `FlatList` не имел `flex: 1`, поэтому не заполнял доступное пространство в `BottomSheetView`
+- Добавлен `style={styles.flatList}` с `flex: 1` на `FlatList`
 
-### Не на весь экран
-`snapPoints={[90]}` = 90% высоты экрана. Замена на `['100%']` = полный экран.
+## Почему были ошибки
+
+### Клавиатура
+`android_keyboardInputMode` по умолчанию = `adjustPan` — вся Activity сдвигается вверх, sheet не подстраивается. С `adjustResize` sheet корректно уменьшается под клавиатуру.
+
+### Галерея
+`BottomSheetModal` использует нативный `Modal` (React Native). На Android, когда Modal открыт, другие нативные Activity (галерея) могут не отображаться или отображаться некорректно. dismiss перед вызовом решает конфликт.
+
+### Emoji обрезка
+`FlatList` без `flex: 1` занимает ровно столько, сколько нужно контенту, но не заполняет родительский контейнер. В `BottomSheetView` с `flex: 1` это приводило к тому, что `FlatList` не получал полную высоту.
 
 ## Изменённые файлы
 
-- `src/widgets/chat-form/ChatForm.tsx` — исправление логики открытия/закрытия + full screen
+- `src/widgets/chat-form/ChatForm.tsx` — keyboard props, dismiss-before-picker, isPickingImage flag
+- `src/widgets/chat-form/EmojiGrid.tsx` — flex:1 на FlatList
 
 ## Тестирование
 
-- Нажать "+" → BottomSheet открывается на весь экран
-- Закрыть свайпом → закрывается
-- Нажать "+" снова → открывается повторно
-- Создать чат → чат появляется в списке
-- Редактировать чат через контекстное меню → форма открывается с данными
+- TypeScript: ошибки только в pre-existing файлах (AudioRecorderPlayer)
+- Jest: 111/111 тестов пройдены
+- Ручное: открыть sheet → клавиатура поднимает sheet → нажать фото → галерея открывается → выбрать фото → sheet возвращается → эмодзи отображаются без обрезки

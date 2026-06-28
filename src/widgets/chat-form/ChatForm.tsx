@@ -35,6 +35,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
   const modalRef = useRef<BottomSheetModal>(null);
   const isPresenting = useRef(false);
+  const isPickingImage = useRef(false);
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -68,26 +69,39 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   }, [visible, editChat]);
 
   const handlePickImage = useCallback(() => {
-    launchImageLibrary(
-      {
-        mediaType: 'photo',
-        maxWidth: 512,
-        maxHeight: 512,
-        quality: 0.85 as import('react-native-image-picker').PhotoQuality,
-      },
-      (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) {
-          Alert.alert(t.error, response.errorMessage || t.photoPickError);
-          return;
-        }
-        const asset = response.assets?.[0];
-        if (asset?.uri) {
-          setAvatarUri(asset.uri);
-          setEmojiAvatar(null);
-        }
-      },
-    );
+    isPickingImage.current = true;
+    modalRef.current?.dismiss();
+    setTimeout(() => {
+      launchImageLibrary(
+        {
+          mediaType: 'photo',
+          maxWidth: 512,
+          maxHeight: 512,
+          quality: 0.85 as import('react-native-image-picker').PhotoQuality,
+        },
+        (response) => {
+          isPickingImage.current = false;
+          if (response.didCancel) {
+            isPresenting.current = true;
+            modalRef.current?.present();
+            return;
+          }
+          if (response.errorCode) {
+            Alert.alert(t.error, response.errorMessage || t.photoPickError);
+            isPresenting.current = true;
+            modalRef.current?.present();
+            return;
+          }
+          const asset = response.assets?.[0];
+          if (asset?.uri) {
+            setAvatarUri(asset.uri);
+            setEmojiAvatar(null);
+          }
+          isPresenting.current = true;
+          modalRef.current?.present();
+        },
+      );
+    }, 300);
   }, [t]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
@@ -163,12 +177,16 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       ref={modalRef}
       snapPoints={snapPoints}
       index={0}
+      keyboardBehavior="interactive"
+      android_keyboardInputMode="adjustResize"
       backgroundStyle={{ backgroundColor: background }}
       handleIndicatorStyle={{ backgroundColor: text + '40' }}
       backdropComponent={renderBackdrop}
       onDismiss={() => {
         isPresenting.current = false;
-        onClose();
+        if (!isPickingImage.current) {
+          onClose();
+        }
       }}>
       <BottomSheetView style={styles.sheetContent}>
         {showEmojiPicker ? (

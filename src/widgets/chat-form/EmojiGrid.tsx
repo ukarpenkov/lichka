@@ -27,6 +27,7 @@ export function EmojiGrid({ onSelect }: EmojiGridProps) {
         data={EMOJIS}
         numColumns={6}
         keyExtractor={(item, i) => `${item}-${i}`}
+        style={styles.flatList}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <Pressable
@@ -45,6 +46,9 @@ export function EmojiGrid({ onSelect }: EmojiGridProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  flatList: {
     flex: 1,
   },
   title: {
