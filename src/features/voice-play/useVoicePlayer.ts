@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import type { PlayBackType } from 'react-native-audio-recorder-player';
+import {
+  AudioRecorderPlayer,
+  type PlayBackType,
+} from 'react-native-audio-recorder-player';
 
 // Module-level registry: when one player starts, others stop
 const activeStopFns: Array<() => void> = [];
