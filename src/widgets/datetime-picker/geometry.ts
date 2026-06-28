@@ -20,7 +20,7 @@ export type PickerGeometry = {
 };
 
 const MONTH_WIDTH = 22;
-const DAY_WIDTH = 18;
+const DAY_WIDTH = 16;
 const EDGE_PADDING = 4;
 const RING_GAP = 7;
 
