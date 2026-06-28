@@ -25,7 +25,7 @@ export type VoicePlayerState = {
 };
 
 export function useVoicePlayer(): VoicePlayerState {
-  const player = useRef(AudioRecorderPlayer).current;
+  const player = useRef(new AudioRecorderPlayer()).current;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentPositionMs, setCurrentPositionMs] = useState(0);
