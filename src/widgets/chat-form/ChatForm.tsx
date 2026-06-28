@@ -34,7 +34,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const { t } = useLocale();
 
   const modalRef = useRef<BottomSheetModal>(null);
-  const wasVisible = useRef(false);
+  const isPresenting = useRef(false);
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -45,10 +45,10 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const isEdit = !!editChat;
   const canSave = title.trim().length > 0;
 
-  const snapPoints = useMemo(() => [90], []);
+  const snapPoints = useMemo(() => ['100%'], []);
 
   useEffect(() => {
-    if (visible && !wasVisible.current) {
+    if (visible && !isPresenting.current) {
       if (editChat) {
         setTitle(editChat.title);
         setAvatarUri(editChat.avatarPath ? `file://${editChat.avatarPath}` : null);
@@ -59,11 +59,12 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         setEmojiAvatar(null);
       }
       setShowEmojiPicker(false);
+      isPresenting.current = true;
       modalRef.current?.present();
-    } else if (!visible && wasVisible.current) {
+    } else if (!visible && isPresenting.current) {
+      isPresenting.current = false;
       modalRef.current?.dismiss();
     }
-    wasVisible.current = visible;
   }, [visible, editChat]);
 
   const handlePickImage = useCallback(() => {
@@ -165,7 +166,10 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       backgroundStyle={{ backgroundColor: background }}
       handleIndicatorStyle={{ backgroundColor: text + '40' }}
       backdropComponent={renderBackdrop}
-      onDismiss={onClose}>
+      onDismiss={() => {
+        isPresenting.current = false;
+        onClose();
+      }}>
       <BottomSheetView style={styles.sheetContent}>
         {showEmojiPicker ? (
           <EmojiGrid onSelect={handleEmojiSelect} />
