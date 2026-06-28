@@ -18,8 +18,6 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
-  FadeIn,
-  FadeOut,
 } from 'react-native-reanimated';
 import { useTheme, useLocale, getMonthLabels, getFullMonthNames } from '../../shared/config';
 import { Text } from '../../shared/ui';
@@ -276,8 +274,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const dayActive = interacting === 'day';
   const monthActive = interacting === 'month';
 
-  const previewLabel = monthActive ? monthFull[month] : `${day}`;
-
   return (
     <Modal
       visible={visible}
@@ -323,20 +319,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
               {day}
             </Animated.Text>
           </Animated.View>
-
-          {/* Плавающее значение над внешним кругом при прокрутке */}
-          <View style={styles.previewRow} pointerEvents="none">
-            {interacting !== null && (
-              <Animated.View
-                entering={FadeIn.duration(160)}
-                exiting={FadeOut.duration(160)}
-              >
-                <Text style={[styles.previewText, { color: ACCENT }]}>
-                  {previewLabel}
-                </Text>
-              </Animated.View>
-            )}
-          </View>
 
           {/* Кольца */}
           <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
@@ -450,15 +432,6 @@ const styles = StyleSheet.create({
   ringArea: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  previewRow: {
-    height: 34,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  previewText: {
-    fontSize: 28,
-    fontWeight: '800',
   },
   marker: {
     position: 'absolute',
