@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { runMigrations } from '../shared/db';
 import { registerNotificationChannels, cleanupOrphanMedia } from '../shared/lib';
+import { requestNotificationPermission } from '../features/notifications';
 import { seedDefaultChat } from '../entities/chat';
 
 type InitState =
@@ -25,6 +26,7 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
         runMigrations();
         seedDefaultChat();
         registerNotificationChannels();
+        requestNotificationPermission().catch(() => {});
         cleanupOrphanMedia().catch(() => {});
 
         if (!cancelled) {
