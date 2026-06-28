@@ -4,7 +4,6 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 
 object AlarmScheduler {
 
@@ -25,13 +24,11 @@ object AlarmScheduler {
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0)
-        if (canScheduleExact(alarmManager)) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent,
-            )
-        } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
+        val showIntent = Intent(context, MainActivity::class.java).let { intent ->
+            PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent)
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
         AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis)
     }
 
@@ -132,14 +129,6 @@ object AlarmScheduler {
                     alarm.triggerAtMillis,
                 )
             }
-        }
-    }
-
-    private fun canScheduleExact(alarmManager: AlarmManager): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
         }
     }
 
