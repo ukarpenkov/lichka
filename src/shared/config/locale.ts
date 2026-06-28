@@ -34,6 +34,7 @@ export interface LocaleDictionary {
   nothingFound: string;
 
   // Chat Room
+  chatNotFound: string;
   deleteMessage: string;
   deleteMessageConfirm: string;
   edited: string;
@@ -156,6 +157,7 @@ export const ru: LocaleDictionary = {
   nothingFound: 'Ничего не найдено',
 
   // Chat Room
+  chatNotFound: 'Чат не найден',
   deleteMessage: 'Удалить сообщение',
   deleteMessageConfirm: 'Удалить без возможности восстановления?',
   edited: 'изменено',
@@ -278,6 +280,7 @@ export const en: LocaleDictionary = {
   nothingFound: 'Nothing found',
 
   // Chat Room
+  chatNotFound: 'Chat not found',
   deleteMessage: 'Delete message',
   deleteMessageConfirm: 'Delete permanently?',
   edited: 'edited',

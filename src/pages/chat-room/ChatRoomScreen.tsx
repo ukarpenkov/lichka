@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, Alert, StyleSheet, Platform, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, Platform, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +17,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale } from '../../shared/config';
+import { Text } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
   getVisibleMessagesByChatId,
@@ -71,11 +72,11 @@ export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
   const { chatId, messageId } = route.params;
-  const { background } = useTheme();
+  const { background, text } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
 
-  const [chat, setChat] = useState<Chat | null>(null);
+  const [chat, setChat] = useState<Chat | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
@@ -123,7 +124,7 @@ export function ChatRoomScreen() {
   });
 
   const loadData = useCallback(() => {
-    setChat(getChatById(chatId));
+    setChat(getChatById(chatId) ?? null);
     setMessages(getVisibleMessagesByChatId(chatId));
   }, [chatId]);
 
@@ -237,10 +238,27 @@ export function ChatRoomScreen() {
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
 
-  if (!chat) {
+  // undefined = ещё грузим, null = чат не найден
+  if (chat === undefined) {
     return (
       <View style={[styles.empty, { backgroundColor: background }]}>
         <View style={{ height: insets.top }} />
+        <View style={styles.loadingCenter}>
+          <ActivityIndicator size="large" color={text} />
+        </View>
+      </View>
+    );
+  }
+
+  if (chat === null) {
+    return (
+      <View style={[styles.empty, { backgroundColor: background }]}>
+        <View style={{ height: insets.top }} />
+        <View style={styles.loadingCenter}>
+          <Text variant="body" style={{ color: text + '80', textAlign: 'center' }}>
+            {t.chatNotFound}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -334,6 +352,11 @@ const styles = StyleSheet.create({
   },
   empty: {
     flex: 1,
+  },
+  loadingCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stickyDate: {
     position: 'absolute',
