@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import {
-  AudioRecorderPlayer,
+import AudioRecorderPlayer, {
   AudioEncoderAndroidType,
   AudioSourceAndroidType,
   AVEncoderAudioQualityIOSType,
@@ -19,7 +18,7 @@ export type VoiceRecorderState = {
 };
 
 export function useVoiceRecorder(): VoiceRecorderState {
-  const recorder = useRef(new AudioRecorderPlayer()).current;
+  const recorder = useRef(AudioRecorderPlayer).current;
   const [isRecording, setIsRecording] = useState(false);
   const [durationMs, setDurationMs] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

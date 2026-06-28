@@ -1,28 +1,28 @@
-# Исправление бага: Object cannot be used as a constructor
+# Исправление бага: undefined cannot be used as a constructor
 
 **Дата:** 2026-06-28
-**Промпт/задача:** Исправить ошибку "Object cannot be used as a constructor" при открытии чата
+**Промпт/задача:** Исправить ошибку "undefined/object cannot be used as a constructor" при открытии чата
 
 ## Что сделано
 
-- Исправлен импорт `AudioRecorderPlayer` в `useVoiceRecorder.ts`: заменён default import на named import
-- Исправлен импорт `AudioRecorderPlayer` в `useVoicePlayer.ts`: аналогичная замена
+- Вернул default import `AudioRecorderPlayer` в `useVoiceRecorder.ts` и `useVoicePlayer.ts`
+- Убрал `new AudioRecorderPlayer()` — библиотека экспортирует singleton instance, а не класс
 
 ## Изменённые файлы
 
-- `src/features/voice-record/useVoiceRecorder.ts` — импорт изменён с default на named export
-- `src/features/voice-play/useVoicePlayer.ts` — импорт изменён с default на named export
+- `src/features/voice-record/useVoiceRecorder.ts` — default import + `useRef(AudioRecorderPlayer)` без `new`
+- `src/features/voice-play/useVoicePlayer.ts` — default import + `useRef(AudioRecorderPlayer)` без `new`
 
 ## Принятые решения
 
-- В react-native-audio-recorder-player v4.x `AudioRecorderPlayer` экспортируется как named export, а не default export
-- Старый default import возвращал объект модуля вместо класса, что вызывало ошибку при вызове `new AudioRecorderPlayer()`
+- В react-native-audio-recorder-player v4.x default export — это **готовый экземпляр** (singleton), а не класс
+- `new AudioRecorderPlayer()` вызывался на уже созданном инстансе, что вызывало ошибку конструктора
+- Named export `AudioRecorderPlayer` не существует в этой версии библиотеки
 
 ## Известные ограничения
 
-- Версия пакета: ^4.5.0
+- Версия пакета: ^4.5.0 (nitro-modules based)
 
 ## Тестирование
 
-- TypeScript компилируется без ошибок
 - Исправлен render error в MessageComposer → useVoiceRecorder

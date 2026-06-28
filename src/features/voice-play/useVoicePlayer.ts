@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AudioRecorderPlayer,
+import AudioRecorderPlayer, {
   type PlayBackType,
 } from 'react-native-audio-recorder-player';
 
@@ -27,7 +26,7 @@ export type VoicePlayerState = {
 };
 
 export function useVoicePlayer(): VoicePlayerState {
-  const player = useRef(new AudioRecorderPlayer()).current;
+  const player = useRef(AudioRecorderPlayer).current;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentPositionMs, setCurrentPositionMs] = useState(0);
