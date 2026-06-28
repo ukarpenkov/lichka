@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Modal,
   View,
@@ -24,13 +24,13 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
   const { text, background } = useTheme();
   const { t } = useLocale();
 
-  const PRESETS = [
+  const PRESETS = useMemo(() => [
     { label: t.every5Min, value: 5 },
     { label: t.every10Min, value: 10 },
     { label: t.every15Min, value: 15 },
     { label: t.everyHour, value: 60 },
     { label: t.everyDay, value: 1440 },
-  ] as const;
+  ] as const, [t]);
 
   const [selected, setSelected] = useState<number | null>(value ?? null);
   const [customText, setCustomText] = useState('');
@@ -49,7 +49,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
         setCustomText('');
       }
     }
-  }, [visible, value]);
+  }, [visible, value, PRESETS]);
 
   const handlePresetPress = useCallback((minutes: number) => {
     setSelected(minutes);

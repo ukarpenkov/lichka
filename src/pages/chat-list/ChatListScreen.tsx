@@ -19,7 +19,7 @@ type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
 export function ChatListScreen() {
   const navigation = useNavigation<Nav>();
   const { text, background } = useTheme();
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const [chats, setChats] = useState<Chat[]>([]);
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
   const [formVisible, setFormVisible] = useState(false);
@@ -49,7 +49,7 @@ export function ChatListScreen() {
         },
       },
     ]);
-  }, [menuChat]);
+  }, [menuChat, t]);
 
   const handleEdit = useCallback(() => {
     if (!menuChat) return;

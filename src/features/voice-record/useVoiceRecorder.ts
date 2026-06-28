@@ -5,7 +5,6 @@ import AudioRecorderPlayer, {
   AudioSourceAndroidType,
   AVEncoderAudioQualityIOSType,
 } from 'react-native-audio-recorder-player';
-import { DocumentDirectoryPath } from 'react-native-fs';
 import { ensureDir, VOICE_DIR, generateId } from '../../shared/lib';
 
 const MAX_DURATION_MS = 60_000;

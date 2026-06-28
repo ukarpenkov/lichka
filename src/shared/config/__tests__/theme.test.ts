@@ -3,7 +3,6 @@ import {
   DEFAULT_LIGHT,
   DEFAULT_DARK,
   THEME_PRESETS,
-  type ThemePreset,
 } from '../theme';
 
 describe('theme', () => {

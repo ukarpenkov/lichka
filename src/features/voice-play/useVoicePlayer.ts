@@ -109,7 +109,7 @@ export function useVoicePlayer(): VoicePlayerState {
     } catch {
       await stopInternal();
     }
-  }, [isPaused, player, stopInternal, cleanup]);
+  }, [isPaused, player, stopInternal]);
 
   const pause = useCallback(async () => {
     if (!isPlaying) return;

@@ -1,8 +1,7 @@
 import React from 'react';
-import { renderHook, act, render } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { ThemeProvider, useTheme } from '../ThemeProvider';
 import { DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
-import { Text } from 'react-native';
 
 const mockExecuteSync = jest.fn();
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Text } from '../../shared/ui';
 import { useTheme, useLocale, formatDateLabel } from '../../shared/config';
 

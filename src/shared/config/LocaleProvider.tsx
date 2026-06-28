@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { getDatabase } from '../db';
 import {
   type Locale,
   type LocaleDictionary,
   dictionaries,
-  getDictionary,
   getSystemLocale,
   SUPPORTED_LOCALES,
 } from './locale';

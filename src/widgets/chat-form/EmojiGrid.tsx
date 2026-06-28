@@ -1,7 +1,7 @@
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import { useLocale } from '../../shared/config';
 
 const EMOJIS = [
   '😀', '😂', '🥰', '😎', '🤩', '😇',
@@ -16,7 +16,6 @@ type EmojiGridProps = {
 };
 
 export function EmojiGrid({ onSelect }: EmojiGridProps) {
-  const { text } = useTheme();
   const { t } = useLocale();
 
   return (

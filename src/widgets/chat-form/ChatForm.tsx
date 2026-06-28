@@ -87,7 +87,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         }
       },
     );
-  }, []);
+  }, [t]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     setEmojiAvatar(emoji);
@@ -125,7 +125,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved]);
+  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved, t]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (

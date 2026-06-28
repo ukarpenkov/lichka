@@ -21,7 +21,7 @@ const APP_VERSION = '0.1';
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { text, background } = useTheme();
-  const { t, locale, setLocale: setAppLocale } = useLocale();
+  const { t, setLocale: setAppLocale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   useFocusEffect(
@@ -70,7 +70,7 @@ export function SettingsScreen() {
         Alert.alert(t.error, t.exportFailed);
       }
     },
-    [],
+    [t],
   );
 
   if (!settings) {
@@ -248,7 +248,7 @@ export function SettingsScreen() {
               try {
                 const filePath = await exportToJSON();
                 Alert.alert(t.done, t.exportDone(filePath));
-              } catch (e) {
+              } catch {
                 Alert.alert(t.error, t.exportFailed);
               }
             }}

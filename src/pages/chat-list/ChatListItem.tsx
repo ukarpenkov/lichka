@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 import { Text, SharedElementAvatar, AnimatedPressable } from '../../shared/ui';
 import { useTheme } from '../../shared/config';

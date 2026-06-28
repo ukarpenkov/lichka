@@ -4,7 +4,7 @@ import { Bell, AlarmClock, Repeat } from 'lucide-react-native';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, formatRelativeDate } from '../../shared/config';
+import { useTheme, useLocale } from '../../shared/config';
 import type { Message, MessageType } from '../../entities/message';
 
 export type ScheduledItemProps = {

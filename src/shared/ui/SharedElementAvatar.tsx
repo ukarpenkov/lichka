@@ -1,13 +1,10 @@
-import React, { createContext, useContext, useCallback } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import React, { createContext, useCallback, useMemo } from 'react';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
 } from 'react-native-reanimated';
 import { Avatar, type AvatarProps } from './Avatar';
 import { FEATURE_FLAGS } from '../config';
-import { SPRING_SOFT } from '../lib/animations';
 
 type SharedElementContextType = {
   registerAvatar: (id: string, frame: { x: number; y: number; width: number; height: number }) => void;
@@ -17,18 +14,18 @@ type SharedElementContextType = {
 const SharedElementContext = createContext<SharedElementContextType | null>(null);
 
 export function SharedElementProvider({ children }: { children: React.ReactNode }) {
-  const frames = new Map<string, { x: number; y: number; width: number; height: number }>();
+  const frames = useMemo(() => new Map<string, { x: number; y: number; width: number; height: number }>(), []);
 
   const registerAvatar = useCallback(
     (id: string, frame: { x: number; y: number; width: number; height: number }) => {
       frames.set(id, frame);
     },
-    [],
+    [frames],
   );
 
   const getAvatarFrame = useCallback(
     (id: string) => frames.get(id) ?? null,
-    [],
+    [frames],
   );
 
   return (
@@ -43,7 +40,7 @@ type SharedElementAvatarProps = AvatarProps & {
   onPress?: () => void;
 };
 
-export function SharedElementAvatar({ sharedId, onPress, ...avatarProps }: SharedElementAvatarProps) {
+export function SharedElementAvatar({ sharedId, onPress: _onPress, ...avatarProps }: SharedElementAvatarProps) {
   const scale = useSharedValue(1);
   const opacity = useAnimatedStyle(() => ({
     opacity: scale.value,

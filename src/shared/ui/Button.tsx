@@ -2,7 +2,6 @@ import React from 'react';
 import {
   Pressable,
   type PressableProps,
-  type TextStyle,
   StyleSheet,
 } from 'react-native';
 import { useTheme } from '../config';

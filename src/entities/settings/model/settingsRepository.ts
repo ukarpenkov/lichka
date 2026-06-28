@@ -36,8 +36,6 @@ export function getSettings(): AppSettings {
 
 export function updateSettings(partial: Partial<AppSettings>): AppSettings {
   const db = getDatabase();
-  const now = new Date().toISOString();
-
   for (const key of KEYS) {
     if (key in partial) {
       const dbKey = DB_KEYS[key];

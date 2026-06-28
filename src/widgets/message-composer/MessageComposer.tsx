@@ -226,7 +226,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
       createMessage(chatId, 'simple', t.voiceMessage(durationSec), null, null, payload);
       onSent?.();
     }
-  }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity]);
+  }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity, t]);
 
   const handleCancelRecord = useCallback(async () => {
     dotScale.value = withSpring(1, { damping: 15, stiffness: 150 });

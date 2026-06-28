@@ -200,7 +200,7 @@ export function ChatRoomScreen() {
         },
       },
     ]);
-  }, [menuMessage, chatId]);
+  }, [menuMessage, chatId, t]);
 
   const { saveEdit } = useEditMessage();
 
