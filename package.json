@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "android:emulator": "react-native run-android --active-arch-only",
     "start": "react-native start",
     "start:reset": "node scripts/clear-metro-cache.mjs && react-native start --reset-cache",
     "metro:clean-cache": "node scripts/clear-metro-cache.mjs",
