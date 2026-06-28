@@ -1,19 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Image,
   Pressable,
   StyleSheet,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-} from '@gorhom/bottom-sheet';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Camera, Smile } from 'lucide-react-native';
+import { Camera, Smile, X } from 'lucide-react-native';
 
 import { Input, Button, Text } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
@@ -33,8 +30,6 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const { text, background } = useTheme();
   const { t } = useLocale();
 
-  const modalRef = useRef<BottomSheetModal>(null);
-  const isPresenting = useRef(false);
   const isPickingImage = useRef(false);
 
   const [title, setTitle] = useState('');
@@ -46,63 +41,59 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const isEdit = !!editChat;
   const canSave = title.trim().length > 0;
 
-  const snapPoints = useMemo(() => ['100%'], []);
-
   useEffect(() => {
-    if (visible && !isPresenting.current) {
+    if (visible) {
       if (editChat) {
         setTitle(editChat.title);
-        setAvatarUri(editChat.avatarPath ? `file://${editChat.avatarPath}` : null);
-        setEmojiAvatar(null);
+        if (editChat.avatarPath && !editChat.avatarPath.includes('/') && !editChat.avatarPath.includes('\\')) {
+          setAvatarUri(null);
+          setEmojiAvatar(editChat.avatarPath);
+        } else {
+          setAvatarUri(editChat.avatarPath ? `file://${editChat.avatarPath}` : null);
+          setEmojiAvatar(null);
+        }
       } else {
         setTitle('');
         setAvatarUri(null);
         setEmojiAvatar(null);
       }
       setShowEmojiPicker(false);
-      isPresenting.current = true;
-      modalRef.current?.present();
-    } else if (!visible && isPresenting.current) {
-      isPresenting.current = false;
-      modalRef.current?.dismiss();
     }
   }, [visible, editChat]);
 
   const handlePickImage = useCallback(() => {
     isPickingImage.current = true;
-    modalRef.current?.dismiss();
-    setTimeout(() => {
-      launchImageLibrary(
-        {
-          mediaType: 'photo',
-          maxWidth: 512,
-          maxHeight: 512,
-          quality: 0.85 as import('react-native-image-picker').PhotoQuality,
-        },
-        (response) => {
-          isPickingImage.current = false;
-          if (response.didCancel) {
-            isPresenting.current = true;
-            modalRef.current?.present();
-            return;
-          }
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        maxWidth: 512,
+        maxHeight: 512,
+        quality: 0.85 as import('react-native-image-picker').PhotoQuality,
+      },
+      (response) => {
+        isPickingImage.current = false;
+        if (response.didCancel || response.errorCode) {
           if (response.errorCode) {
             Alert.alert(t.error, response.errorMessage || t.photoPickError);
-            isPresenting.current = true;
-            modalRef.current?.present();
-            return;
           }
-          const asset = response.assets?.[0];
-          if (asset?.uri) {
-            setAvatarUri(asset.uri);
-            setEmojiAvatar(null);
-          }
-          isPresenting.current = true;
-          modalRef.current?.present();
-        },
-      );
-    }, 300);
+          return;
+        }
+        const asset = response.assets?.[0];
+        if (asset?.uri) {
+          setAvatarUri(asset.uri);
+          setEmojiAvatar(null);
+        }
+      },
+    );
   }, [t]);
+
+  const handleAvatarTap = useCallback(() => {
+    if (emojiAvatar) {
+      setShowEmojiPicker(true);
+    } else {
+      handlePickImage();
+    }
+  }, [emojiAvatar, handlePickImage]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     setEmojiAvatar(emoji);
@@ -121,7 +112,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         const chatId = editChat?.id || generateId();
         avatarPath = await saveAvatar(avatarUri, chatId);
       } else if (emojiAvatar) {
-        avatarPath = null;
+        avatarPath = emojiAvatar;
       } else if (!avatarUri && !emojiAvatar && editChat) {
         avatarPath = editChat.avatarPath;
       }
@@ -133,21 +124,14 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       }
 
       onSaved();
-      modalRef.current?.dismiss();
+      onClose();
     } catch (e: any) {
       console.error('ChatForm handleSave error:', e);
       Alert.alert(t.error, e?.message ?? t.chatSaveError);
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved, t]);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
-    ),
-    [],
-  );
+  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved, onClose, t]);
 
   const avatarContent = () => {
     if (avatarUri) {
@@ -173,84 +157,113 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   };
 
   return (
-    <BottomSheetModal
-      ref={modalRef}
-      snapPoints={snapPoints}
-      index={0}
-      keyboardBehavior="interactive"
-      android_keyboardInputMode="adjustResize"
-      backgroundStyle={{ backgroundColor: background }}
-      handleIndicatorStyle={{ backgroundColor: text + '40' }}
-      backdropComponent={renderBackdrop}
-      onDismiss={() => {
-        isPresenting.current = false;
-        if (!isPickingImage.current) {
-          onClose();
-        }
-      }}>
-      <BottomSheetView style={styles.sheetContent}>
-        {showEmojiPicker ? (
-          <EmojiGrid onSelect={handleEmojiSelect} />
-        ) : (
-          <>
-            <Text variant="body" style={[styles.headerTitle, { color: text }]}>
-              {isEdit ? t.editChat : t.newChat}
-            </Text>
-
-            <View style={styles.avatarButton}>
-              {avatarContent()}
-              <View style={styles.avatarActions}>
-                <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
-                  <Camera size={18} color={text + '99'} />
-                  <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
-                </Pressable>
-                <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
-                  <Smile size={18} color={text + '99'} />
-                  <Text variant="caption" style={{ color: text + '99' }}>{t.emoji}</Text>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={onClose} />
+        <View style={[styles.sheetContent, { backgroundColor: background }]}>
+          {showEmojiPicker ? (
+            <>
+              <View style={styles.sheetHeader}>
+                <Pressable onPress={() => setShowEmojiPicker(false)} style={styles.closeBtn}>
+                  <X size={20} color={text + '99'} />
                 </Pressable>
               </View>
-            </View>
+              <EmojiGrid onSelect={handleEmojiSelect} />
+            </>
+          ) : (
+            <>
+              <View style={styles.sheetHeader}>
+                <Text variant="body" style={[styles.headerTitle, { color: text }]}>
+                  {isEdit ? t.editChat : t.newChat}
+                </Text>
+                <Pressable onPress={onClose} style={styles.closeBtn}>
+                  <X size={20} color={text + '99'} />
+                </Pressable>
+              </View>
 
-            <Input
-              placeholder={t.chatNamePlaceholder}
-              value={title}
-              onChangeText={setTitle}
-              autoFocus={!isEdit}
-            />
+              <View style={styles.avatarButton}>
+                <Pressable onPress={handleAvatarTap}>
+                  {avatarContent()}
+                </Pressable>
+                <View style={styles.avatarActions}>
+                  <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
+                    <Camera size={18} color={text + '99'} />
+                    <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
+                  </Pressable>
+                  <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
+                    <Smile size={18} color={text + '99'} />
+                    <Text variant="caption" style={{ color: text + '99' }}>{t.emoji}</Text>
+                  </Pressable>
+                </View>
+              </View>
 
-            <View style={styles.actions}>
-              <Button
-                title={isEdit ? t.save : t.create}
-                onPress={handleSave}
-                disabled={!canSave || saving}
-                style={[
-                  styles.saveButton,
-                  {
-                    backgroundColor: text,
-                    opacity: !canSave || saving ? 0.4 : 1,
-                  },
-                ]}
+              <Input
+                placeholder={t.chatNamePlaceholder}
+                value={title}
+                onChangeText={setTitle}
+                autoFocus={!isEdit}
               />
-            </View>
-          </>
-        )}
-      </BottomSheetView>
-    </BottomSheetModal>
+
+              <View style={styles.actions}>
+                <Button
+                  title={isEdit ? t.save : t.create}
+                  onPress={handleSave}
+                  disabled={!canSave || saving}
+                  style={[
+                    styles.saveButton,
+                    {
+                      backgroundColor: text,
+                      opacity: !canSave || saving ? 0.4 : 1,
+                    },
+                  ]}
+                />
+              </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetContent: {
+  modalOverlay: {
     flex: 1,
+    justifyContent: 'flex-start',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  sheetContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 24,
+    maxHeight: '90%',
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  closeBtn: {
+    position: 'absolute',
+    right: 0,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 20,
   },
   avatarButton: {
     alignItems: 'center',

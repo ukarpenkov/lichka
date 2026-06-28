@@ -13,7 +13,15 @@ export type ButtonProps = Omit<PressableProps, 'style'> & {
 };
 
 export function Button({ title, disabled, style, ...rest }: ButtonProps) {
-  const { text } = useTheme();
+  const { text, background } = useTheme();
+
+  const resolvedStyle = typeof style === 'function' ? undefined : style;
+  const flatStyle = Array.isArray(resolvedStyle)
+    ? Object.assign({}, ...resolvedStyle.filter(Boolean))
+    : resolvedStyle;
+  const bgColor = flatStyle?.backgroundColor;
+
+  const labelColor = bgColor === text ? background : text;
 
   return (
     <Pressable
@@ -25,7 +33,7 @@ export function Button({ title, disabled, style, ...rest }: ButtonProps) {
       ]}
       {...rest}
     >
-      <Text style={{ color: text, fontSize: 16, fontWeight: '600' }}>{title}</Text>
+      <Text style={{ color: labelColor, fontSize: 16, fontWeight: '600' }}>{title}</Text>
     </Pressable>
   );
 }
