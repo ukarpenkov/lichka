@@ -87,6 +87,7 @@ export function ChatRoomScreen() {
 
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
+  const scrollToMessageId = useRef(false);
 
   const keyboard = useAnimatedKeyboard({
     isStatusBarTranslucentAndroid: true,
@@ -137,11 +138,21 @@ export function ChatRoomScreen() {
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
   useEffect(() => {
+    if (listItems.length > 0 && !scrollToMessageId.current) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [listItems]);
+
+  useEffect(() => {
     if (!messageId || listItems.length === 0) return;
     const index = listItems.findIndex(
       (item) => item.kind === 'message' && item.message.id === messageId,
     );
     if (index === -1) return;
+    scrollToMessageId.current = true;
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToIndex({
         index,
@@ -176,6 +187,7 @@ export function ChatRoomScreen() {
         (item) => item.kind === 'message' && item.message.id === msgId,
       );
       if (index === -1) return;
+      scrollToMessageId.current = true;
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
           index,
@@ -302,7 +314,6 @@ export function ChatRoomScreen() {
         data={listItems}
         renderItem={renderListItem}
         keyExtractor={keyExtractor}
-        inverted
         style={styles.list}
         contentContainerStyle={[styles.listContent, keyboardPaddingStyle]}
         onViewableItemsChanged={handleViewableItemsChanged}
