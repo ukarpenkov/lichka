@@ -15,7 +15,7 @@ import { Camera, Smile, X } from 'lucide-react-native';
 import { Input, Button, Text } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
-import { saveAvatar, generateId } from '../../shared/lib';
+import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
 
 import { EmojiGrid } from './EmojiGrid';
 
@@ -49,7 +49,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
           setAvatarUri(null);
           setEmojiAvatar(editChat.avatarPath);
         } else {
-          setAvatarUri(editChat.avatarPath ? `file://${editChat.avatarPath}` : null);
+          setAvatarUri(editChat.avatarPath ? `file://${resolveMediaPath(editChat.avatarPath)}` : null);
           setEmojiAvatar(null);
         }
       } else {

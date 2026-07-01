@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../config';
+import { resolveMediaPath } from '../lib';
 
 export type AvatarProps = {
   title: string;
@@ -40,7 +41,7 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
 
     return (
       <Image
-        source={{ uri: `file://${avatarPath}` }}
+        source={{ uri: `file://${resolveMediaPath(avatarPath)}` }}
         style={[styles.image, { width: size, height: size, borderRadius: radius }]}
       />
     );
