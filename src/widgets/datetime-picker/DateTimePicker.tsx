@@ -26,8 +26,10 @@ import { getSettings } from '../../entities/settings';
 import { Bezel } from './Bezel';
 import { TimeScroller } from './TimeScroller';
 import { YearPicker } from './YearPicker';
+import { YearGridModal } from './YearGridModal';
 import { makeGeometry } from './geometry';
 import { daysInMonth } from './circularMath';
+import Svg, { Circle } from 'react-native-svg';
 
 const ACCENT = '#4A9EFF';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -59,18 +61,28 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const monthShort = useMemo(() => getMonthLabels(locale), [locale]);
   const monthFull = useMemo(() => getFullMonthNames(locale), [locale]);
 
+  const savedValue = useRef<Date>(value);
+  const reduceMotionRef = useRef(false);
+
   const [year, setYear] = useState(value.getFullYear());
   const [month, setMonth] = useState(value.getMonth());
   const [day, setDay] = useState(value.getDate());
   const [hour, setHour] = useState(value.getHours());
   const [minute, setMinute] = useState(value.getMinutes());
   const [interacting, setInteracting] = useState<'day' | 'month' | null>(null);
+  const [yearModalVisible, setYearModalVisible] = useState(false);
 
   const dayCount = daysInMonth(year, month + 1);
-  const dayLabels = useMemo(
-    () => Array.from({ length: dayCount }, (_, i) => `${i + 1}`),
-    [dayCount],
+  const allDayLabels = useMemo(
+    () => Array.from({ length: 31 }, (_, i) => `${i + 1}`),
+    [],
   );
+
+  const dimDayIndices = useMemo(() => {
+    const set = new Set<number>();
+    for (let i = dayCount; i < 31; i++) set.add(i);
+    return set;
+  }, [dayCount]);
 
   const dayRotation = useSharedValue(0);
   const monthRotation = useSharedValue(0);
@@ -80,7 +92,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const lastMonthIdx = useSharedValue(0);
   const dayCountSV = useSharedValue(dayCount);
 
-  const reduceMotionRef = useRef(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((v) => {
       reduceMotionRef.current = v;
@@ -98,14 +109,15 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   }, []);
 
   const cx = GEO.cx;
+  const dividerRadius = (GEO.month.inner + GEO.day.outer) / 2;
 
-  // Инициализация поворотов из value при открытии
   useEffect(() => {
     if (!visible) return;
     const d = value.getDate();
     const m = value.getMonth();
     const y = value.getFullYear();
     const count = daysInMonth(y, m + 1);
+    savedValue.current = new Date(value);
     setYear(y);
     setMonth(m);
     setDay(d);
@@ -117,7 +129,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     monthRotation.value = -m * MONTH_STEP;
   }, [visible, value, dayRotation, monthRotation, dayCountSV]);
 
-  // Пересчёт поворота дней при смене месяца/года (число дней меняется)
   useEffect(() => {
     dayCountSV.value = dayCount;
     const clamped = Math.min(day, dayCount);
@@ -127,12 +138,56 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayCount]);
 
-  const handleYearChange = useCallback(
-    (y: number) => {
-      setYear(y);
-    },
-    [],
-  );
+  const handleYearChange = useCallback((y: number) => {
+    setYear(y);
+  }, []);
+
+  const handleToday = useCallback(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const d = now.getDate();
+    const h = now.getHours();
+    const min = now.getMinutes();
+    const count = daysInMonth(y, m + 1);
+    setYear(y);
+    setMonth(m);
+    setDay(d);
+    setHour(h);
+    setMinute(min);
+    dayCountSV.value = count;
+    dayRotation.value = withSpring(-(d - 1) * dayStep(count));
+    monthRotation.value = withSpring(-m * MONTH_STEP);
+  }, [dayCountSV, dayRotation, monthRotation]);
+
+  const handleCancel = useCallback(() => {
+    const sv = savedValue.current;
+    const y = sv.getFullYear();
+    const m = sv.getMonth();
+    const d = sv.getDate();
+    const h = sv.getHours();
+    const min = sv.getMinutes();
+    const count = daysInMonth(y, m + 1);
+    setYear(y);
+    setMonth(m);
+    setDay(d);
+    setHour(h);
+    setMinute(min);
+    dayCountSV.value = count;
+    dayRotation.value = -(d - 1) * dayStep(count);
+    monthRotation.value = -m * MONTH_STEP;
+    onCancel();
+  }, [onCancel, dayCountSV, dayRotation, monthRotation]);
+
+  const handleConfirm = useCallback(() => {
+    savedValue.current = new Date(year, month, day, hour, minute);
+    onConfirm(new Date(year, month, day, hour, minute));
+  }, [year, month, day, hour, minute, onConfirm]);
+
+  const handleOpenYearModal = useCallback(() => {
+    triggerHaptic();
+    setYearModalVisible(true);
+  }, [triggerHaptic]);
 
   const onStepDay = useCallback(
     (idx: number) => {
@@ -172,14 +227,18 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       const touch = e.changedTouches[0];
       const dist = Math.sqrt((touch.x - cx) ** 2 + (touch.y - cx) ** 2);
 
-      if (dist < GEO.day.inner) {
-        // Центр — скролл времени, кольца не активируем
+      const midband = (GEO.day.outer + GEO.month.inner) / 2;
+      const isDay = dist <= midband;
+
+      if (isDay && dist < GEO.day.inner) {
+        manager.fail();
+        return;
+      }
+      if (!isDay && dist > GEO.month.outer) {
         manager.fail();
         return;
       }
 
-      const midband = (GEO.day.outer + GEO.month.inner) / 2;
-      const isDay = dist <= midband;
       activeRing.value = isDay ? RING_DAY : RING_MONTH;
       lastAngle.value =
         (Math.atan2(touch.y - cx, touch.x - cx) * 180) / Math.PI + 90;
@@ -251,11 +310,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       manager.end();
     });
 
-  const handleConfirm = useCallback(() => {
-    onConfirm(new Date(year, month, day, hour, minute));
-  }, [year, month, day, hour, minute, onConfirm]);
-
-  // Анимация заголовка: при работе с месяцами день плавно сдвигается вверх
   const headerStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -266,136 +320,157 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     ],
   }));
 
-  // Затемнение дня при выборе месяца
   const dayTextStyle = useAnimatedStyle(() => ({
     opacity: withTiming(interacting === 'month' ? 0.45 : 1, { duration: 250 }),
   }));
 
   const dayActive = interacting === 'day';
-  const monthActive = interacting === 'month';
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={handleCancel}
     >
       <GestureHandlerRootView style={styles.root}>
-      <Pressable style={styles.overlay} onPress={onCancel}>
-        <Pressable
-          style={[styles.card, { backgroundColor: background }]}
-          onPress={() => {}}
-        >
-          {/* Заголовок: год → месяц → крупный день (по центру) */}
-          <Animated.View style={[styles.header, headerStyle]}>
-            <YearPicker
-              year={year}
-              textColor={text}
-              accentColor={ACCENT}
-              onChange={handleYearChange}
-            />
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: '600',
-                color: monthActive ? ACCENT : `${text}99`,
-                marginTop: 2,
-              }}
-            >
-              {monthFull[month]}
-            </Text>
-            <Animated.Text
-              style={[
-                {
-                  fontSize: 34,
-                  fontWeight: '800',
-                  color: dayActive ? ACCENT : text,
-                  lineHeight: 40,
-                },
-                dayTextStyle,
-              ]}
-            >
-              {day}
-            </Animated.Text>
-          </Animated.View>
-
-          {/* Кольца */}
-          <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
-            {/* Маркер слота выбора (12 часов) */}
-            <View
-              style={[styles.marker, { borderTopColor: ACCENT }]}
-              pointerEvents="none"
-            />
-
-            <GestureDetector gesture={ringGesture}>
-              <View style={StyleSheet.absoluteFill}>
-                <Bezel
-                  count={MONTH_COUNT}
-                  labels={monthShort}
-                  rotation={monthRotation}
-                  center={GEO.month.center}
-                  width={GEO.month.width}
-                  size={RING_SIZE}
-                  textColor={text}
-                  accentColor={ACCENT}
-                  fontSize={11}
-                />
-                <Bezel
-                  count={dayCount}
-                  labels={dayLabels}
-                  rotation={dayRotation}
-                  center={GEO.day.center}
-                  width={GEO.day.width}
-                  size={RING_SIZE}
-                  textColor={text}
-                  accentColor={ACCENT}
-                  fontSize={11}
-                />
-              </View>
-            </GestureDetector>
-
-            {/* Центр: скролл времени вне жеста колец, чтобы не съезжала вёрстка */}
-            <View style={styles.timeCenter} pointerEvents="box-none">
-              <View
+        <Pressable style={styles.overlay} onPress={handleCancel}>
+          <Pressable
+            style={[styles.card, { backgroundColor: background }]}
+            onPress={() => {}}
+          >
+            <Animated.View style={[styles.header, headerStyle]}>
+              <YearPicker
+                year={year}
+                textColor={text}
+                accentColor={ACCENT}
+                onChange={handleYearChange}
+                onLongPress={handleOpenYearModal}
+                onToday={handleToday}
+              />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color: `${text}66`,
+                  marginTop: 4,
+                }}
+              >
+                {monthFull[month]}
+              </Text>
+              <Animated.Text
                 style={[
-                  styles.timeScrollerClip,
                   {
-                    width: GEO.centerRadius * 2,
-                    height: GEO.centerRadius * 2,
-                    borderRadius: GEO.centerRadius,
+                    fontSize: 44,
+                    fontWeight: '700',
+                    color: dayActive ? ACCENT : text,
+                    lineHeight: 48,
                   },
+                  dayTextStyle,
                 ]}
               >
-                <TimeScroller
-                  hour={hour}
-                  minute={minute}
-                  textColor={text}
-                  accentColor={ACCENT}
-                  onHourChange={setHour}
-                  onMinuteChange={setMinute}
-                  onTick={triggerHaptic}
-                />
-              </View>
-            </View>
-          </View>
+                {day}
+              </Animated.Text>
+            </Animated.View>
 
-          {/* Кнопки */}
-          <View style={styles.buttons}>
-            <Pressable onPress={onCancel} style={styles.btn}>
-              <Text variant="body" style={{ color: `${text}99` }}>
-                {t.cancel}
-              </Text>
-            </Pressable>
-            <Pressable onPress={handleConfirm} style={[styles.btn, styles.doneBtn]}>
-              <Text variant="body" style={{ color: '#FFFFFF', fontWeight: '700' }}>
-                {t.done}
-              </Text>
-            </Pressable>
-          </View>
+            <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
+              <Svg
+                width={RING_SIZE}
+                height={RING_SIZE}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              >
+                <Circle
+                  cx={cx}
+                  cy={cx}
+                  r={dividerRadius}
+                  stroke={`${text}1A`}
+                  strokeWidth={1}
+                  strokeDasharray="6 4"
+                  fill="none"
+                />
+              </Svg>
+
+              <GestureDetector gesture={ringGesture}>
+                <View style={StyleSheet.absoluteFill}>
+                  <Bezel
+                    count={MONTH_COUNT}
+                    labels={monthShort}
+                    rotation={monthRotation}
+                    center={GEO.month.center}
+                    width={GEO.month.width}
+                    size={RING_SIZE}
+                    textColor={text}
+                    accentColor={ACCENT}
+                    fontSize={13}
+                  />
+                  <Bezel
+                    count={31}
+                    labels={allDayLabels}
+                    rotation={dayRotation}
+                    center={GEO.day.center}
+                    width={GEO.day.width}
+                    size={RING_SIZE}
+                    textColor={text}
+                    accentColor={ACCENT}
+                    fontSize={13}
+                    dimIndices={dimDayIndices}
+                  />
+                </View>
+              </GestureDetector>
+            </View>
+
+            <View style={styles.timeArea}>
+              <TimeScroller
+                hour={hour}
+                minute={minute}
+                textColor={text}
+                accentColor={ACCENT}
+                onHourChange={setHour}
+                onMinuteChange={setMinute}
+                onTick={triggerHaptic}
+              />
+            </View>
+
+            <View style={[styles.footer, { borderTopColor: `${text}0F` }]}>
+              <Pressable
+                onPress={handleCancel}
+                style={[styles.footerBtn, styles.footerBtnCancel, { backgroundColor: `${text}0D` }]}
+              >
+                <Text style={{ color: text, fontSize: 15, fontWeight: '600' }}>
+                  {t.cancel}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleToday}
+                style={[styles.footerBtn, styles.footerBtnToday, { backgroundColor: `${ACCENT}1A` }]}
+              >
+                <Text style={{ color: ACCENT, fontSize: 15, fontWeight: '600' }}>
+                  {t.today}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirm}
+                style={[styles.footerBtn, styles.footerBtnDone, { backgroundColor: ACCENT }]}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                  {t.done}
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
       </GestureHandlerRootView>
+
+      <YearGridModal
+        visible={yearModalVisible}
+        selected={year}
+        textColor={text}
+        accentColor={ACCENT}
+        background={background}
+        onSelect={setYear}
+        onClose={() => setYearModalVisible(false)}
+      />
     </Modal>
   );
 }
@@ -412,9 +487,9 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '92%',
-    borderRadius: 24,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
+    borderRadius: 28,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -426,56 +501,42 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
     paddingHorizontal: 4,
   },
   ringArea: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
-  marker: {
-    position: 'absolute',
-    top: 1,
-    alignSelf: 'center',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    zIndex: 6,
-  },
-  timeCenter: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  timeArea: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  timeScrollerClip: {
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    width: '100%',
-    marginTop: 16,
-    gap: 16,
-  },
-  btn: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
   },
-  doneBtn: {
-    backgroundColor: ACCENT,
-    borderRadius: 12,
-    paddingHorizontal: 24,
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    gap: 10,
+  },
+  footerBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  footerBtnCancel: {
+    flex: 0,
+  },
+  footerBtnToday: {
+    flex: 1,
+  },
+  footerBtnDone: {
+    flex: 0,
+    minWidth: 100,
   },
 });
