@@ -413,7 +413,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                     size={RING_SIZE}
                     textColor={text}
                     accentColor={ACCENT}
-                    fontSize={13}
+                    fontSize={12}
                     dimIndices={dimDayIndices}
                   />
                 </View>
