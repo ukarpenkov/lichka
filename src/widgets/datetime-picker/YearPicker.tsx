@@ -12,7 +12,6 @@ type Props = {
   accentColor: string;
   onChange: (year: number) => void;
   onLongPress?: () => void;
-  onToday?: () => void;
 };
 
 export function YearPicker({
@@ -21,7 +20,6 @@ export function YearPicker({
   accentColor,
   onChange,
   onLongPress,
-  onToday,
 }: Props) {
   const canDec = year > MIN_YEAR;
   const canInc = year < MAX_YEAR;
@@ -75,16 +73,6 @@ export function YearPicker({
         <ChevronRight size={20} color={canInc ? textColor : `${textColor}33`} />
       </Pressable>
 
-      {onToday && (
-        <Pressable
-          onPress={onToday}
-          style={[styles.todayBtn, { backgroundColor: `${accentColor}14` }]}
-        >
-          <Text style={{ color: accentColor, fontSize: 11, fontWeight: '600' }}>
-            Today
-          </Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -98,10 +86,5 @@ const styles = StyleSheet.create({
   arrow: {
     padding: 4,
   },
-  todayBtn: {
-    marginLeft: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
+
 });

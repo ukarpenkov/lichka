@@ -346,7 +346,6 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 accentColor={ACCENT}
                 onChange={handleYearChange}
                 onLongPress={handleOpenYearModal}
-                onToday={handleToday}
               />
               <Text
                 style={{
