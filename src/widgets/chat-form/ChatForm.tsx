@@ -166,7 +166,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
-        <View style={[styles.sheetContent, { backgroundColor: background }]}>
+        <View style={[styles.sheetContent, { backgroundColor: background }, showEmojiPicker && styles.sheetContentExpanded]}>
           {showEmojiPicker ? (
             <>
               <View style={styles.sheetHeader}>
@@ -248,6 +248,10 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     maxHeight: '90%',
   },
+  sheetContentExpanded: {
+    flex: 1,
+    paddingHorizontal: 0,
+  },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -284,6 +288,7 @@ const styles = StyleSheet.create({
   },
   avatarEmojiText: {
     fontSize: 48,
+    lineHeight: 96,
   },
   avatarPlaceholder: {
     width: 96,

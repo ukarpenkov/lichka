@@ -59,14 +59,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cell: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 4,
-    borderRadius: 8,
+    margin: 5,
+    borderRadius: 10,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: 32,
+    lineHeight: 52,
+    textAlign: 'center',
   },
 });
