@@ -17,6 +17,7 @@ class AlarmActivity : Activity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private lateinit var messageId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +37,7 @@ class AlarmActivity : Activity() {
 
         val chatTitle = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_TITLE) ?: ""
         val body = intent.getStringExtra(AlarmScheduler.EXTRA_BODY) ?: ""
-        val messageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID) ?: ""
+        messageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID) ?: ""
         val chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID) ?: ""
 
         findViewById<TextView>(R.id.alarm_chat_title).text = chatTitle
