@@ -125,13 +125,17 @@ export function TimeScroller({
   );
 
   useEffect(() => {
-    lastHourIdx.current = hour;
-    scrollToIndex(hourListRef, hour, false);
+    if (lastHourIdx.current !== hour) {
+      lastHourIdx.current = hour;
+      scrollToIndex(hourListRef, hour, false);
+    }
   }, [hour, scrollToIndex]);
 
   useEffect(() => {
-    lastMinIdx.current = minute;
-    scrollToIndex(minListRef, minute, false);
+    if (lastMinIdx.current !== minute) {
+      lastMinIdx.current = minute;
+      scrollToIndex(minListRef, minute, false);
+    }
   }, [minute, scrollToIndex]);
 
   const renderItem = useCallback(
