@@ -1,6 +1,7 @@
 package com.lichka
 
 import android.app.Activity
+import android.app.NotificationManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -43,11 +44,15 @@ class AlarmActivity : Activity() {
 
         findViewById<Button>(R.id.btn_dismiss).setOnClickListener {
             stopAlarm()
+            cancelAlarmNotification()
+            AlarmStorage.remove(this, messageId)
             finish()
         }
 
         findViewById<Button>(R.id.btn_snooze).setOnClickListener {
             stopAlarm()
+            cancelAlarmNotification()
+            AlarmStorage.remove(this, messageId)
             val snoozeTrigger = System.currentTimeMillis() + NotificationHelper.snoozeMinutes() * 60_000L
             AlarmScheduler.scheduleAlarm(this, messageId, chatId, body, chatTitle, snoozeTrigger)
             finish()
@@ -84,6 +89,11 @@ class AlarmActivity : Activity() {
             @Suppress("DEPRECATION")
             vibrator?.vibrate(pattern, 0)
         }
+    }
+
+    private fun cancelAlarmNotification() {
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(messageId.hashCode())
     }
 
     private fun stopAlarm() {

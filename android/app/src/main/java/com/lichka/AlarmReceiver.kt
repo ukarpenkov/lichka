@@ -32,15 +32,15 @@ class AlarmReceiver : BroadcastReceiver() {
         isAlarm: Boolean,
     ) {
         if (isAlarm) {
-            val alarmIntent =
-                Intent(context, AlarmActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    putExtra(AlarmScheduler.EXTRA_MESSAGE_ID, messageId)
-                    putExtra(AlarmScheduler.EXTRA_CHAT_ID, chatId)
-                    putExtra(AlarmScheduler.EXTRA_BODY, body)
-                    putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
-                }
-            context.startActivity(alarmIntent)
+            // Fallback: старые будильники (до обновления) могут прийти через BroadcastReceiver.
+            // Используем Notification + setFullScreenIntent — работает даже при убитом приложении.
+            val notification =
+                NotificationHelper.buildAlarmNotification(
+                    context, body, chatTitle, chatId, messageId,
+                )
+            val manager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(messageId.hashCode(), notification)
         } else {
             val notification =
                 NotificationHelper.buildReminderNotification(

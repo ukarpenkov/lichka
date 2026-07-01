@@ -76,16 +76,17 @@ object AlarmScheduler {
         }
         val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent)
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-        AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis)
+        AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis, isAlarm = true)
     }
 
     fun cancelAlarm(context: Context, messageId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, AlarmReceiver::class.java).apply {
-            putExtra(EXTRA_IS_ALARM, true)
+        val intent = Intent(context, AlarmActivity::class.java).apply {
+            putExtra(EXTRA_MESSAGE_ID, messageId)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         val pendingIntent =
-            PendingIntent.getBroadcast(
+            PendingIntent.getActivity(
                 context,
                 messageId.hashCode(),
                 intent,
@@ -118,7 +119,12 @@ object AlarmScheduler {
                 AlarmStorage.remove(context, alarm.messageId)
                 continue
             }
-            if (alarm.intervalMinutes > 0) {
+            if (alarm.isAlarm) {
+                scheduleAlarm(
+                    context, alarm.messageId, alarm.chatId, alarm.body, alarm.chatTitle,
+                    alarm.triggerAtMillis,
+                )
+            } else if (alarm.intervalMinutes > 0) {
                 schedulePeriodicFirst(
                     context, alarm.messageId, alarm.chatId, alarm.body, alarm.chatTitle,
                     alarm.intervalMinutes, alarm.triggerAtMillis,
@@ -164,14 +170,14 @@ object AlarmScheduler {
         chatTitle: String,
     ): PendingIntent {
         val intent =
-            Intent(context, AlarmReceiver::class.java).apply {
+            Intent(context, AlarmActivity::class.java).apply {
                 putExtra(EXTRA_MESSAGE_ID, messageId)
                 putExtra(EXTRA_CHAT_ID, chatId)
                 putExtra(EXTRA_BODY, body)
                 putExtra(EXTRA_CHAT_TITLE, chatTitle)
-                putExtra(EXTRA_IS_ALARM, true)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-        return PendingIntent.getBroadcast(
+        return PendingIntent.getActivity(
             context,
             messageId.hashCode(),
             intent,

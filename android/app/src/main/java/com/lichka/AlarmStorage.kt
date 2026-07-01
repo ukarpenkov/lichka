@@ -21,6 +21,7 @@ object AlarmStorage {
         val chatTitle: String,
         val intervalMinutes: Int,
         val triggerAtMillis: Long,
+        val isAlarm: Boolean = false,
     )
 
     fun save(
@@ -31,6 +32,7 @@ object AlarmStorage {
         chatTitle: String,
         intervalMinutes: Int,
         triggerAtMillis: Long,
+        isAlarm: Boolean = false,
     ) {
         val prefs = getPrefs(context)
         val alarms = loadAll(context).toMutableList()
@@ -38,7 +40,7 @@ object AlarmStorage {
         // Удаляем старую запись с таким же messageId
         alarms.removeAll { it.messageId == messageId }
         alarms.add(
-            SavedAlarm(messageId, chatId, body, chatTitle, intervalMinutes, triggerAtMillis)
+            SavedAlarm(messageId, chatId, body, chatTitle, intervalMinutes, triggerAtMillis, isAlarm)
         )
 
         prefs.edit().putString(KEY_ALARMS, toJsonArray(alarms).toString()).apply()
@@ -74,6 +76,7 @@ object AlarmStorage {
                     put("chatTitle", alarm.chatTitle)
                     put("intervalMinutes", alarm.intervalMinutes)
                     put("triggerAtMillis", alarm.triggerAtMillis)
+                    put("isAlarm", alarm.isAlarm)
                 }
             )
         }
@@ -92,6 +95,7 @@ object AlarmStorage {
                     chatTitle = obj.getString("chatTitle"),
                     intervalMinutes = obj.getInt("intervalMinutes"),
                     triggerAtMillis = obj.getLong("triggerAtMillis"),
+                    isAlarm = obj.optBoolean("isAlarm", false),
                 )
             )
         }
