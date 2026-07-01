@@ -15,7 +15,7 @@ export type PickerGeometry = {
 const MONTH_WIDTH = 38;
 const DAY_WIDTH = 44;
 const EDGE_PADDING = 4;
-const RING_GAP = 10;
+const RING_GAP = 6;
 
 export function makeGeometry(size: number): PickerGeometry {
   const cx = size / 2;
