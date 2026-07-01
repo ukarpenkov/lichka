@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Platform } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -8,9 +8,6 @@ import Animated, {
   withRepeat,
   withSequence,
   runOnJS,
-  useAnimatedKeyboard,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 import { useTheme, useLocale } from '../../shared/config';
 import { IconButton, Text } from '../../shared/ui';
@@ -66,28 +63,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
     });
     return () => sub.remove();
   }, []);
-
-  // Keyboard animation for smooth composer following
-  const keyboard = useAnimatedKeyboard({
-    isStatusBarTranslucentAndroid: true,
-  });
-
-  const composerStyle = useAnimatedStyle(() => {
-    if (Platform.OS === 'ios') {
-      return {
-        transform: [{ translateY: -keyboard.height.value }],
-      };
-    }
-    const progress = interpolate(
-      keyboard.height.value,
-      [0, 300],
-      [0, 1],
-      Extrapolation.CLAMP,
-    );
-    return {
-      transform: [{ translateY: -keyboard.height.value * progress }],
-    };
-  });
 
   // Recording indicator animations
   const dotScale = useSharedValue(1);
@@ -265,7 +240,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   if (isRecording) {
     return (
-      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }, composerStyle]}>
+      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
         <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
@@ -291,7 +266,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   return (
     <>
-      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }, composerStyle]}>
+      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
         <TextInput
           style={[styles.input, { color: text, borderColor: `${text}33` }]}
           placeholder={t.messageInput}

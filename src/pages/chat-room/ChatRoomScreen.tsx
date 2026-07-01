@@ -99,11 +99,9 @@ export function ChatRoomScreen() {
     },
   });
 
-  const keyboardPaddingStyle = useAnimatedStyle(() => {
+  const keyboardAreaStyle = useAnimatedStyle(() => {
     if (Platform.OS === 'ios') {
-      return {
-        paddingBottom: keyboard.height.value,
-      };
+      return {};
     }
     const progress = interpolate(
       keyboard.height.value,
@@ -309,29 +307,31 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <AnimatedFlatList
-        ref={flatListRef as any}
-        data={listItems}
-        renderItem={renderListItem}
-        keyExtractor={keyExtractor}
-        style={styles.list}
-        contentContainerStyle={[styles.listContent, keyboardPaddingStyle]}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        onScrollToIndexFailed={(info: any) => {
-          setTimeout(() => {
-            flatListRef.current?.scrollToIndex({
-              index: info.index,
-              animated: false,
-              viewPosition: 0.5,
-            });
-          }, 200);
-        }}
-      />
+      <Animated.View style={[styles.chatArea, keyboardAreaStyle]}>
+        <AnimatedFlatList
+          ref={flatListRef as any}
+          data={listItems}
+          renderItem={renderListItem}
+          keyExtractor={keyExtractor}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          onScrollToIndexFailed={(info: any) => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: false,
+                viewPosition: 0.5,
+              });
+            }, 200);
+          }}
+        />
 
-      <MessageComposer chatId={chatId} onSent={loadData} />
+        <MessageComposer chatId={chatId} onSent={loadData} />
+      </Animated.View>
 
       <MessageContextMenu
         visible={menuMessage !== null}
@@ -374,6 +374,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  chatArea: {
+    flex: 1,
   },
   list: {
     flex: 1,
