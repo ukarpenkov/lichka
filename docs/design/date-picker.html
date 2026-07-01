@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date & Time Picker — Improved</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #e8ecf1 0%, #d5dce4 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1c1c1e;
+        }
+
+        .picker-card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 420px;
+            padding: 28px 24px 24px;
+            position: relative;
+        }
+
+        /* Year navigation */
+        .year-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .year-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f2f2f7;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #007aff;
+            transition: all 0.2s ease;
+        }
+
+        .year-btn:hover {
+            background: #e5e5ea;
+            transform: scale(1.05);
+        }
+
+        .year-btn:active {
+            transform: scale(0.95);
+        }
+
+        .year-label {
+            font-size: 22px;
+            font-weight: 600;
+            color: #007aff;
+            min-width: 80px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .today-btn {
+            font-size: 11px;
+            font-weight: 600;
+            color: #007aff;
+            background: rgba(0, 122, 255, 0.08);
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-left: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .today-btn:hover {
+            background: rgba(0, 122, 255, 0.16);
+        }
+
+        /* Date display */
+        .date-display {
+            text-align: center;
+            margin: 8px 0 16px;
+        }
+
+        .date-month {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8e8e93;
+            margin-bottom: 2px;
+        }
+
+        .date-day {
+            font-size: 44px;
+            font-weight: 700;
+            color: #1c1c1e;
+            line-height: 1;
+        }
+
+        /* Rings container */
+        .rings-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+
+        .ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .ring:active {
+            cursor: grabbing;
+        }
+
+        .ring-months {
+            width: 100%;
+            height: 100%;
+            border: 48px solid #f2f2f7;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+
+        .ring-days {
+            width: 72%;
+            height: 72%;
+            border: 40px solid #e5e5ea;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Visual separator between rings */
+        .ring-divider {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 82%;
+            height: 82%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed rgba(142, 142, 147, 0.25);
+            pointer-events: none;
+        }
+
+        /* Ring labels */
+        .ring-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8e8e93;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: all 0.25s ease;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .ring-label.active {
+            color: #007aff;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .ring-label.dim {
+            opacity: 0.35;
+        }
+
+        /* Time picker */
+        .time-picker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 16px 0 20px;
+            height: 140px;
+        }
+
+        .time-column {
+            position: relative;
+            width: 80px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .time-column-inner {
+            position: absolute;
+            width: 100%;
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .time-item {
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 400;
+            color: #8e8e93;
+            transition: all 0.25s ease;
+        }
+
+        .time-item.selected {
+            font-size: 28px;
+            font-weight: 600;
+            color: #007aff;
+        }
+
+        .time-colon {
+            font-size: 28px;
+            font-weight: 600;
+            color: #007aff;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .time-highlight {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 46px;
+            transform: translateY(-50%);
+            background: rgba(0, 122, 255, 0.06);
+            border-radius: 10px;
+            pointer-events: none;
+            border-top: 1px solid rgba(0, 122, 255, 0.15);
+            border-bottom: 1px solid rgba(0, 122, 255, 0.15);
+        }
+
+        /* Footer buttons */
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 12px;
+            border-top: 1px solid #f2f2f7;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 14px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-cancel {
+            background: #f2f2f7;
+            color: #1c1c1e;
+        }
+
+        .btn-cancel:hover {
+            background: #e5e5ea;
+        }
+
+        .btn-today {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007aff;
+            flex: 1;
+        }
+
+        .btn-today:hover {
+            background: rgba(0, 122, 255, 0.18);
+        }
+
+        .btn-done {
+            background: #007aff;
+            color: #fff;
+            min-width: 100px;
+        }
+
+        .btn-done:hover {
+            background: #0066d6;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1c1c1e;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Decade picker modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            width: 90%;
+            max-width: 340px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            text-align: center;
+            color: #1c1c1e;
+        }
+
+        .year-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .year-grid button {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: #f2f2f7;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .year-grid button:hover {
+            background: #e5e5ea;
+        }
+
+        .year-grid button.active {
+            background: #007aff;
+            color: #fff;
+        }
+
+        @media (max-width: 420px) {
+            .picker-card {
+                padding: 20px 16px 18px;
+                border-radius: 22px;
+            }
+
+            .btn {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="picker-card">
+        <!-- Year navigation -->
+        <div class="year-nav">
+            <button class="year-btn" id="prevYear" aria-label="Предыдущий год">‹</button>
+            <span class="year-label" id="yearLabel" title="Долгое нажатие — быстрый выбор">2026</span>
+            <button class="year-btn" id="nextYear" aria-label="Следующий год">›</button>
+            <button class="today-btn" id="todayBtnTop">Сегодня</button>
+        </div>
+
+        <!-- Date display -->
+        <div class="date-display">
+            <div class="date-month" id="dateMonth">July</div>
+            <div class="date-day" id="dateDay">1</div>
+        </div>
+
+        <!-- Rings -->
+        <div class="rings-container" id="ringsContainer">
+            <div class="ring-divider"></div>
+            <div class="ring ring-months" id="ringMonths"></div>
+            <div class="ring ring-days" id="ringDays"></div>
+        </div>
+
+        <!-- Time picker (two independent columns) -->
+        <div class="time-picker">
+            <div class="time-column" id="hoursCol">
+                <div class="time-highlight"></div>
+                <div class="time-column-inner" id="hoursInner"></div>
+            </div>
+            <div class="time-colon">:</div>
+            <div class="time-column" id="minutesCol">
+                <div class="time-highlight"></div>
+                <div class="time-column-inner" id="minutesInner"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <button class="btn btn-cancel" id="btnCancel">Cancel</button>
+            <button class="btn btn-today" id="btnToday">Сегодня</button>
+            <button class="btn btn-done" id="btnDone">Done</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Decade picker modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>Выберите год</h3>
+            <div class="year-grid" id="yearGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // State
+        const now = new Date();
+        let state = {
+            year: 2026,
+            month: 6, // July (0-indexed)
+            day: 1,
+            hours: 20,
+            minutes: 12
+        };
+        let savedState = { ...state };
+
+        // DOM
+        const $ = id => document.getElementById(id);
+        const yearLabel = $('yearLabel');
+        const dateMonth = $('dateMonth');
+        const dateDay = $('dateDay');
+        const ringMonths = $('ringMonths');
+        const ringDays = $('ringDays');
+        const ringsContainer = $('ringsContainer');
+        const hoursInner = $('hoursInner');
+        const minutesInner = $('minutesInner');
+        const toast = $('toast');
+        const modalOverlay = $('modalOverlay');
+        const yearGrid = $('yearGrid');
+
+        function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(showToast._t);
+            showToast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        // ========== RINGS ==========
+        function renderRings() {
+            ringMonths.innerHTML = '';
+            ringDays.innerHTML = '';
+
+            const monthsCount = 12;
+            const daysCount = daysInMonth(state.year, state.month);
+            const maxDays = 31;
+
+            // Months ring
+            for (let i = 0; i < monthsCount; i++) {
+                const angle = (i / monthsCount) * 360 - 90;
+                const rad = angle * Math.PI / 180;
+                const radius = 50; // percent from center
+                const x = 50 + radius * Math.cos(rad);
+                const y = 50 + radius * Math.sin(rad);
+                const el = document.createElement('div');
+                el.className = 'ring-label' + (i === state.month ? ' active' : '');
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                el.textContent = MONTHS_SHORT[i];
+                el.dataset.index = i;
+                ringMonths.appendChild(el);
+            }
+
+            // Days ring
+            for (let i = 1; i <= maxDays; i++) {
+                const angle = (i / maxDays) * 360 - 90;
+                const rad = angle * Math.PI / 180;
+                const radius = 50;
+                const x = 50 + radius * Math.cos(rad);
+                const y = 50 + radius * Math.sin(rad);
+                const el = document.createElement('div');
+                const isValid = i <= daysCount;
+                el.className = 'ring-label' + (i === state.day ? ' active' : '') + (!isValid ? ' dim' : '');
+                el.style.left = x + '%';
+                el.style.top = y + '%';
+                el.textContent = i;
+                el.dataset.index = i;
+                if (isValid) {
+                    el.style.cursor = 'pointer';
+                    el.addEventListener('click', () => {
+                        state.day = i;
+                        renderRings();
+                        renderDisplay();
+                    });
+                }
+                ringDays.appendChild(el);
+            }
+        }
+
+        function renderDisplay() {
+            yearLabel.textContent = state.year;
+            dateMonth.textContent = MONTHS[state.month];
+            dateDay.textContent = state.day;
+        }
+
+        // Ring drag interaction
+        function setupRingDrag(ring, type) {
+            let dragging = false;
+            let startY = 0;
+            let startAngle = 0;
+
+            const getCenter = () => {
+                const rect = ringsContainer.getBoundingClientRect();
+                return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            };
+
+            const getAngleFromCenter = (clientX, clientY) => {
+                const c = getCenter();
+                return Math.atan2(clientY - c.y, clientX - c.x) * 180 / Math.PI;
+            };
+
+            ring.addEventListener('mousedown', e => {
+                dragging = true;
+                startY = e.clientY;
+                startAngle = getAngleFromCenter(e.clientX, e.clientY);
+                e.preventDefault();
+            });
+            ring.addEventListener('touchstart', e => {
+                dragging = true;
+                startY = e.touches[0].clientY;
+                startAngle = getAngleFromCenter(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            const onMove = (clientX, clientY) => {
+                if (!dragging) return;
+                const currentAngle = getAngleFromCenter(clientX, clientY);
+                let delta = currentAngle - startAngle;
+                if (delta > 180) delta -= 360;
+                if (delta < -180) delta += 360;
+
+                if (type === 'month') {
+                    const steps = Math.round(delta / 30);
+                    if (steps !== 0) {
+                        state.month = (state.month + steps + 12) % 12;
+                        // Clamp day
+                        const maxD = daysInMonth(state.year, state.month);
+                        if (state.day > maxD) state.day = maxD;
+                        startAngle = currentAngle;
+                        renderRings();
+                        renderDisplay();
+                        renderTime();
+                    }
+                } else {
+                    const maxD = daysInMonth(state.year, state.month);
+                    const stepAngle = 360 / 31;
+                    const steps = Math.round(delta / stepAngle);
+                    if (steps !== 0) {
+                        let newDay = state.day + steps;
+                        if (newDay < 1) newDay = maxD + newDay;
+                        if (newDay > maxD) newDay = newDay - maxD;
+                        state.day = newDay;
+                        startAngle = currentAngle;
+                        renderRings();
+                        renderDisplay();
+                    }
+                }
+            };
+
+            document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+            document.addEventListener('touchmove', e => {
+                if (dragging) onMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            const end = () => { dragging = false; };
+            document.addEventListener('mouseup', end);
+            document.addEventListener('touchend', end);
+
+            // Wheel
+            ring.addEventListener('wheel', e => {
+                e.preventDefault();
+                if (type === 'month') {
+                    state.month = (state.month + (e.deltaY > 0 ? 1 : -1) + 12) % 12;
+                    const maxD = daysInMonth(state.year, state.month);
+                    if (state.day > maxD) state.day = maxD;
+                } else {
+                    const maxD = daysInMonth(state.year, state.month);
+                    state.day = state.day + (e.deltaY > 0 ? 1 : -1);
+                    if (state.day < 1) state.day = maxD;
+                    if (state.day > maxD) state.day = 1;
+                }
+                renderRings();
+                renderDisplay();
+            }, { passive: false });
+        }
+
+        setupRingDrag(ringMonths, 'month');
+        setupRingDrag(ringDays, 'day');
+
+        // ========== TIME PICKER ==========
+        function renderTime() {
+            // Hours: 0-23, show 5 around selected
+            const hoursList = [];
+            for (let i = -2; i <= 2; i++) {
+                let h = state.hours + i;
+                if (h < 0) h += 24;
+                if (h >= 24) h -= 24;
+                hoursList.push(h);
+            }
+            hoursInner.innerHTML = hoursList.map(h =>
+                `<div class="time-item ${h === state.hours ? 'selected' : ''}">${String(h).padStart(2, '0')}</div>`
+            ).join('');
+            hoursInner.style.transform = `translateY(-${2 * 46}px)`;
+
+            // Minutes: 0-59 step 1
+            const minutesList = [];
+            for (let i = -2; i <= 2; i++) {
+                let m = state.minutes + i;
+                if (m < 0) m += 60;
+                if (m >= 60) m -= 60;
+                minutesList.push(m);
+            }
+            minutesInner.innerHTML = minutesList.map(m =>
+                `<div class="time-item ${m === state.minutes ? 'selected' : ''}">${String(m).padStart(2, '0')}</div>`
+            ).join('');
+            minutesInner.style.transform = `translateY(-${2 * 46}px)`;
+        }
+
+        function setupTimeColumn(colId, innerId, key, max) {
+            const col = $(colId);
+            const inner = $(innerId);
+            let startY = 0;
+            let startVal = 0;
+            let moving = false;
+
+            const apply = (delta) => {
+                const steps = Math.round(delta / 46);
+                if (steps !== 0) {
+                    let newVal = (startVal + steps) % max;
+                    if (newVal < 0) newVal += max;
+                    state[key] = newVal;
+                    startVal = newVal;
+                    renderTime();
+                }
+            };
+
+            col.addEventListener('mousedown', e => {
+                moving = true; startY = e.clientY; startVal = state[key];
+            });
+            col.addEventListener('touchstart', e => {
+                moving = true; startY = e.touches[0].clientY; startVal = state[key];
+            }, { passive: true });
+
+            const onMove = (y) => {
+                if (!moving) return;
+                apply(y - startY);
+            };
+            document.addEventListener('mousemove', e => onMove(e.clientY));
+            document.addEventListener('touchmove', e => {
+                if (moving) onMove(e.touches[0].clientY);
+            }, { passive: true });
+            const end = () => { moving = false; };
+            document.addEventListener('mouseup', end);
+            document.addEventListener('touchend', end);
+
+            col.addEventListener('wheel', e => {
+                e.preventDefault();
+                state[key] = (state[key] + (e.deltaY > 0 ? 1 : -1) + max) % max;
+                renderTime();
+            }, { passive: false });
+        }
+
+        setupTimeColumn('hoursCol', 'hoursInner', 'hours', 24);
+        setupTimeColumn('minutesCol', 'minutesInner', 'minutes', 60);
+
+        // ========== YEAR NAV ==========
+        $('prevYear').addEventListener('click', () => { state.year--; renderAll(); });
+        $('nextYear').addEventListener('click', () => { state.year++; renderAll(); });
+
+        // Long press on year for decade picker
+        let pressTimer;
+        yearLabel.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(openDecadePicker, 500);
+        });
+        yearLabel.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(openDecadePicker, 500);
+        }, { passive: true });
+        const clearPress = () => clearTimeout(pressTimer);
+        yearLabel.addEventListener('mouseup', clearPress);
+        yearLabel.addEventListener('mouseleave', clearPress);
+        yearLabel.addEventListener('touchend', clearPress);
+
+        function openDecadePicker() {
+            yearGrid.innerHTML = '';
+            for (let y = 2020; y <= 2035; y++) {
+                const btn = document.createElement('button');
+                btn.textContent = y;
+                if (y === state.year) btn.classList.add('active');
+                btn.addEventListener('click', () => {
+                    state.year = y;
+                    modalOverlay.classList.remove('show');
+                    renderAll();
+                    showToast(`Год: ${y}`);
+                });
+                yearGrid.appendChild(btn);
+            }
+            modalOverlay.classList.add('show');
+        }
+        modalOverlay.addEventListener('click', e => {
+            if (e.target === modalOverlay) modalOverlay.classList.remove('show');
+        });
+
+        // ========== TODAY / CANCEL / DONE ==========
+        function goToToday() {
+            state.year = now.getFullYear();
+            state.month = now.getMonth();
+            state.day = now.getDate();
+            state.hours = now.getHours();
+            state.minutes = now.getMinutes();
+            renderAll();
+            showToast('Сброшено на сегодня');
+        }
+
+        $('todayBtnTop').addEventListener('click', goToToday);
+        $('btnToday').addEventListener('click', goToToday);
+
+        $('btnCancel').addEventListener('click', () => {
+            state = { ...savedState };
+            renderAll();
+            showToast('Отменено');
+        });
+
+        $('btnDone').addEventListener('click', () => {
+            savedState = { ...state };
+            const dt = `${state.day} ${MONTHS[state.month]} ${state.year}, ${String(state.hours).padStart(2, '0')}:${String(state.minutes).padStart(2, '0')}`;
+            showToast('✓ ' + dt);
+        });
+
+        function renderAll() {
+            renderRings();
+            renderDisplay();
+            renderTime();
+        }
+
+        // Init
+        renderAll();
+    </script>
+
+</body>
+
+</html>
