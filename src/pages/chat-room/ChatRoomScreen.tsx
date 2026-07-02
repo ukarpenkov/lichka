@@ -2,9 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, FlatList, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   useAnimatedScrollHandler,
-  withSpring,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
@@ -95,14 +93,6 @@ export function ChatRoomScreen() {
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
     },
-  });
-
-  const stickyDateStyle = useAnimatedStyle(() => {
-    const opacity = withSpring(1, { damping: 20, stiffness: 200 });
-    return {
-      opacity,
-      transform: [{ translateY: 0 }],
-    };
   });
 
   const loadData = useCallback(() => {
@@ -287,7 +277,6 @@ export function ChatRoomScreen() {
           exiting={FadeOut.duration(150)}
           style={[
             styles.stickyDate,
-            stickyDateStyle,
             { top: headerAreaHeight, backgroundColor: background },
           ]}>
           <DateSeparator date={stickyDate} />
