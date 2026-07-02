@@ -91,7 +91,7 @@ export function ChatListScreen() {
       </View>
 
       {chats.length === 0 ? (
-        <View style={styles.empty}>
+        <View style={[styles.empty, { backgroundColor: background }]}>
           <Text variant="body" style={{ color: text + '80' }}>
             {t.createFirstChat}
           </Text>
@@ -107,6 +107,8 @@ export function ChatListScreen() {
               onLongPress={() => setMenuChat(item)}
             />
           )}
+          showsVerticalScrollIndicator={false}
+          style={{ backgroundColor: background }}
         />
       )}
 
