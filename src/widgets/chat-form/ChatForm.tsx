@@ -4,7 +4,6 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  Alert,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -12,7 +11,7 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import { Camera, Smile, X } from 'lucide-react-native';
 
-import { Input, Button, Text } from '../../shared/ui';
+import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
@@ -37,6 +36,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const [emojiAvatar, setEmojiAvatar] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dialog, setDialog] = useState<{
+    title?: string;
+    message?: string;
+    buttons?: AlertButton[];
+  } | null>(null);
 
   const isEdit = !!editChat;
   const canSave = title.trim().length > 0;
@@ -74,7 +78,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         isPickingImage.current = false;
         if (response.didCancel || response.errorCode) {
           if (response.errorCode) {
-            Alert.alert(t.error, response.errorMessage || t.photoPickError);
+            setDialog({ title: t.error, message: response.errorMessage || t.photoPickError, buttons: [{ text: t.done }] });
           }
           return;
         }
@@ -127,7 +131,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       onClose();
     } catch (e: any) {
       console.error('ChatForm handleSave error:', e);
-      Alert.alert(t.error, e?.message ?? t.chatSaveError);
+      setDialog({ title: t.error, message: e?.message ?? t.chatSaveError, buttons: [{ text: t.done }] });
     } finally {
       setSaving(false);
     }
@@ -228,6 +232,14 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <AlertDialog
+        visible={dialog !== null}
+        title={dialog?.title}
+        message={dialog?.message}
+        buttons={dialog?.buttons}
+        onClose={() => setDialog(null)}
+      />
     </Modal>
   );
 }

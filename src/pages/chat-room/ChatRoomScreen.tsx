@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, Alert, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,7 +14,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale } from '../../shared/config';
-import { Text } from '../../shared/ui';
+import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
   getVisibleMessagesByChatId,
@@ -79,6 +79,11 @@ export function ChatRoomScreen() {
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [dialog, setDialog] = useState<{
+    title?: string;
+    message?: string;
+    buttons?: AlertButton[];
+  } | null>(null);
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
 
@@ -177,18 +182,22 @@ export function ChatRoomScreen() {
 
   const handleDeleteMessage = useCallback(() => {
     if (!menuMessage) return;
-    Alert.alert(t.deleteMessage, t.deleteMessageConfirm, [
-      { text: t.cancel, style: 'cancel' },
-      {
-        text: t.delete,
-        style: 'destructive',
-        onPress: () => {
-          deleteMessage(menuMessage.id);
-          cancelNotification(menuMessage.id);
-          setMessages(getVisibleMessagesByChatId(chatId));
+    setDialog({
+      title: t.deleteMessage,
+      message: t.deleteMessageConfirm,
+      buttons: [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.delete,
+          style: 'destructive',
+          onPress: () => {
+            deleteMessage(menuMessage.id);
+            cancelNotification(menuMessage.id);
+            setMessages(getVisibleMessagesByChatId(chatId));
+          },
         },
-      },
-    ]);
+      ],
+    });
   }, [menuMessage, chatId, t]);
 
   const { saveEdit } = useEditMessage();
@@ -330,6 +339,14 @@ export function ChatRoomScreen() {
         onClose={() => setEditFormVisible(false)}
         onSaved={loadData}
         editChat={chat}
+      />
+
+      <AlertDialog
+        visible={dialog !== null}
+        title={dialog?.title}
+        message={dialog?.message}
+        buttons={dialog?.buttons}
+        onClose={() => setDialog(null)}
       />
     </View>
   );

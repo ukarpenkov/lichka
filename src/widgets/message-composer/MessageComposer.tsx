@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -10,7 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useTheme, useLocale } from '../../shared/config';
-import { IconButton, Text } from '../../shared/ui';
+import { IconButton, Text, AlertDialog } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
 import {
@@ -48,6 +48,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
   const [intervalVisible, setIntervalVisible] = useState(false);
+  const [permissionDialog, setPermissionDialog] = useState(false);
 
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
@@ -141,6 +142,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
           const canSchedule = await ensureExactAlarmPermission();
           if (!canSchedule) {
             setPickerMode(null);
+            setPermissionDialog(true);
             return;
           }
           requestBatteryOptimizationExemption();
@@ -301,6 +303,17 @@ export function MessageComposer({ chatId, onSent }: Props) {
         visible={intervalVisible}
         onConfirm={handleIntervalConfirm}
         onCancel={handleIntervalCancel}
+      />
+
+      <AlertDialog
+        visible={permissionDialog}
+        title={t.exactAlarms}
+        message={t.exactAlarmsMessage}
+        buttons={[
+          { text: t.cancel, style: 'cancel' },
+          { text: t.openSettings, onPress: () => Linking.openSettings() },
+        ]}
+        onClose={() => setPermissionDialog(false)}
       />
     </>
   );

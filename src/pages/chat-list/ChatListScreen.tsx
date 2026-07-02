@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { FlatList, Alert, View, StyleSheet } from 'react-native';
+import { FlatList, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Plus, Search } from 'lucide-react-native';
 
-import { Screen, Text, IconButton, AnimatedPressable } from '../../shared/ui';
+import { Screen, Text, IconButton, AnimatedPressable, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
@@ -25,6 +25,11 @@ export function ChatListScreen() {
   const [formVisible, setFormVisible] = useState(false);
   const [editChat, setEditChat] = useState<Chat | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [dialog, setDialog] = useState<{
+    title?: string;
+    message?: string;
+    buttons?: AlertButton[];
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,17 +43,21 @@ export function ChatListScreen() {
 
   const handleDelete = useCallback(() => {
     if (!menuChat) return;
-    Alert.alert(t.deleteChat, t.deleteChatConfirm(menuChat.title), [
-      { text: t.cancel, style: 'cancel' },
-      {
-        text: t.delete,
-        style: 'destructive',
-        onPress: () => {
-          deleteChat(menuChat.id);
-          setChats(getChats());
+    setDialog({
+      title: t.deleteChat,
+      message: t.deleteChatConfirm(menuChat.title),
+      buttons: [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.delete,
+          style: 'destructive',
+          onPress: () => {
+            deleteChat(menuChat.id);
+            setChats(getChats());
+          },
         },
-      },
-    ]);
+      ],
+    });
   }, [menuChat, t]);
 
   const handleEdit = useCallback(() => {
@@ -127,6 +136,14 @@ export function ChatListScreen() {
       <GlobalSearch
         visible={searchVisible}
         onClose={() => setSearchVisible(false)}
+      />
+
+      <AlertDialog
+        visible={dialog !== null}
+        title={dialog?.title}
+        message={dialog?.message}
+        buttons={dialog?.buttons}
+        onClose={() => setDialog(null)}
       />
     </Screen>
   );

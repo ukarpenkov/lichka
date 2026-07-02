@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, View, Switch, Pressable, Alert, StyleSheet } from 'react-native';
+import { ScrollView, View, Switch, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, FileUp, Info, ChevronRight } from 'lucide-react-native';
 
-import { Screen, Text } from '../../shared/ui';
+import { Screen, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToJSON, importFromJSON, getGoogleToken, uploadBackup, downloadBackup } from '../../features';
@@ -23,6 +23,11 @@ export function SettingsScreen() {
   const { text, background } = useTheme();
   const { t, setLocale: setAppLocale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [dialog, setDialog] = useState<{
+    title?: string;
+    message?: string;
+    buttons?: AlertButton[];
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,11 +68,15 @@ export function SettingsScreen() {
         if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
         if (result.settingsImported) parts.push(t.settingsImported);
 
-        Alert.alert(t.importComplete, parts.length > 0 ? parts.join('\n') : t.noNewData);
+        setTimeout(() => {
+          setDialog({ title: t.importComplete, message: parts.length > 0 ? parts.join('\n') : t.noNewData, buttons: [{ text: t.done }] });
+        }, 300);
         setSettings(getSettings());
       } catch (e: any) {
         if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
-        Alert.alert(t.error, t.exportFailed);
+        setTimeout(() => {
+          setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
+        }, 300);
       }
     },
     [t],
@@ -172,10 +181,10 @@ export function SettingsScreen() {
               try {
                 const token = await getGoogleToken();
                 await uploadBackup(token);
-                Alert.alert(t.done, t.backupSaved);
+                setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
-                Alert.alert(t.error, t.backupFailed);
+                setDialog({ title: t.error, message: t.backupFailed, buttons: [{ text: t.done }] });
               }
             }}
           />
@@ -187,10 +196,10 @@ export function SettingsScreen() {
                 const token = await getGoogleToken();
                 const json = await downloadBackup(token);
 
-                Alert.alert(
-                  t.restoreTitle,
-                  t.chooseImportMode,
-                  [
+                setDialog({
+                  title: t.restoreTitle,
+                  message: t.chooseImportMode,
+                  buttons: [
                     { text: t.cancel, style: 'cancel' },
                     {
                       text: t.merge,
@@ -202,7 +211,9 @@ export function SettingsScreen() {
                         if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
                         if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
                         if (result.settingsImported) parts.push(t.settingsImported);
-                        Alert.alert(t.restoreComplete, parts.length > 0 ? parts.join('\n') : t.noNewData);
+                        setTimeout(() => {
+                          setDialog({ title: t.restoreComplete, message: parts.length > 0 ? parts.join('\n') : t.noNewData, buttons: [{ text: t.done }] });
+                        }, 300);
                         setSettings(getSettings());
                       },
                     },
@@ -210,34 +221,41 @@ export function SettingsScreen() {
                       text: t.replaceAll,
                       style: 'destructive',
                       onPress: () => {
-                        Alert.alert(
-                          t.replaceAllConfirm,
-                          t.replaceAllWarning,
-                          [
-                            { text: t.cancel, style: 'cancel' },
-                            {
-                              text: t.replace,
-                              style: 'destructive',
-                              onPress: () => {
-                                const result = importFromJSON(json, 'replace');
-                                Alert.alert(t.restoreComplete,
-                                  `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`);
-                                setSettings(getSettings());
+                        setTimeout(() => {
+                          setDialog({
+                            title: t.replaceAllConfirm,
+                            message: t.replaceAllWarning,
+                            buttons: [
+                              { text: t.cancel, style: 'cancel' },
+                              {
+                                text: t.replace,
+                                style: 'destructive',
+                                onPress: () => {
+                                  const result = importFromJSON(json, 'replace');
+                                  setTimeout(() => {
+                                    setDialog({
+                                      title: t.restoreComplete,
+                                      message: `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`,
+                                      buttons: [{ text: t.done }],
+                                    });
+                                  }, 300);
+                                  setSettings(getSettings());
+                                },
                               },
-                            },
-                          ],
-                        );
+                            ],
+                          });
+                        }, 300);
                       },
                     },
                   ],
-                );
+                });
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
                 if (e?.message === 'NO_BACKUP') {
-                  Alert.alert(t.noBackup, t.noBackupMessage);
+                  setDialog({ title: t.noBackup, message: t.noBackupMessage, buttons: [{ text: t.done }] });
                   return;
                 }
-                Alert.alert(t.error, t.restoreFailed);
+                setDialog({ title: t.error, message: t.restoreFailed, buttons: [{ text: t.done }] });
               }
             }}
           />
@@ -247,9 +265,9 @@ export function SettingsScreen() {
             onPress={async () => {
               try {
                 const filePath = await exportToJSON();
-                Alert.alert(t.done, t.exportDone(filePath));
+                setDialog({ title: t.done, message: t.exportDone(filePath), buttons: [{ text: t.done }] });
               } catch {
-                Alert.alert(t.error, t.exportFailed);
+                setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
               }
             }}
           />
@@ -257,10 +275,10 @@ export function SettingsScreen() {
             label={t.importFromFile}
             icon={FileUp}
             onPress={() => {
-              Alert.alert(
-                t.importFromFile,
-                t.chooseImportMode,
-                [
+              setDialog({
+                title: t.importFromFile,
+                message: t.chooseImportMode,
+                buttons: [
                   {
                     text: t.cancel,
                     style: 'cancel',
@@ -273,18 +291,20 @@ export function SettingsScreen() {
                     text: t.replaceAll,
                     style: 'destructive',
                     onPress: () => {
-                      Alert.alert(
-                        t.replaceAllConfirm,
-                        t.replaceAllWarning,
-                        [
-                          { text: t.cancel, style: 'cancel' },
-                          { text: t.replace, style: 'destructive', onPress: () => handleImport('replace') },
-                        ],
-                      );
+                      setTimeout(() => {
+                        setDialog({
+                          title: t.replaceAllConfirm,
+                          message: t.replaceAllWarning,
+                          buttons: [
+                            { text: t.cancel, style: 'cancel' },
+                            { text: t.replace, style: 'destructive', onPress: () => handleImport('replace') },
+                          ],
+                        });
+                      }, 300);
                     },
                   },
                 ],
-              );
+              });
             }}
           />
         </View>
@@ -301,6 +321,14 @@ export function SettingsScreen() {
           </SettingsRow>
         </View>
       </ScrollView>
+
+      <AlertDialog
+        visible={dialog !== null}
+        title={dialog?.title}
+        message={dialog?.message}
+        buttons={dialog?.buttons}
+        onClose={() => setDialog(null)}
+      />
     </Screen>
   );
 }
