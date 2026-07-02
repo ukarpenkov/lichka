@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, FlatList, TextInput, StyleSheet } from 'react-native';
+import { View, FlatList, TextInput, StyleSheet, InteractionManager } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,7 +27,10 @@ export function GlobalSearch({ visible, onClose }: Props) {
 
   useEffect(() => {
     if (visible) {
-      inputRef.current?.focus();
+      const task = InteractionManager.runAfterInteractions(() => {
+        inputRef.current?.focus();
+      });
+      return () => task.cancel();
     } else {
       setQuery('');
       setResults([]);

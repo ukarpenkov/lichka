@@ -68,5 +68,11 @@ coverage/
 # Reanimated
 react-native-reanimated-*
 
+# Kotlin
+.kotlin
+
+# Embedded repos
+document-picker/
+
 # Claude Code
 .claude

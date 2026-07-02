@@ -17,13 +17,9 @@ type Props = {
   fontSize: number;
   textColor: string;
   accentColor: string;
+  dim?: boolean;
 };
 
-/**
- * Одна метка безеля. Позиция, прозрачность, масштаб и цвет вычисляются
- * на UI-потоке исходя из угла относительно верхней точки выбора (12 часов).
- * Соседние значения «проявляются» по мере приближения к верху.
- */
 export function BezelLabel({
   index,
   count,
@@ -33,9 +29,11 @@ export function BezelLabel({
   fontSize,
   textColor,
   accentColor,
+  dim,
 }: Props) {
   const step = 360 / count;
   const base = step * index;
+  const dimOpacity = 0.35;
 
   const style = useAnimatedStyle(() => {
     const onScreen = base + rotation.value;
@@ -61,8 +59,10 @@ export function BezelLabel({
       [accentColor, textColor],
     );
 
+    const finalOpacity = dim ? opacity * dimOpacity : opacity;
+
     return {
-      opacity,
+      opacity: finalOpacity,
       color,
       transform: [{ translateX: x }, { translateY: y }, { scale }],
     };
