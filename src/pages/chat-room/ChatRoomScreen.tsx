@@ -1,15 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, Alert, StyleSheet, Platform, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
-  useAnimatedKeyboard,
   withSpring,
   FadeIn,
   FadeOut,
-  interpolate,
-  Extrapolation,
 } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -89,29 +86,10 @@ export function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
 
-  const keyboard = useAnimatedKeyboard({
-    isStatusBarTranslucentAndroid: true,
-  });
-
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
     },
-  });
-
-  const keyboardAreaStyle = useAnimatedStyle(() => {
-    if (Platform.OS === 'ios') {
-      return {};
-    }
-    const progress = interpolate(
-      keyboard.height.value,
-      [0, 300],
-      [0, 1],
-      Extrapolation.CLAMP,
-    );
-    return {
-      paddingBottom: keyboard.height.value * progress,
-    };
   });
 
   const stickyDateStyle = useAnimatedStyle(() => {
@@ -307,7 +285,7 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <Animated.View style={[styles.chatArea, keyboardAreaStyle]}>
+      <View style={styles.chatArea}>
         <AnimatedFlatList
           ref={flatListRef as any}
           data={listItems}
@@ -331,7 +309,7 @@ export function ChatRoomScreen() {
         />
 
         <MessageComposer chatId={chatId} onSent={loadData} />
-      </Animated.View>
+      </View>
 
       <MessageContextMenu
         visible={menuMessage !== null}
