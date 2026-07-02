@@ -8,3 +8,4 @@ export { HighlightedBody, parseHighlights } from './HighlightedBody';
 export { AnimatedPressable } from './AnimatedPressable';
 export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';
 export { AlertDialog, type AlertButton } from './AlertDialog';
+export { CalendarDaysIcon, type IconProps } from './Icon';

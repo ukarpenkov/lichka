@@ -2,7 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
+import { MessageCircle, Settings } from 'lucide-react-native';
+import { CalendarDaysIcon } from '../shared/ui';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
@@ -105,7 +106,7 @@ export function AppNavigator() {
           component={ScheduledScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <CalendarDays color={color} size={size} />
+              <CalendarDaysIcon color={color} size={size} />
             ),
           }}
         />
