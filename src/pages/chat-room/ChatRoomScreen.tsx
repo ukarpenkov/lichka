@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Platform, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
@@ -88,6 +90,11 @@ export function ChatRoomScreen() {
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
+
+  const keyboard = useAnimatedKeyboard();
+  const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: Platform.OS === 'android' ? keyboard.height.value : 0,
+  }));
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -283,7 +290,7 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <View style={styles.chatArea}>
+      <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
         <AnimatedFlatList
           ref={flatListRef as any}
           data={listItems}
@@ -307,7 +314,7 @@ export function ChatRoomScreen() {
         />
 
         <MessageComposer chatId={chatId} onSent={loadData} />
-      </View>
+      </Animated.View>
 
       <MessageContextMenu
         visible={menuMessage !== null}
