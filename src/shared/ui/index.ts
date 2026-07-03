@@ -8,4 +8,4 @@ export { HighlightedBody, parseHighlights } from './HighlightedBody';
 export { AnimatedPressable } from './AnimatedPressable';
 export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';
 export { AlertDialog, type AlertButton } from './AlertDialog';
-export { CalendarDaysIcon, AlarmClockIcon, MicIcon, SettingsIcon, MessageCircleIcon, type IconProps } from './Icon';
+export { AlarmClockIcon, MicIcon, type IconProps } from './Icon';

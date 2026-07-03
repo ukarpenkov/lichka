@@ -3,7 +3,7 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { CalendarDaysIcon, MessageCircleIcon, SettingsIcon } from '../shared/ui';
+import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
@@ -136,7 +136,7 @@ export function AppNavigator() {
           component={ChatStackScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <MessageCircleIcon color={color} size={size} />
+              <MessageCircle color={color} size={size} />
             ),
           }}
         />
@@ -145,7 +145,7 @@ export function AppNavigator() {
           component={ScheduledScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <CalendarDaysIcon color={color} size={size} />
+              <CalendarDays color={color} size={size} />
             ),
           }}
         />
@@ -154,7 +154,7 @@ export function AppNavigator() {
           component={SettingsStackScreen}
           options={{
             tabBarIcon: ({ color, size }) => (
-              <SettingsIcon color={color} size={size} />
+              <Settings color={color} size={size} />
             ),
           }}
         />
