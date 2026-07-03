@@ -9,6 +9,7 @@ import Animated, {
   withSequence,
   runOnJS,
 } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, useLocale } from '../../shared/config';
 import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
@@ -139,8 +140,21 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const handlePickerConfirm = useCallback(
     async (date: Date) => {
       if (pickerMode === 'alarm') {
-        setAlarmGuideVisible(true);
-        setPickerDate(date);
+        const hasSeen = await AsyncStorage.getItem('alarm_guide_shown');
+        if (hasSeen === '1') {
+          setPickerMode(null);
+          const canSchedule = await ensureExactAlarmPermission();
+          if (!canSchedule) {
+            setPermissionDialog(true);
+            return;
+          }
+          requestBatteryOptimizationExemption();
+          sendMessage('alarm', { scheduledAt: date.toISOString() });
+        } else {
+          await AsyncStorage.setItem('alarm_guide_shown', '1');
+          setAlarmGuideVisible(true);
+          setPickerDate(date);
+        }
         return;
       }
       if (pickerMode === 'reminder') {
