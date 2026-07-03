@@ -1,4 +1,5 @@
 import React from 'react';
+import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -35,6 +36,7 @@ function ChatStackScreen() {
         headerStyle: { backgroundColor: background },
         headerTintColor: text,
         headerTitleStyle: { color: text },
+        contentStyle: { backgroundColor: background },
       }}>
       <Stack.Screen
         name="ChatList"
@@ -60,6 +62,7 @@ function SettingsStackScreen() {
         headerStyle: { backgroundColor: background },
         headerTintColor: text,
         headerTitleStyle: { color: text },
+        contentStyle: { backgroundColor: background },
       }}>
       <SettingsStack.Screen
         name="Settings"
@@ -75,11 +78,45 @@ function SettingsStackScreen() {
   );
 }
 
+function isBackgroundDark(background: string): boolean {
+  const hex = background.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return r * 0.299 + g * 0.587 + b * 0.114 < 128;
+}
+
 export function AppNavigator() {
   const { text, background } = useTheme();
+  const isDark = isBackgroundDark(background);
+
+  const navTheme = React.useMemo(
+    () => ({
+      dark: isDark,
+      colors: {
+        primary: text,
+        background: background,
+        card: background,
+        text: text,
+        border: text + '20',
+        notification: text,
+      },
+      fonts: {
+        regular: { fontFamily: 'System', fontWeight: '400' as const },
+        medium: { fontFamily: 'System', fontWeight: '500' as const },
+        bold: { fontFamily: 'System', fontWeight: '700' as const },
+        heavy: { fontFamily: 'System', fontWeight: '900' as const },
+      },
+    }),
+    [text, background, isDark],
+  );
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={background}
+      />
       <NotificationHandler />
       <Tab.Navigator
         screenOptions={{
