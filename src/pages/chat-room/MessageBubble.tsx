@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, AccessibilityInfo } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
+import { Bell, Repeat } from 'lucide-react-native';
 import { useTheme, useLocale } from '../../shared/config';
-import { Text } from '../../shared/ui';
+import { Text, AlarmClockIcon } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
-import type { Message } from '../../entities/message';
+import type { Message, MessageType } from '../../entities/message';
 
 type MessageBubbleProps = {
   message: Message;
@@ -31,6 +32,12 @@ function isVoiceMessage(message: Message): boolean {
   }
 }
 
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
+  reminder: Bell,
+  alarm: undefined as any,
+  periodic: Repeat,
+};
+
 export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
   const { text } = useTheme();
   const { t } = useLocale();
@@ -48,6 +55,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
 
   const isEdited = message.updatedAt > message.createdAt;
   const isVoice = useMemo(() => isVoiceMessage(message), [message]);
+  const TypeIcon = message.type === 'alarm' ? AlarmClockIcon : TYPE_ICON[message.type as keyof typeof TYPE_ICON];
 
   const handleLongPress = useCallback(() => {
     if (!reduceMotionRef.current && getSettings().hapticEnabled) {
@@ -84,6 +92,9 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
             <Text variant="caption" style={[styles.meta, styles.edited, { color: text + '60' }]}>
               {t.edited}
             </Text>
+          )}
+          {!isVoice && TypeIcon && (
+            <TypeIcon size={11} color={text + '50'} />
           )}
           <Text variant="caption" style={[styles.meta, { color: text + '50' }]}>
             {formatTime(message.createdAt)}

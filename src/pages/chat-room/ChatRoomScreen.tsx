@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Platform, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
+  useAnimatedKeyboard,
+  useAnimatedStyle,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +73,7 @@ export function ChatRoomScreen() {
   const { background, text } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const [chat, setChat] = useState<Chat | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -88,12 +92,20 @@ export function ChatRoomScreen() {
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
+  const keyboard = useAnimatedKeyboard();
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
     },
   });
+
+  const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom:
+      Platform.OS === 'android'
+        ? Math.max(keyboard.height.value - tabBarHeight, 0)
+        : 0,
+  }));
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
@@ -283,7 +295,7 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <View style={styles.chatArea}>
+      <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
         <AnimatedFlatList
           ref={flatListRef as any}
           data={listItems}
@@ -307,7 +319,7 @@ export function ChatRoomScreen() {
         />
 
         <MessageComposer chatId={chatId} onSent={loadData} />
-      </View>
+      </Animated.View>
 
       <MessageContextMenu
         visible={menuMessage !== null}
