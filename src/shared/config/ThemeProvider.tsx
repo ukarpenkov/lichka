@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { NativeModules, Platform } from 'react-native';
 import { getDatabase } from '../db';
 import { getTheme, DEFAULT_LIGHT, type ThemePreset } from './theme';
 
@@ -28,7 +29,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     );
     if (result.rows.length > 0) {
       const id = result.rows[0].value as string;
-      setPreset(getTheme(id));
+      const theme = getTheme(id);
+      setPreset(theme);
+      if (Platform.OS === 'android' && NativeModules.ThemeModule) {
+        NativeModules.ThemeModule.setTheme(theme.background, theme.text);
+      }
     }
   }, []);
 
@@ -40,6 +45,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
       [SETTINGS_KEY, id],
     );
+    if (Platform.OS === 'android' && NativeModules.ThemeModule) {
+      NativeModules.ThemeModule.setTheme(next.background, next.text);
+    }
   }, []);
 
   const value: ThemeContextValue = {

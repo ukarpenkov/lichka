@@ -14,11 +14,12 @@ class AlarmReceiver : BroadcastReceiver() {
         val chatTitle = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_TITLE) ?: return
         val intervalMinutes = intent.getIntExtra(AlarmScheduler.EXTRA_INTERVAL_MINUTES, 0)
         val isAlarm = intent.getBooleanExtra(AlarmScheduler.EXTRA_IS_ALARM, false)
+        val triggerTime = intent.getLongExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, 0)
 
         if (intent.action == NotificationHelper.snoozeAction) {
-            handleSnooze(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm)
+            handleSnooze(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
         } else {
-            handleAlarm(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm)
+            handleAlarm(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
         }
     }
 
@@ -30,13 +31,14 @@ class AlarmReceiver : BroadcastReceiver() {
         chatTitle: String,
         intervalMinutes: Int,
         isAlarm: Boolean,
+        triggerTime: Long,
     ) {
         if (isAlarm) {
             // Fallback: старые будильники (до обновления) могут прийти через BroadcastReceiver.
             // Используем Notification + setFullScreenIntent — работает даже при убитом приложении.
             val notification =
                 NotificationHelper.buildAlarmNotification(
-                    context, body, chatTitle, chatId, messageId,
+                    context, body, chatTitle, chatId, messageId, triggerTime,
                 )
             val manager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -70,6 +72,7 @@ class AlarmReceiver : BroadcastReceiver() {
         chatTitle: String,
         intervalMinutes: Int,
         isAlarm: Boolean,
+        triggerTime: Long,
     ) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(messageId.hashCode())

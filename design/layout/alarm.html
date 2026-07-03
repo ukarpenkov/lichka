@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Будильник</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/inter:latest@4.5.0/cyrillic-400-normal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/inter:latest@4.5.0/cyrillic-500-normal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/fonts/inter:latest@4.5.0/cyrillic-600-normal.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background: #0b0d17;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .phone {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            background:
+                radial-gradient(circle at 50% 20%, rgba(255, 95, 95, 0.18), transparent 55%),
+                radial-gradient(circle at 50% 90%, rgba(120, 140, 255, 0.10), transparent 60%),
+                linear-gradient(180deg, #0f1220 0%, #0a0c16 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 22px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #e8e8ef;
+        }
+
+        .status-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .battery {
+            width: 22px;
+            height: 11px;
+            border: 1.2px solid #e8e8ef;
+            border-radius: 3px;
+            position: relative;
+            padding: 1.5px;
+        }
+
+        .battery::after {
+            content: '';
+            position: absolute;
+            right: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 5px;
+            background: #e8e8ef;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .battery-level {
+            width: 70%;
+            height: 100%;
+            background: #4ade80;
+            border-radius: 1.5px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 28px;
+            gap: 20px;
+        }
+
+        .alarm-icon-wrap {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alarm-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .alarm-ring.pulse {
+            animation: pulse 2.4s ease-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+
+        .alarm-icon {
+            width: 96px;
+            height: 96px;
+            color: #fff;
+            animation: shake 0.9s ease-in-out infinite;
+            transform-origin: 50% 100%;
+            filter: drop-shadow(0 10px 30px rgba(255, 95, 95, 0.25));
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: rotate(-6deg);
+            }
+
+            50% {
+                transform: rotate(6deg);
+            }
+        }
+
+        .time {
+            font-size: 22px;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: rgba(255, 255, 255, 0.55);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .message {
+            font-size: 44px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            text-align: center;
+            line-height: 1.15;
+            background: linear-gradient(180deg, #ffffff 0%, #b8bccf 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 0 8px;
+        }
+
+        .actions {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 16px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.25s ease, background 0.25s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-dismiss {
+            background: linear-gradient(135deg, #ff5a5a 0%, #e03e3e 100%);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(255, 70, 70, 0.25);
+        }
+
+        .btn-dismiss:hover {
+            box-shadow: 0 14px 40px rgba(255, 70, 70, 0.4);
+        }
+
+        .btn-snooze {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-snooze:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .home-indicator {
+            width: 134px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.35);
+            border-radius: 100px;
+            margin: 14px auto 10px;
+        }
+
+        .toast {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 12px 20px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="phone">
+        <div class="status-bar">
+            <span>13:59</span>
+            <div class="status-right">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                    <circle cx="12" cy="20" r="1" fill="currentColor" />
+                </svg>
+                <div class="battery">
+                    <div class="battery-level"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="alarm-icon-wrap">
+                <div class="alarm-ring pulse"></div>
+                <svg class="alarm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="13" r="8" />
+                    <path d="M12 9v4l2 2" />
+                    <path d="M5 3L2 6" />
+                    <path d="M22 6l-3-3" />
+                    <path d="M6.38 18.7L4 21" />
+                    <path d="M17.62 18.7L20 21" />
+                </svg>
+            </div>
+
+            <div class="time">07:30</div>
+            <div class="message">Аьвлавьла</div>
+
+            <div class="actions">
+                <button class="btn btn-dismiss" id="dismissBtn">Отключить</button>
+                <button class="btn btn-snooze" id="snoozeBtn">Отложить · 5 мин</button>
+            </div>
+        </div>
+
+        <div class="home-indicator"></div>
+        <div class="toast" id="toast">Отложено на 5 минут</div>
+    </div>
+
+    <script>
+        const dismissBtn = document.getElementById('dismissBtn');
+        const snoozeBtn = document.getElementById('snoozeBtn');
+        const toast = document.getElementById('toast');
+        const icon = document.querySelector('.alarm-icon');
+        const rings = document.querySelectorAll('.alarm-ring');
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1800);
+        }
+
+        function stopAlarm() {
+            icon.style.animationPlayState = 'paused';
+            rings.forEach(r => r.style.animationPlayState = 'paused');
+        }
+
+        dismissBtn.addEventListener('click', () => {
+            stopAlarm();
+            showToast('Будильник отключён');
+        });
+
+        snoozeBtn.addEventListener('click', () => {
+            stopAlarm();
+            showToast('Отложено на 5 минут');
+            setTimeout(() => {
+                icon.style.animationPlayState = 'running';
+                rings.forEach(r => r.style.animationPlayState = 'running');
+            }, 2000);
+        });
+    </script>
+</body>
+
+</html>

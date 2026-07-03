@@ -17,6 +17,7 @@ object NotificationHelper {
         chatTitle: String,
         chatId: String,
         messageId: String,
+        triggerTime: Long,
     ): Notification {
         val alarmIntent =
             Intent(context, AlarmActivity::class.java).apply {
@@ -25,6 +26,7 @@ object NotificationHelper {
                 putExtra(AlarmScheduler.EXTRA_CHAT_ID, chatId)
                 putExtra(AlarmScheduler.EXTRA_BODY, body)
                 putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
+                putExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, triggerTime)
             }
         val alarmPendingIntent =
             PendingIntent.getActivity(
@@ -42,6 +44,7 @@ object NotificationHelper {
                 putExtra(AlarmScheduler.EXTRA_BODY, body)
                 putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
                 putExtra(AlarmScheduler.EXTRA_IS_ALARM, true)
+                putExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, triggerTime)
             }
         val snoozePendingIntent =
             PendingIntent.getBroadcast(

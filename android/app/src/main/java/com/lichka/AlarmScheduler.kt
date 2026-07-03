@@ -13,6 +13,7 @@ object AlarmScheduler {
     const val EXTRA_CHAT_TITLE = "chatTitle"
     const val EXTRA_INTERVAL_MINUTES = "intervalMinutes"
     const val EXTRA_IS_ALARM = "isAlarm"
+    const val EXTRA_TRIGGER_TIME = "triggerTime"
 
     fun scheduleReminder(
         context: Context,
@@ -23,7 +24,7 @@ object AlarmScheduler {
         triggerAtMillis: Long,
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, false)
+        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis, false)
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
@@ -43,7 +44,7 @@ object AlarmScheduler {
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent =
-            buildPendingIntent(context, messageId, chatId, body, chatTitle, intervalMinutes, false)
+            buildPendingIntent(context, messageId, chatId, body, chatTitle, intervalMinutes, triggerAtMillis, false)
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
@@ -63,7 +64,7 @@ object AlarmScheduler {
         triggerAtMillis: Long,
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, true)
+        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis, true)
 
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(
@@ -127,6 +128,7 @@ object AlarmScheduler {
         body: String,
         chatTitle: String,
         intervalMinutes: Int,
+        triggerAtMillis: Long,
         isAlarm: Boolean = false,
     ): PendingIntent {
         val intent =
@@ -137,6 +139,7 @@ object AlarmScheduler {
                 putExtra(EXTRA_CHAT_TITLE, chatTitle)
                 putExtra(EXTRA_INTERVAL_MINUTES, intervalMinutes)
                 putExtra(EXTRA_IS_ALARM, isAlarm)
+                putExtra(EXTRA_TRIGGER_TIME, triggerAtMillis)
             }
         return PendingIntent.getBroadcast(
             context,
