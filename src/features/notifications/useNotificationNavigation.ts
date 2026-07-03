@@ -1,37 +1,62 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
-import { getInitialChatId, consumeInitialChatId } from '../../shared/lib/notificationChannels';
+import { getInitialChatId, getInitialMessageId, consumeInitialChatId } from '../../shared/lib/notificationChannels';
+
+let pendingPayload: { chatId: string; messageId?: string } | null = null;
+let navReady = false;
+
+export function setNavigationReady() {
+  navReady = true;
+  if (pendingPayload && navRef) {
+    const p = pendingPayload;
+    pendingPayload = null;
+    navRef('ChatsTab', { screen: 'ChatRoom', params: { chatId: p.chatId, messageId: p.messageId } });
+  }
+}
+
+type NavigateFn = (name: string, params: any) => void;
+let navRef: NavigateFn | null = null;
 
 export function useNotificationNavigation() {
   const navigation = useNavigation<any>();
-  const hasHandledInitial = useRef(false);
+
+  useEffect(() => {
+    navRef = (name: string, params: any) => navigation.navigate(name, params);
+    if (navigation.isReady?.()) {
+      setNavigationReady();
+    }
+  }, [navigation]);
+
+  const navigateToChat = useCallback((chatId: string, messageId?: string) => {
+    if (navReady && navRef) {
+      navRef('ChatsTab', { screen: 'ChatRoom', params: { chatId, messageId } });
+    } else {
+      pendingPayload = { chatId, messageId };
+    }
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
-    // Cold start: check initial chatId from notification intent
-    if (!hasHandledInitial.current) {
-      getInitialChatId().then((chatId) => {
+    Promise.all([getInitialChatId(), getInitialMessageId()]).then(
+      ([chatId, messageId]) => {
         if (chatId) {
-          hasHandledInitial.current = true;
           consumeInitialChatId();
-          navigation.navigate('ChatsTab', {
-            screen: 'ChatRoom',
-            params: { chatId },
-          });
+          navigateToChat(chatId, messageId || undefined);
         }
-      });
-    }
+      },
+    );
 
-    // Warm start: listen for events from native
     const emitter = new NativeEventEmitter(NativeModules.NotificationModule);
-    const sub = emitter.addListener('onNotificationOpen', (event: { chatId: string }) => {
-      navigation.navigate('ChatsTab', {
-        screen: 'ChatRoom',
-        params: { chatId: event.chatId },
-      });
-    });
+    const sub = emitter.addListener(
+      'onNotificationOpen',
+      (event: { chatId: string; messageId?: string }) => {
+        if (event.chatId) {
+          navigateToChat(event.chatId, event.messageId);
+        }
+      },
+    );
     return () => sub.remove();
-  }, [navigation]);
+  }, [navigateToChat]);
 }

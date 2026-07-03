@@ -11,7 +11,7 @@ import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
 import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
-import { useNotificationNavigation } from '../features/notifications';
+import { useNotificationNavigation, setNavigationReady } from '../features/notifications';
 
 import type { ChatStackParamList, SettingsStackParamList } from './types';
 
@@ -114,7 +114,9 @@ export function AppNavigator() {
   );
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer
+      theme={navTheme}
+      onReady={() => setNavigationReady()}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={background}

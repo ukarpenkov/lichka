@@ -126,8 +126,15 @@ class NotificationModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun getInitialMessageId(promise: Promise) {
+        val messageId = reactApplicationContext.currentActivity?.intent?.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
+        promise.resolve(messageId)
+    }
+
+    @ReactMethod
     fun consumeInitialChatId() {
         reactApplicationContext.currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_CHAT_ID)
+        reactApplicationContext.currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
     }
 
     @ReactMethod
@@ -140,12 +147,16 @@ class NotificationModule(reactContext: ReactApplicationContext) :
         // Required for NativeEventEmitter
     }
 
-    fun emitNotificationOpen(chatId: String) {
+    fun emitNotificationOpen(chatId: String, messageId: String?) {
         val reactContext = reactApplicationContext
         if (reactContext.hasActiveReactInstance()) {
+            val payload: MutableMap<String, String?> = mutableMapOf("chatId" to chatId)
+            if (messageId != null) {
+                payload["messageId"] = messageId
+            }
             reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                .emit("onNotificationOpen", mapOf("chatId" to chatId))
+                .emit("onNotificationOpen", payload)
         }
     }
 

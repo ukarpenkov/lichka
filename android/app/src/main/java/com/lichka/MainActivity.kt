@@ -36,12 +36,13 @@ class MainActivity : ReactActivity() {
     setIntent(intent)
     val chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
     if (chatId != null) {
+      val messageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
       val reactHost = (application as MainApplication).reactHost
       val reactContext = reactHost?.currentReactContext
       if (reactContext != null) {
         val module =
             reactContext.getNativeModule(NotificationModule::class.java) as? NotificationModule
-        module?.emitNotificationOpen(chatId)
+        module?.emitNotificationOpen(chatId, messageId)
       }
     }
   }

@@ -68,6 +68,10 @@ export function getInitialChatId(): Promise<string | null> {
   return NotificationModule.getInitialChatId();
 }
 
+export function getInitialMessageId(): Promise<string | null> {
+  return NotificationModule.getInitialMessageId();
+}
+
 export function consumeInitialChatId(): void {
   NotificationModule.consumeInitialChatId();
 }

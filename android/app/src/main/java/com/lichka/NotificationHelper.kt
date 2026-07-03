@@ -86,6 +86,7 @@ object NotificationHelper {
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 putExtra(AlarmScheduler.EXTRA_CHAT_ID, chatId)
+                putExtra(AlarmScheduler.EXTRA_MESSAGE_ID, messageId)
             }
         val contentPendingIntent =
             PendingIntent.getActivity(

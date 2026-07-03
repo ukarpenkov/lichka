@@ -11,6 +11,7 @@ export {
   canScheduleExactAlarms,
   requestIgnoreBatteryOptimizations,
   getInitialChatId,
+  getInitialMessageId,
   consumeInitialChatId,
   CHANNEL_REMINDERS,
   CHANNEL_ALARMS,

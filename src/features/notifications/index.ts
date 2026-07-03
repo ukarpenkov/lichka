@@ -4,4 +4,4 @@ export {
   ensureExactAlarmPermission,
   requestBatteryOptimizationExemption,
 } from './requestExactAlarmPermission';
-export { useNotificationNavigation } from './useNotificationNavigation';
+export { useNotificationNavigation, setNavigationReady } from './useNotificationNavigation';
