@@ -18,3 +18,4 @@ export {
 } from './notificationChannels';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { playSendSound, playReminderSound } from './sounds';
+export { useKeyboardHeight } from './keyboard';

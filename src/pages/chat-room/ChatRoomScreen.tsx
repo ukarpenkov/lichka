@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Platform, Keyboard, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Platform, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
-  useAnimatedKeyboard,
   useAnimatedStyle,
   FadeIn,
   FadeOut,
@@ -15,6 +14,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale } from '../../shared/config';
+import { useKeyboardHeight } from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
@@ -92,21 +92,7 @@ export function ChatRoomScreen() {
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
-  const keyboard = useAnimatedKeyboard();
-  const keyboardVisible = useSharedValue(false);
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      keyboardVisible.value = true;
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardVisible.value = false;
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [keyboardVisible]);
+  const keyboardHeight = useKeyboardHeight();
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -114,10 +100,13 @@ export function ChatRoomScreen() {
     },
   });
 
+  // Экран чата вложен в таб-навигатор, поэтому нижний tab bar уже занимает
+  // `tabBarHeight` над краем экрана — вычитаем его из высоты клавиатуры.
+  // На iOS клавиатуру поднимает система, ручная компенсация не нужна.
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
-      Platform.OS === 'android' && keyboardVisible.value
-        ? Math.max(keyboard.height.value - tabBarHeight, 0)
+      Platform.OS === 'android'
+        ? Math.max(keyboardHeight.value - tabBarHeight, 0)
         : 0,
   }));
 

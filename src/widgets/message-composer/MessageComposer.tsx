@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking, Keyboard } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
-  useAnimatedKeyboard,
   useAnimatedStyle,
   withSpring,
   withRepeat,
@@ -22,7 +21,7 @@ import {
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { Send, Bell, Repeat, X, Square } from 'lucide-react-native';
-import { hapticTap, hapticLongPress, hapticSuccess, playSendSound } from '../../shared/lib';
+import { hapticTap, hapticLongPress, hapticSuccess, playSendSound, useKeyboardHeight } from '../../shared/lib';
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
 import { DocumentDirectoryPath } from 'react-native-fs';
@@ -46,8 +45,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function MessageComposer({ chatId, onSent }: Props) {
   const { text, background } = useTheme();
   const { t } = useLocale();
-  const keyboard = useAnimatedKeyboard();
-  const keyboardVisible = useSharedValue(false);
+  const keyboardHeight = useKeyboardHeight();
   const [body, setBody] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -70,19 +68,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
     return () => sub.remove();
   }, []);
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      keyboardVisible.value = true;
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardVisible.value = false;
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [keyboardVisible]);
-
   // Recording indicator animations
   const dotScale = useSharedValue(1);
   const recOpacity = useSharedValue(0);
@@ -96,7 +81,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   }));
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom: keyboardVisible.value ? 0 : 12,
+    paddingBottom: keyboardHeight.value > 0 ? 0 : 12,
   }));
 
   const triggerHapticTap = useCallback(() => {
