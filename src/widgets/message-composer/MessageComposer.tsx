@@ -3,6 +3,7 @@ import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking } fr
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
+  useAnimatedKeyboard,
   useAnimatedStyle,
   withSpring,
   withRepeat,
@@ -45,6 +46,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function MessageComposer({ chatId, onSent }: Props) {
   const { text, background } = useTheme();
   const { t } = useLocale();
+  const keyboard = useAnimatedKeyboard();
   const [body, setBody] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -77,6 +79,10 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const recRowAnimatedStyle = useAnimatedStyle(() => ({
     opacity: recOpacity.value,
+  }));
+
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboard.height.value > 0 ? 0 : 12,
   }));
 
   const triggerHapticTap = useCallback(() => {
@@ -265,8 +271,8 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   if (isRecording) {
     return (
-      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
-        <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
+    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+      <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
               <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
@@ -291,8 +297,8 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   return (
     <>
-      <Animated.View style={[styles.container, { backgroundColor: background, borderTopColor: `${text}15` }]}>
-        <TextInput
+    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+      <TextInput
           style={[styles.input, { color: text, borderColor: `${text}33` }]}
           placeholder={t.messageInput}
           placeholderTextColor={`${text}66`}
