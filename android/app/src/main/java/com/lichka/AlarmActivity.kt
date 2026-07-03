@@ -2,11 +2,13 @@ package com.lichka
 
 import android.app.Activity
 import android.app.NotificationManager
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.WindowManager
@@ -17,6 +19,7 @@ class AlarmActivity : Activity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var wakeLock: PowerManager.WakeLock? = null
     private lateinit var messageId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +64,18 @@ class AlarmActivity : Activity() {
 
         startAlarmSound()
         startVibration()
+        acquireWakeLock()
+    }
+
+    private fun acquireWakeLock() {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(
+            PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                PowerManager.FULL_WAKE_LOCK or
+                PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            "lichka:alarm",
+        )
+        wakeLock?.acquire(10 * 60 * 1000L) // 10 minutes max
     }
 
     private fun startAlarmSound() {
@@ -105,6 +120,10 @@ class AlarmActivity : Activity() {
         mediaPlayer = null
         vibrator?.cancel()
         vibrator = null
+        wakeLock?.let {
+            if (it.isHeld) it.release()
+        }
+        wakeLock = null
     }
 
     override fun onDestroy() {

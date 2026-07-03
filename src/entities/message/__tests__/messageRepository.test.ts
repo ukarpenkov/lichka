@@ -327,9 +327,9 @@ describe('messageRepository', () => {
       const [sql, params] = mockExecuteSync.mock.calls[0];
       expect(sql).toContain('chat_id = ?');
       expect(sql).toContain("type IN ('reminder', 'alarm')");
-      expect(sql).toContain('scheduled_at <= ?');
+      expect(sql).toContain("REPLACE(SUBSTR(scheduled_at, 1, 19), 'T', ' ') <= datetime('now')");
       expect(params[0]).toBe('chat-abc');
-      expect(params).toHaveLength(2);
+      expect(params).toHaveLength(1);
     });
 
     it('should return empty array when no matching messages', () => {

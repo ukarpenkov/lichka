@@ -116,6 +116,9 @@ export interface LocaleDictionary {
   // Permissions
   exactAlarms: string;
   exactAlarmsMessage: string;
+  batteryOptimization: string;
+  batteryOptimizationMessage: string;
+  alarmPermissionsGuide: string;
   openSettings: string;
 
   // Import
@@ -238,7 +241,10 @@ export const ru: LocaleDictionary = {
 
   // Permissions
   exactAlarms: 'Точные будильники',
-  exactAlarmsMessage: 'Для своевременного срабатывания напоминаний разрешите точные будильники в настройках устройства.',
+  exactAlarmsMessage: 'Для работы будильника в любое время разрешите точные будильники в настройках:\n\n1. Откройте «Настройки устройства» → «Приложения» → «Lichka»\n2. Включите «Точные будильники»',
+  batteryOptimization: 'Оптимизация батареи',
+  batteryOptimizationMessage: 'Чтобы будильник срабатывал даже когда телефон заблокирован или не используется, отключите оптимизацию батареи:\n\n1. Настройки → Приложения → Lichka → Батарея\n2. Выберите «Не оптимизировать»\n\nНа некоторых устройствах также может потребоваться:\n• Разрешить автозапуск\n• Отключить ограничения фоновой активности',
+  alarmPermissionsGuide: 'Чтобы будильник срабатывал всегда (даже при заблокированном экране), убедитесь что включены:\n\n✓ Точные будильники\n✓ Отключена оптимизация батареи\n✓ Разрешён показ поверх блокировки\n✓ Разрешён автозапуск (Xiaomi, Huawei и др.)',
   openSettings: 'Настройки',
 
   // Import
@@ -361,7 +367,10 @@ export const en: LocaleDictionary = {
 
   // Permissions
   exactAlarms: 'Exact alarms',
-  exactAlarmsMessage: 'To ensure timely reminders, please allow exact alarms in device settings.',
+  exactAlarmsMessage: 'For the alarm to work at any time, please enable exact alarms in settings:\n\n1. Open «Device Settings» → «Apps» → «Lichka»\n2. Enable «Exact alarms»',
+  batteryOptimization: 'Battery optimization',
+  batteryOptimizationMessage: 'To ensure the alarm fires even when the phone is locked or idle, disable battery optimization:\n\n1. Settings → Apps → Lichka → Battery\n2. Select «Don\'t optimize»\n\nOn some devices you may also need:\n• Enable auto-start\n• Disable background restrictions',
+  alarmPermissionsGuide: 'To make sure the alarm always fires (even when screen is locked), ensure these are enabled:\n\n✓ Exact alarms\n✓ Battery optimization disabled\n✓ Show over lock screen\n✓ Auto-start (Xiaomi, Huawei, etc.)',
   openSettings: 'Settings',
 
   // Import

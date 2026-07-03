@@ -23,7 +23,7 @@ object AlarmScheduler {
         triggerAtMillis: Long,
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0)
+        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, false)
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
@@ -43,8 +43,7 @@ object AlarmScheduler {
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent =
-            buildPendingIntent(context, messageId, chatId, body, chatTitle, intervalMinutes)
-        // Используем setAlarmClock — самый надёжный метод, работает даже в Doze
+            buildPendingIntent(context, messageId, chatId, body, chatTitle, intervalMinutes, false)
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
         }
@@ -64,7 +63,7 @@ object AlarmScheduler {
         triggerAtMillis: Long,
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pendingIntent = buildAlarmPendingIntent(context, messageId, chatId, body, chatTitle)
+        val pendingIntent = buildPendingIntent(context, messageId, chatId, body, chatTitle, 0, true)
 
         val showIntent = Intent(context, MainActivity::class.java).let { intent ->
             PendingIntent.getActivity(
@@ -77,23 +76,6 @@ object AlarmScheduler {
         val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent)
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
         AlarmStorage.save(context, messageId, chatId, body, chatTitle, 0, triggerAtMillis, isAlarm = true)
-    }
-
-    fun cancelAlarm(context: Context, messageId: String) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, AlarmActivity::class.java).apply {
-            putExtra(EXTRA_MESSAGE_ID, messageId)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        val pendingIntent =
-            PendingIntent.getActivity(
-                context,
-                messageId.hashCode(),
-                intent,
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
-            )
-        pendingIntent?.let { alarmManager.cancel(it) }
-        AlarmStorage.remove(context, messageId)
     }
 
     fun cancel(context: Context, messageId: String) {
@@ -145,6 +127,7 @@ object AlarmScheduler {
         body: String,
         chatTitle: String,
         intervalMinutes: Int,
+        isAlarm: Boolean = false,
     ): PendingIntent {
         val intent =
             Intent(context, AlarmReceiver::class.java).apply {
@@ -153,31 +136,9 @@ object AlarmScheduler {
                 putExtra(EXTRA_BODY, body)
                 putExtra(EXTRA_CHAT_TITLE, chatTitle)
                 putExtra(EXTRA_INTERVAL_MINUTES, intervalMinutes)
+                putExtra(EXTRA_IS_ALARM, isAlarm)
             }
         return PendingIntent.getBroadcast(
-            context,
-            messageId.hashCode(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
-
-    private fun buildAlarmPendingIntent(
-        context: Context,
-        messageId: String,
-        chatId: String,
-        body: String,
-        chatTitle: String,
-    ): PendingIntent {
-        val intent =
-            Intent(context, AlarmActivity::class.java).apply {
-                putExtra(EXTRA_MESSAGE_ID, messageId)
-                putExtra(EXTRA_CHAT_ID, chatId)
-                putExtra(EXTRA_BODY, body)
-                putExtra(EXTRA_CHAT_TITLE, chatTitle)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-        return PendingIntent.getActivity(
             context,
             messageId.hashCode(),
             intent,

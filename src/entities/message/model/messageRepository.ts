@@ -153,7 +153,7 @@ export function getVisibleMessagesByChatId(chatId: string): Message[] {
        AND (
          type IN ('simple', 'periodic')
          OR scheduled_at IS NULL
-         OR scheduled_at <= datetime('now')
+         OR REPLACE(SUBSTR(scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
        )
      ORDER BY created_at ASC`,
     [chatId],
@@ -164,13 +164,12 @@ export function getVisibleMessagesByChatId(chatId: string): Message[] {
 
 export function getMessagesForChatAtTime(chatId: string): Message[] {
   const db = getDatabase();
-  const now = new Date().toISOString();
   const result = db.executeSync(
     `SELECT ${SELECT_COLUMNS} FROM messages
      WHERE chat_id = ?
        AND type IN ('reminder', 'alarm')
-       AND scheduled_at <= ?`,
-    [chatId, now],
+       AND REPLACE(SUBSTR(scheduled_at, 1, 19), 'T', ' ') <= datetime('now')`,
+    [chatId],
   );
 
   return result.rows.map(mapRow);

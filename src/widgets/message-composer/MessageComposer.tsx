@@ -49,6 +49,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const [pickerDate, setPickerDate] = useState(new Date());
   const [intervalVisible, setIntervalVisible] = useState(false);
   const [permissionDialog, setPermissionDialog] = useState(false);
+  const [alarmGuideVisible, setAlarmGuideVisible] = useState(false);
 
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
@@ -137,22 +138,30 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const handlePickerConfirm = useCallback(
     async (date: Date) => {
-      if (pickerMode) {
-        if (pickerMode === 'alarm') {
-          const canSchedule = await ensureExactAlarmPermission();
-          if (!canSchedule) {
-            setPickerMode(null);
-            setPermissionDialog(true);
-            return;
-          }
-          requestBatteryOptimizationExemption();
-        }
-        sendMessage(pickerMode, { scheduledAt: date.toISOString() });
+      if (pickerMode === 'alarm') {
+        setAlarmGuideVisible(true);
+        setPickerDate(date);
+        return;
+      }
+      if (pickerMode === 'reminder') {
+        sendMessage('reminder', { scheduledAt: date.toISOString() });
       }
       setPickerMode(null);
     },
     [pickerMode, sendMessage],
   );
+
+  const handleAlarmGuideConfirm = useCallback(async () => {
+    setAlarmGuideVisible(false);
+    setPickerMode(null);
+    const canSchedule = await ensureExactAlarmPermission();
+    if (!canSchedule) {
+      setPermissionDialog(true);
+      return;
+    }
+    requestBatteryOptimizationExemption();
+    sendMessage('alarm', { scheduledAt: pickerDate.toISOString() });
+  }, [sendMessage, pickerDate]);
 
   const handlePickerCancel = useCallback(() => {
     setPickerMode(null);
@@ -314,6 +323,23 @@ export function MessageComposer({ chatId, onSent }: Props) {
           { text: t.openSettings, onPress: () => Linking.openSettings() },
         ]}
         onClose={() => setPermissionDialog(false)}
+      />
+
+      <AlertDialog
+        visible={alarmGuideVisible}
+        title={t.exactAlarms}
+        message={t.alarmPermissionsGuide}
+        buttons={[
+          { text: t.cancel, style: 'cancel', onPress: () => {
+            setAlarmGuideVisible(false);
+            setPickerMode(null);
+          }},
+          { text: t.done, onPress: handleAlarmGuideConfirm },
+        ]}
+        onClose={() => {
+          setAlarmGuideVisible(false);
+          setPickerMode(null);
+        }}
       />
     </>
   );
