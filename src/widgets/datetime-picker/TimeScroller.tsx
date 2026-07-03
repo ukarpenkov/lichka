@@ -47,14 +47,14 @@ export function TimeScroller({
 
   const scrollToIndex = useCallback(
     (ref: React.RefObject<FlatList<number | null> | null>, index: number, animated: boolean) => {
-      ref.current?.scrollToOffset({ offset: (index + PAD) * ITEM_HEIGHT, animated });
+      ref.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated });
     },
     [],
   );
 
   const handleHourScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT) - PAD;
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(23, idx));
       if (clamped !== lastHourIdx.current) {
         lastHourIdx.current = clamped;
@@ -66,7 +66,7 @@ export function TimeScroller({
 
   const handleMinuteScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT) - PAD;
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(59, idx));
       if (clamped !== lastMinIdx.current) {
         lastMinIdx.current = clamped;
@@ -78,7 +78,7 @@ export function TimeScroller({
 
   const handleHourScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT) - PAD;
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(23, idx));
       if (clamped !== hour) {
         onHourChange(clamped);
@@ -90,7 +90,7 @@ export function TimeScroller({
 
   const handleMinuteScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT) - PAD;
+      const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = Math.max(0, Math.min(59, idx));
       if (clamped !== minute) {
         onMinuteChange(clamped);
