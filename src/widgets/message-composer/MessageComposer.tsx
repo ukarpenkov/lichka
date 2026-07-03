@@ -308,16 +308,16 @@ export function MessageComposer({ chatId, onSent }: Props) {
           maxLength={4000}
         />
         <View style={styles.actions}>
-          <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <AnimatedPressable
             onLongPress={handleMicLongPress}
             delayLongPress={300}
             style={styles.micBtn}>
             <MicIcon size={22} color={`${text}99`} />
           </AnimatedPressable>
+          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
         </View>
       </Animated.View>
 
