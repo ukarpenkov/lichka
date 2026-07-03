@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, KeyboardAvoidingView, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
@@ -283,9 +283,7 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <KeyboardAvoidingView
-        style={styles.chatArea}
-        behavior="height">
+      <View style={styles.chatArea}>
         <AnimatedFlatList
           ref={flatListRef as any}
           data={listItems}
@@ -309,7 +307,7 @@ export function ChatRoomScreen() {
         />
 
         <MessageComposer chatId={chatId} onSent={loadData} />
-      </KeyboardAvoidingView>
+      </View>
 
       <MessageContextMenu
         visible={menuMessage !== null}
