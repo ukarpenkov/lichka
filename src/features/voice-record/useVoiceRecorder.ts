@@ -69,6 +69,8 @@ export function useVoiceRecorder(): VoiceRecorderState {
         AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.medium,
         AVNumberOfChannelsKeyIOS: 1,
         AVSampleRateKeyIOS: 16000,
+        AudioChannels: 1,
+        AudioSamplingRate: 16000,
       });
 
       currentUriRef.current = uri;

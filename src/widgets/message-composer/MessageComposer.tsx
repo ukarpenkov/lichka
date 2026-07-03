@@ -206,7 +206,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
     const result = await stopRecording();
     if (result && result.uri) {
-      const relativeUri = result.uri.replace(`${DocumentDirectoryPath}/`, '');
+      const relativeUri = result.uri.replace('file://', '').replace(`${DocumentDirectoryPath}/`, '');
       const payload = JSON.stringify({ uri: relativeUri });
       const durationSec = Math.round(result.durationMs / 1000);
       createMessage(chatId, 'simple', t.voiceMessage(durationSec), null, null, payload);
