@@ -14,7 +14,10 @@
 В результате контент сдвигается дважды, и между `MessageComposer` (низ контента) и клавиатурой образуется зазор.
 
 ## Исправление
-Удалён `useAnimatedKeyboard` и связанная логика `keyboardAreaStyle`. Клавиатура обрабатывается нативно через `adjustResize`.
+Удалены `useAnimatedKeyboard`, `useAnimatedStyle` и связанная логика `chatAreaAnimatedStyle` из `ChatRoomScreen.tsx`. Клавиатура обрабатывается нативно через `adjustResize` в `AndroidManifest.xml`.
+
+### Изменённые файлы
+- `src/pages/chat-room/ChatRoomScreen.tsx` — удалены `useAnimatedKeyboard`, `useAnimatedStyle`, `Platform`, переменные `keyboard` и `chatAreaAnimatedStyle`, а также `chatAreaAnimatedStyle` из стилей `Animated.View`
 
 ## Статус
-fixed
+fixed (2026-07-03)
