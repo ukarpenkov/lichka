@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, type PressableProps, type ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -22,6 +22,7 @@ export function AnimatedPressable({
   ...rest
 }: AnimatedPressableProps) {
   const scale = useSharedValue(1);
+  const [pressed, setPressed] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -29,6 +30,7 @@ export function AnimatedPressable({
 
   const handlePressIn = useCallback(
     (e: any) => {
+      setPressed(true);
       scale.value = withSpring(scaleTo, SPRING_PRESS);
       onPressIn?.(e);
     },
@@ -37,6 +39,7 @@ export function AnimatedPressable({
 
   const handlePressOut = useCallback(
     (e: any) => {
+      setPressed(false);
       scale.value = withSpring(1, SPRING_PRESS);
       onPressOut?.(e);
     },
@@ -44,7 +47,7 @@ export function AnimatedPressable({
   );
 
   return (
-    <Animated.View style={[animatedStyle, pressStyle]}>
+    <Animated.View style={[animatedStyle, pressed ? pressStyle : undefined]}>
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
