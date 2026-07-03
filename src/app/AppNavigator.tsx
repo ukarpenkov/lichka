@@ -45,10 +45,7 @@ function ChatStackScreen() {
       <Stack.Screen
         name="ChatRoom"
         component={ChatRoomScreen}
-        options={{
-          headerShown: false,
-          androidWindowSoftInputMode: 'adjustNothing',
-        }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

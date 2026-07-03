@@ -1,23 +1,27 @@
-# [UI] Лишний отступ между панелью ввода и клавиатурой в чате
+# [UI] Панель ввода прячется за клавиатурой в чате
 
 ## Описание
-При открытии клавиатуры на экране чата между `MessageComposer` и клавиатурой появляется пустое пространство (фон приложения). Панель ввода не прилегает к клавиатуре.
+При открытии клавиатуры на экране чата `MessageComposer` оказывается **под** клавиатурой — пользователь не видит поле ввода.
 
 ## Локализация
-`src/pages/chat-room/ChatRoomScreen.tsx:92-115` — `useAnimatedKeyboard` с `paddingBottom`
+- `src/pages/chat-room/ChatRoomScreen.tsx` — основной layout экрана чата
+- `android/app/src/main/AndroidManifest.xml:26` — `windowSoftInputMode`
 
 ## Причина
-Двойная компенсация высоты клавиатуры:
-1. `android:windowSoftInputMode="adjustResize"` в `AndroidManifest.xml:24` — система сама уменьшает окно на высоту клавиатуры
-2. `useAnimatedKeyboard` + `paddingBottom: keyboard.height.value` в `ChatRoomScreen.tsx` — добавлена **дополнительная** компенсация поверх системной
-
-В результате контент сдвигается дважды, и между `MessageComposer` (низ контента) и клавиатурой образуется зазор.
+Конфликт `adjustResize` (нативная обработка Android) и React Native:
+1. `adjustResize` уменьшает окно при открытии клавиатуры, но React Native с `flex: 1` layout **не корректно** пересчитывает размеры — контент не сжимается
+2. Предыдущий код компенсировал это через `useAnimatedKeyboard` + `paddingBottom`, но это вызывало двойную компенсацию (зазор)
+3. После удаления `useAnimatedKeyboard` без замены — панель ввода ушла под клавиатуру
 
 ## Исправление
-Удалены `useAnimatedKeyboard`, `useAnimatedStyle` и связанная логика `chatAreaAnimatedStyle` из `ChatRoomScreen.tsx`. Клавиатура обрабатывается нативно через `adjustResize` в `AndroidManifest.xml`.
+1. **`AndroidManifest.xml`** — заменён `adjustResize` на `adjustNothing` (Android не трогает layout нативно)
+2. **`ChatRoomScreen.tsx`** — область чата обёрнута в `KeyboardAvoidingView` с `behavior="padding"` для корректного подъёма контента при открытии клавиатуры
+3. **`AppNavigator.tsx`** — удалён невалидный `androidWindowSoftInputMode` (остаток предыдущей попытки)
 
 ### Изменённые файлы
-- `src/pages/chat-room/ChatRoomScreen.tsx` — удалены `useAnimatedKeyboard`, `useAnimatedStyle`, `Platform`, переменные `keyboard` и `chatAreaAnimatedStyle`, а также `chatAreaAnimatedStyle` из стилей `Animated.View`
+- `android/app/src/main/AndroidManifest.xml` — `adjustResize` → `adjustNothing`
+- `src/pages/chat-room/ChatRoomScreen.tsx` — добавлен `KeyboardAvoidingView` вокруг области чата
+- `src/app/AppNavigator.tsx` — удалён `androidWindowSoftInputMode: 'adjustNothing'`
 
 ## Статус
 fixed (2026-07-03)
