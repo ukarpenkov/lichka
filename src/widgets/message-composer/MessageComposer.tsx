@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking, Keyboard } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -47,6 +47,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const { text, background } = useTheme();
   const { t } = useLocale();
   const keyboard = useAnimatedKeyboard();
+  const keyboardVisible = useSharedValue(false);
   const [body, setBody] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -69,6 +70,19 @@ export function MessageComposer({ chatId, onSent }: Props) {
     return () => sub.remove();
   }, []);
 
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      keyboardVisible.value = true;
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardVisible.value = false;
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardVisible]);
+
   // Recording indicator animations
   const dotScale = useSharedValue(1);
   const recOpacity = useSharedValue(0);
@@ -82,7 +96,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   }));
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom: keyboard.height.value > 0 ? 0 : 12,
+    paddingBottom: keyboardVisible.value ? 0 : 12,
   }));
 
   const triggerHapticTap = useCallback(() => {

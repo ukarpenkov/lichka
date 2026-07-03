@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Platform, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Platform, Keyboard, type LayoutChangeEvent, type ViewToken } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
@@ -93,6 +93,20 @@ export function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
   const keyboard = useAnimatedKeyboard();
+  const keyboardVisible = useSharedValue(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      keyboardVisible.value = true;
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardVisible.value = false;
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardVisible]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -102,7 +116,7 @@ export function ChatRoomScreen() {
 
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
-      Platform.OS === 'android'
+      Platform.OS === 'android' && keyboardVisible.value
         ? Math.max(keyboard.height.value - tabBarHeight, 0)
         : 0,
   }));
