@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Bell, AlarmClock, Repeat } from 'lucide-react-native';
+import { Bell, Repeat } from 'lucide-react-native';
+import { AlarmClockIcon } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable } from '../../shared/ui';
@@ -15,14 +16,14 @@ export type ScheduledItemProps = {
 
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
   reminder: Bell,
-  alarm: AlarmClock,
+  alarm: undefined as any,
   periodic: Repeat,
 };
 
 export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProps) {
   const { text } = useTheme();
   const { t, locale } = useLocale();
-  const Icon = TYPE_ICON[message.type as keyof typeof TYPE_ICON];
+  const Icon = message.type === 'alarm' ? AlarmClockIcon : TYPE_ICON[message.type as keyof typeof TYPE_ICON];
   const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
   const timeText =
     message.type === 'periodic'

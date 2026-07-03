@@ -10,7 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { useTheme, useLocale } from '../../shared/config';
-import { IconButton, Text, AlertDialog } from '../../shared/ui';
+import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
 import { createMessage } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
 import {
@@ -19,7 +19,7 @@ import {
   requestBatteryOptimizationExemption,
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
-import { Send, Bell, AlarmClock, Repeat, Mic, X, Square } from 'lucide-react-native';
+import { Send, Bell, Repeat, X, Square } from 'lucide-react-native';
 import { hapticTap, hapticLongPress, hapticSuccess, playSendSound } from '../../shared/lib';
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
@@ -281,13 +281,13 @@ export function MessageComposer({ chatId, onSent }: Props) {
         <View style={styles.actions}>
           <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClock} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
           <AnimatedPressable
             onLongPress={handleMicLongPress}
             delayLongPress={300}
             style={styles.micBtn}>
-            <Mic size={22} color={`${text}99`} />
+            <MicIcon size={22} color={`${text}99`} />
           </AnimatedPressable>
         </View>
       </Animated.View>

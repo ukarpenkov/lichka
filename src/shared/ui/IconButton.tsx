@@ -1,12 +1,9 @@
 import React from 'react';
 import { Pressable, Image, type ImageSourcePropType, StyleSheet } from 'react-native';
-import type { LucideIcon } from 'lucide-react-native';
 import { useTheme } from '../config';
 
 export type IconButtonProps = {
-  /** Lucide icon component */
-  icon?: LucideIcon;
-  /** Image source for custom icon */
+  icon?: React.ComponentType<any>;
   source?: ImageSourcePropType;
   /** Icon element (e.g. from react-native-svg) */
   children?: React.ReactNode;
