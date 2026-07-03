@@ -285,7 +285,7 @@ export function ChatRoomScreen() {
 
       <KeyboardAvoidingView
         style={styles.chatArea}
-        behavior="padding">
+        behavior="height">
         <AnimatedFlatList
           ref={flatListRef as any}
           data={listItems}
