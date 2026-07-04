@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Будильник</title>
+    <style>
+        @import url('https://cdn.fontsource.org/fonts/inter/css.css');
+
+        :root {
+            --bg-primary: #13141f;
+            --bg-secondary: #1c1d2e;
+            --bg-tertiary: #252640;
+            --bg-elevated: #2a2b45;
+
+            --text-primary: #f4f4f7;
+            --text-secondary: #8b8ca3;
+            --text-tertiary: #5e5f78;
+
+            --accent-danger: #ff6b6b;
+            --accent-danger-hover: #ff8787;
+            --accent-danger-active: #fa5252;
+
+            --accent-secondary: #3d3e5c;
+            --accent-secondary-hover: #4a4b6e;
+            --accent-secondary-text: #e4e4eb;
+
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-light: rgba(255, 255, 255, 0.1);
+
+            --icon-color: #6c6d8a;
+            --icon-ring: rgba(108, 109, 138, 0.15);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 20px;
+            --radius-xl: 24px;
+
+            --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f6fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #eceef5;
+            --bg-elevated: #e4e6f0;
+
+            --text-primary: #1a1b2e;
+            --text-secondary: #6b6c82;
+            --text-tertiary: #9a9bb0;
+
+            --accent-danger: #e03131;
+            --accent-danger-hover: #c92a2a;
+            --accent-danger-active: #b02525;
+
+            --accent-secondary: #e8e9f2;
+            --accent-secondary-hover: #dde0ec;
+            --accent-secondary-text: #1a1b2e;
+
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-light: rgba(0, 0, 0, 0.1);
+
+            --icon-color: #8b8ca3;
+            --icon-ring: rgba(139, 140, 163, 0.15);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="mono"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1e1e1e;
+            --bg-elevated: #262626;
+
+            --text-primary: #fafafa;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #666666;
+
+            --accent-danger: #ffffff;
+            --accent-danger-hover: #e0e0e0;
+            --accent-danger-active: #cccccc;
+
+            --accent-secondary: #2a2a2a;
+            --accent-secondary-hover: #333333;
+            --accent-secondary-text: #fafafa;
+
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-light: rgba(255, 255, 255, 0.15);
+
+            --icon-color: #777777;
+            --icon-ring: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background var(--transition-slow), color var(--transition-slow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0 16px;
+        }
+
+        .theme-switcher {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            padding: 3px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            color: var(--text-tertiary);
+        }
+
+        .theme-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        .theme-btn.active {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .status-time {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.02em;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .alarm-icon-wrapper {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alarm-icon-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-light);
+            background: var(--bg-secondary);
+            transition: all var(--transition-slow);
+        }
+
+        .alarm-icon-ring::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .alarm-icon-pulse {
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid var(--icon-ring);
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .alarm-icon-pulse:nth-child(2) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.4);
+                opacity: 0;
+            }
+        }
+
+        .alarm-icon {
+            position: relative;
+            z-index: 2;
+            width: 64px;
+            height: 64px;
+            color: var(--icon-color);
+            transition: color var(--transition-slow);
+            animation: alarm-shake 0.6s ease-in-out infinite;
+        }
+
+        @keyframes alarm-shake {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: rotate(-4deg);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: rotate(4deg);
+            }
+        }
+
+        .alarm-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .alarm-info {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .alarm-time {
+            font-size: 56px;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            transition: color var(--transition-slow);
+        }
+
+        .alarm-label {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            line-height: 1.2;
+            transition: color var(--transition-slow);
+        }
+
+        .alarm-meta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .alarm-meta-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-danger);
+        }
+
+        .alarm-meta-text {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent-danger);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        /* ===== Текстовые действия ===== */
+        .actions {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+            padding: 0 4px 16px;
+        }
+
+        .text-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            padding: 8px 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all var(--transition-fast);
+            position: relative;
+            border-radius: 100px;
+        }
+
+        .text-action:active {
+            transform: scale(0.96);
+        }
+
+        .text-action .action-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            transition: transform var(--transition-fast);
+        }
+
+        .text-action:hover .action-icon {
+            transform: scale(1.1);
+        }
+
+        .text-action .action-label {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            line-height: 1;
+        }
+
+        /* Отключить — красный текст */
+        .action-dismiss {
+            color: var(--accent-danger);
+        }
+
+        .action-dismiss:hover {
+            color: var(--accent-danger-hover);
+        }
+
+        .action-dismiss:active {
+            color: var(--accent-danger-active);
+        }
+
+        /* Отложить — серый текст */
+        .action-snooze {
+            color: var(--text-secondary);
+        }
+
+        .action-snooze:hover {
+            color: var(--text-primary);
+        }
+
+        .action-snooze:active {
+            color: var(--text-tertiary);
+        }
+
+        /* Разделитель между действиями */
+        .action-divider {
+            width: 40px;
+            height: 1px;
+            background: var(--border-light);
+            opacity: 0.6;
+        }
+
+        .home-indicator {
+            width: 120px;
+            height: 4px;
+            background: var(--text-tertiary);
+            border-radius: 100px;
+            margin: 0 auto 8px;
+            opacity: 0.5;
+        }
+
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 100px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-light);
+            opacity: 0;
+            transition: all var(--transition-base);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-height: 640px) {
+            .alarm-icon-wrapper {
+                width: 110px;
+                height: 110px;
+            }
+
+            .alarm-icon {
+                width: 52px;
+                height: 52px;
+            }
+
+            .alarm-time {
+                font-size: 44px;
+            }
+
+            .alarm-label {
+                font-size: 24px;
+            }
+
+            .actions {
+                gap: 20px;
+            }
+        }
+
+        @media (min-width: 480px) {
+            .app-container {
+                height: 100vh;
+                border-radius: 32px;
+                margin: 20px auto;
+                max-height: 820px;
+                box-shadow: var(--shadow-lg);
+                border: 1px solid var(--border-subtle);
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+
+    <div class="app-container">
+
+        <div class="top-bar">
+            <div class="theme-switcher">
+                <button class="theme-btn active" data-theme="dark" title="Тёмная">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+                <button class="theme-btn" data-theme="light" title="Светлая">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                </button>
+                <button class="theme-btn" data-theme="mono" title="Монохром">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 2a10 10 0 0 1 0 20" />
+                    </svg>
+                </button>
+            </div>
+            <div class="status-time" id="statusTime">19:06</div>
+        </div>
+
+        <div class="main-content">
+
+            <div class="alarm-icon-wrapper">
+                <div class="alarm-icon-pulse"></div>
+                <div class="alarm-icon-pulse"></div>
+                <div class="alarm-icon-ring"></div>
+                <div class="alarm-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="13" r="8" />
+                        <path d="M12 9v4l2.5 1.5" />
+                        <path d="M5 3L2 6" />
+                        <path d="M22 6l-3-3" />
+                        <path d="M6.38 18.7L4 21" />
+                        <path d="M17.64 18.67L20 21" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="alarm-info">
+                <div class="alarm-time">19:04</div>
+                <div class="alarm-label">Аааапп</div>
+                <div class="alarm-meta">
+                    <span class="alarm-meta-dot"></span>
+                    <span class="alarm-meta-text">Звонок</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Текстовые действия вместо кнопок -->
+        <div class="actions">
+            <button class="text-action action-dismiss" id="dismissBtn">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18" />
+                    <path d="M6 6l12 12" />
+                </svg>
+                <span class="action-label">Отключить</span>
+            </button>
+
+            <div class="action-divider"></div>
+
+            <button class="text-action action-snooze" id="snoozeBtn">
+                <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span class="action-label">Отложить · 5 мин</span>
+            </button>
+        </div>
+
+        <div class="home-indicator"></div>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const themeBtns = document.querySelectorAll('.theme-btn');
+        const body = document.body;
+
+        themeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                themeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                body.setAttribute('data-theme', btn.dataset.theme);
+            });
+        });
+
+        function updateTime() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('statusTime').textContent = `${h}:${m}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        document.getElementById('dismissBtn').addEventListener('click', () => {
+            showToast('Будильник отключён');
+        });
+
+        document.getElementById('snoozeBtn').addEventListener('click', () => {
+            showToast('Будильник отложен на 5 минут');
+        });
+    </script>
+
+</body>
+
+</html>
