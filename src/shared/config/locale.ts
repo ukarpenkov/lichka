@@ -113,6 +113,13 @@ export interface LocaleDictionary {
   recording: (duration: string) => string;
   messageInput: string;
 
+  // Image
+  attachImage: string;
+  imagePreview: string;
+  removeImage: string;
+  imagePickError: string;
+  imageMessage: (width: number, height: number) => string;
+
   // Permissions
   exactAlarms: string;
   exactAlarmsMessage: string;
@@ -239,6 +246,13 @@ export const ru: LocaleDictionary = {
   recording: (duration) => `Запись ${duration}`,
   messageInput: 'Сообщение...',
 
+  // Image
+  attachImage: 'Прикрепить изображение',
+  imagePreview: 'Предпросмотр',
+  removeImage: 'Убрать',
+  imagePickError: 'Не удалось выбрать изображение',
+  imageMessage: (w, h) => `[image:${w}x${h}]`,
+
   // Permissions
   exactAlarms: 'Точные будильники',
   exactAlarmsMessage: 'Для работы будильника в любое время разрешите точные будильники в настройках:\n\n1. Откройте «Настройки устройства» → «Приложения» → «Lichka»\n2. Включите «Точные будильники»',
@@ -364,6 +378,13 @@ export const en: LocaleDictionary = {
   voiceMessage: (sec) => `[voice:${sec}]`,
   recording: (duration) => `Recording ${duration}`,
   messageInput: 'Message...',
+
+  // Image
+  attachImage: 'Attach image',
+  imagePreview: 'Preview',
+  removeImage: 'Remove',
+  imagePickError: 'Failed to pick image',
+  imageMessage: (w, h) => `[image:${w}x${h}]`,
 
   // Permissions
   exactAlarms: 'Exact alarms',

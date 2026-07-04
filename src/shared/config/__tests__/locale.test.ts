@@ -62,6 +62,22 @@ describe('locale', () => {
       expect(ru.chatsAdded(3)).toContain('3');
       expect(en.chatsAdded(3)).toContain('3');
     });
+
+    it('should have working image template functions', () => {
+      expect(ru.imageMessage(1920, 1080)).toBe('[image:1920x1080]');
+      expect(en.imageMessage(800, 600)).toBe('[image:800x600]');
+    });
+
+    it('should have all image-related keys as strings', () => {
+      const imageStringKeys = ['attachImage', 'imagePreview', 'removeImage', 'imagePickError'] as const;
+
+      for (const key of imageStringKeys) {
+        expect(typeof ru[key]).toBe('string');
+        expect((ru[key] as string).length).toBeGreaterThan(0);
+        expect(typeof en[key]).toBe('string');
+        expect((en[key] as string).length).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('SUPPORTED_LOCALES', () => {
