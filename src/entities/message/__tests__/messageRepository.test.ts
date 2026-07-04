@@ -9,6 +9,7 @@ jest.mock('react-native-fs', () => ({
 import {
   createMessage,
   getMessagesByChatId,
+  getVisibleMessagesByChatId,
   getMessageById,
   updateMessage,
   deleteMessage,
@@ -117,6 +118,15 @@ describe('messageRepository', () => {
 
       expect(msg.type).toBe('alarm');
       expect(msg.enabled).toBe(true);
+    });
+
+    it('should create an image message with enabled=false', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const msg = createMessage('chat-1', 'image', '', null, null, '{"uri":"media/images/1.jpg"}');
+
+      expect(msg.type).toBe('image');
+      expect(msg.enabled).toBe(false);
+      expect(msg.payload).toBe('{"uri":"media/images/1.jpg"}');
     });
   });
 
@@ -303,6 +313,22 @@ describe('messageRepository', () => {
       expect(params).toHaveLength(1);
     });
 
+    it('should NOT return image messages', () => {
+      const imageRow = {
+        ...sampleDbRow,
+        type: 'image',
+        enabled: 1,
+        payload: '{"uri":"media/images/1.jpg"}',
+      };
+
+      mockExecuteSync.mockReturnValue({ rows: [imageRow] });
+      const messages = getScheduledMessages();
+
+      const sql = mockExecuteSync.mock.calls[0][0];
+      expect(sql).toContain("type IN ('reminder', 'alarm', 'periodic')");
+      expect(sql).not.toContain('image');
+    });
+
     it('should return empty array when no scheduled messages', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
 
@@ -336,6 +362,31 @@ describe('messageRepository', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
 
       expect(getMessagesForChatAtTime('chat-1')).toEqual([]);
+    });
+  });
+
+  describe('getVisibleMessagesByChatId', () => {
+    it('should include image messages', () => {
+      const imageRow = {
+        ...sampleDbRow,
+        type: 'image',
+        body: '',
+        payload: '{"uri":"media/images/1.jpg"}',
+      };
+
+      mockExecuteSync.mockReturnValue({ rows: [imageRow] });
+      const messages = getVisibleMessagesByChatId('chat-1');
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0].type).toBe('image');
+    });
+
+    it('should query with image in type filter', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      getVisibleMessagesByChatId('chat-abc');
+
+      const [sql] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("type IN ('simple', 'periodic', 'image')");
     });
   });
 });

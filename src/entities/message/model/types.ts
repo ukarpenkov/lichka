@@ -1,4 +1,4 @@
-export type MessageType = 'simple' | 'reminder' | 'alarm' | 'periodic';
+export type MessageType = 'simple' | 'reminder' | 'alarm' | 'periodic' | 'image';
 
 export interface Message {
   id: string;

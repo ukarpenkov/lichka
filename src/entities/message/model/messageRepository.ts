@@ -18,7 +18,7 @@ export function createMessage(
   const now = new Date().toISOString();
   const sAt = scheduledAt ?? null;
   const interval = intervalMinutes ?? null;
-  const enabled = type === 'simple' ? 0 : 1;
+  const enabled = type === 'simple' || type === 'image' ? 0 : 1;
   const pl = payload ?? null;
 
   db.executeSync(
@@ -151,7 +151,7 @@ export function getVisibleMessagesByChatId(chatId: string): Message[] {
     `SELECT ${SELECT_COLUMNS} FROM messages
      WHERE chat_id = ?
        AND (
-         type IN ('simple', 'periodic')
+         type IN ('simple', 'periodic', 'image')
          OR scheduled_at IS NULL
          OR REPLACE(SUBSTR(scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
        )
