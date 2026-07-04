@@ -11,12 +11,18 @@ import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
 import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
+import { AlarmScreen } from '../pages/alarm';
 import { useNotificationNavigation, setNavigationReady } from '../features/notifications';
 
-import type { ChatStackParamList, SettingsStackParamList } from './types';
+import type {
+  RootStackParamList,
+  ChatStackParamList,
+  SettingsStackParamList,
+} from './types';
 
 // --- Navigators ---
 
+const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Stack = createNativeStackNavigator<ChatStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -85,6 +91,52 @@ function isBackgroundDark(background: string): boolean {
   return r * 0.299 + g * 0.587 + b * 0.114 < 128;
 }
 
+function MainTabs() {
+  const { text, background } = useTheme();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: background,
+          borderTopColor: text + '20',
+        },
+        tabBarActiveTintColor: text,
+        tabBarInactiveTintColor: text + '60',
+      }}>
+      <Tab.Screen
+        name="ChatsTab"
+        component={ChatStackScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MessageCircle color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ScheduledTab"
+        component={ScheduledScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <CalendarDays color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        component={SettingsStackScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Settings color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 export function AppNavigator() {
   const { text, background } = useTheme();
   const isDark = isBackgroundDark(background);
@@ -119,45 +171,18 @@ export function AppNavigator() {
         backgroundColor={background}
       />
       <NotificationHandler />
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-          tabBarStyle: {
-            backgroundColor: background,
-            borderTopColor: text + '20',
-          },
-          tabBarActiveTintColor: text,
-          tabBarInactiveTintColor: text + '60',
-        }}>
-        <Tab.Screen
-          name="ChatsTab"
-          component={ChatStackScreen}
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
+        <RootStack.Screen name="Main" component={MainTabs} />
+        <RootStack.Screen
+          name="Alarm"
+          component={AlarmScreen}
           options={{
-            tabBarIcon: ({ color, size }) => (
-              <MessageCircle color={color} size={size} />
-            ),
+            presentation: 'fullScreenModal',
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
           }}
         />
-        <Tab.Screen
-          name="ScheduledTab"
-          component={ScheduledScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <CalendarDays color={color} size={size} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="SettingsTab"
-          component={SettingsStackScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Settings color={color} size={size} />
-            ),
-          }}
-        />
-      </Tab.Navigator>
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 }
