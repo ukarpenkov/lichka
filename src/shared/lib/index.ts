@@ -1,5 +1,5 @@
 /** Утилиты и хелперы. */
-export { resolveMediaPath, ensureDir, saveAvatar, AVATARS_DIR, VOICE_DIR } from './mediaPath';
+export { resolveMediaPath, ensureDir, saveAvatar, saveImage, AVATARS_DIR, VOICE_DIR, IMAGES_DIR } from './mediaPath';
 export { cleanupOrphanMedia } from './cleanupMedia';
 export { generateId } from './generateId';
 export {
@@ -19,3 +19,4 @@ export {
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { playSendSound, playReminderSound } from './sounds';
 export { useKeyboardHeight } from './keyboard';
+export { pickAndCompressImage, type CompressedImage } from './imageCompress';
