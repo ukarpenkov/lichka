@@ -352,17 +352,19 @@ export function MessageComposer({ chatId, onSent }: Props) {
           </Pressable>
         </View>
       ) : null}
-      <TextInput
-          style={[styles.input, { color: text, borderColor: `${text}33` }]}
-          placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
-          placeholderTextColor={`${text}66`}
-          multiline
-          value={body}
-          onChangeText={setBody}
-          maxLength={4000}
-        />
-        <View style={styles.actions}>
+      <View style={[styles.inputWrapper, { borderColor: `${text}33` }]}>
+          <TextInput
+            style={[styles.input, { color: text }]}
+            placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
+            placeholderTextColor={`${text}66`}
+            multiline
+            value={body}
+            onChangeText={setBody}
+            maxLength={4000}
+          />
           <IconButton icon={Paperclip} size={22} color={`${text}99`} onPress={handleAttachImage} onPressIn={triggerHapticTap} />
+        </View>
+        <View style={styles.actions}>
           {!imagePreview && (
             <>
             <AnimatedPressable
@@ -441,13 +443,20 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     borderWidth: 1,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 4,
+  },
+  input: {
+    flex: 1,
     fontSize: 16,
     maxHeight: 120,
+    paddingVertical: 6,
   },
   actions: {
     flexDirection: 'row',

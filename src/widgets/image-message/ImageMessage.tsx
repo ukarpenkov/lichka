@@ -52,12 +52,19 @@ export function ImageMessage({ message }: ImageMessageProps) {
       ? imageData.width / imageData.height
       : 1;
   const imageHeight = Math.min(bubbleWidth / aspectRatio, 300);
+  const imageRadius = hasCaption ? undefined : 16;
 
   return (
     <View style={styles.container}>
       <Image
         source={{ uri: absoluteUri }}
-        style={[styles.image, { width: bubbleWidth, height: imageHeight }]}
+        style={[
+          styles.image,
+          { width: bubbleWidth, height: imageHeight },
+          hasCaption
+            ? { borderTopLeftRadius: 16, borderTopRightRadius: 16 }
+            : { borderRadius: imageRadius },
+        ]}
       />
       {hasCaption && (
         <Text variant="body" style={styles.caption}>
@@ -70,15 +77,18 @@ export function ImageMessage({ message }: ImageMessageProps) {
 
 const styles = StyleSheet.create({
   container: {
+    marginHorizontal: -12,
+    marginVertical: -8,
     gap: 4,
   },
   image: {
-    borderRadius: 12,
     resizeMode: 'cover',
   },
   caption: {
     fontSize: 14,
     marginTop: 2,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
   },
   fallback: {
     fontSize: 15,

@@ -92,6 +92,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
             backgroundColor: highlighted ? text + '25' : text + '12',
             opacity: pressed ? 0.85 : 1,
           },
+          isImage && styles.bubbleImage,
         ]}
       >
         {isVoice ? (
@@ -129,6 +130,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginVertical: 2,
     marginHorizontal: 12,
+  },
+  bubbleImage: {
+    overflow: 'hidden',
   },
   body: {
     fontSize: 15,
