@@ -3,3 +3,4 @@ export { ChatForm } from './chat-form';
 export { DateTimePicker } from './datetime-picker';
 export { PeriodPicker } from './period-picker';
 export { VoiceMessage } from './voice-message';
+export { ImageMessage } from './image-message';

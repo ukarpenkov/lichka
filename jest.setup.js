@@ -3,8 +3,26 @@ jest.mock('react-native-gesture-handler', () => {
   return {
     GestureHandlerRootView: ({ children }) => React.createElement('View', null, children),
     Gesture: {
-      Pan: () => ({ activeOffsetX: () => ({ onUpdate: () => ({}) }), onUpdate: () => ({}) }),
+      Pan: () => {
+        const self = {
+          activeOffsetX() { return self; },
+          onUpdate() { return self; },
+          onEnd() { return self; },
+        };
+        return self;
+      },
       LongPress: () => ({}),
+      Manual: () => {
+        const self = {
+          onTouchesDown() { return self; },
+          onTouchesUp() { return self; },
+          onTouchesMove() { return self; },
+          onStart() { return self; },
+          onEnd() { return self; },
+          onFinalize() { return self; },
+        };
+        return self;
+      },
     },
     GestureDetector: ({ children }) => children,
     State: {},
@@ -87,6 +105,8 @@ jest.mock('react-native-reanimated', () => {
       FadeInUp: { springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) },
       FadeOutDown: { duration: () => ({}) },
       Layout: { springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) },
+      ZoomIn: { duration: () => ({ springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) }) },
+      ZoomOut: { duration: () => ({}) },
     },
     useSharedValue: (v) => ({ value: v }),
     useAnimatedStyle: (fn) => ({}),
@@ -106,6 +126,8 @@ jest.mock('react-native-reanimated', () => {
     FadeInUp: { springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) },
     FadeOutDown: { duration: () => ({}) },
     Layout: { springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) },
+    ZoomIn: { duration: () => ({ springify: () => ({ damping: () => ({ stiffness: () => ({}) }) }) }) },
+    ZoomOut: { duration: () => ({}) },
   };
 });
 
@@ -180,4 +202,14 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
 
 jest.mock('react-native-image-picker', () => ({
   launchImageLibrary: jest.fn(),
+}));
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    removeItem: jest.fn(),
+    clear: jest.fn(),
+  },
 }));

@@ -5,6 +5,7 @@ import { Bell, Repeat } from 'lucide-react-native';
 import { useTheme, useLocale } from '../../shared/config';
 import { Text, AlarmClockIcon } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
+import { ImageMessage } from '../../widgets/image-message';
 import { hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
@@ -32,10 +33,22 @@ function isVoiceMessage(message: Message): boolean {
   }
 }
 
+function isImageMessage(message: Message): boolean {
+  if (message.type === 'image') return true;
+  if (!message.payload) return false;
+  try {
+    const parsed = JSON.parse(message.payload);
+    return typeof parsed.uri === 'string' && parsed.uri.includes('images');
+  } catch {
+    return false;
+  }
+}
+
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
   reminder: Bell,
   alarm: undefined as any,
   periodic: Repeat,
+  image: undefined as any,
 };
 
 export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
@@ -55,6 +68,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
 
   const isEdited = message.updatedAt > message.createdAt;
   const isVoice = useMemo(() => isVoiceMessage(message), [message]);
+  const isImage = useMemo(() => isImageMessage(message), [message]);
   const TypeIcon = message.type === 'alarm' ? AlarmClockIcon : TYPE_ICON[message.type as keyof typeof TYPE_ICON];
 
   const handleLongPress = useCallback(() => {
@@ -82,6 +96,8 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
       >
         {isVoice ? (
           <VoiceMessage message={message} />
+        ) : isImage ? (
+          <ImageMessage message={message} />
         ) : (
           <Text variant="body" style={styles.body}>
             {message.body}
@@ -93,7 +109,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
               {t.edited}
             </Text>
           )}
-          {!isVoice && TypeIcon && (
+          {!isVoice && !isImage && TypeIcon && (
             <TypeIcon size={11} color={text + '50'} />
           )}
           <Text variant="caption" style={[styles.meta, { color: text + '50' }]}>

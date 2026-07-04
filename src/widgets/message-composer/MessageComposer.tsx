@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking } from 'react-native';
+import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -20,8 +20,8 @@ import {
   requestBatteryOptimizationExemption,
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
-import { Send, Bell, Repeat, X, Square } from 'lucide-react-native';
-import { hapticTap, hapticLongPress, hapticSuccess, playSendSound, useKeyboardHeight } from '../../shared/lib';
+import { Send, Bell, Repeat, X, Square, Paperclip } from 'lucide-react-native';
+import { hapticTap, hapticLongPress, hapticSuccess, playSendSound, useKeyboardHeight, generateId, pickAndCompressImage, saveImage } from '../../shared/lib';
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
 import { DocumentDirectoryPath } from 'react-native-fs';
@@ -52,6 +52,8 @@ export function MessageComposer({ chatId, onSent }: Props) {
   const [intervalVisible, setIntervalVisible] = useState(false);
   const [permissionDialog, setPermissionDialog] = useState(false);
   const [alarmGuideVisible, setAlarmGuideVisible] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{ uri: string; width: number; height: number } | null>(null);
+  const [imageErrorDialog, setImageErrorDialog] = useState(false);
 
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
@@ -124,9 +126,54 @@ export function MessageComposer({ chatId, onSent }: Props) {
     [body, chatId, onSent, triggerHapticSuccess, triggerSendSound],
   );
 
+  const sendImageMessage = useCallback(async () => {
+    if (!imagePreview) return;
+
+    const msgId = generateId();
+    const savedPath = await saveImage(imagePreview.uri, msgId);
+
+    const payload = JSON.stringify({
+      uri: savedPath,
+      width: imagePreview.width,
+      height: imagePreview.height,
+    });
+
+    const textBody = body.trim()
+      ? body
+      : t.imageMessage(imagePreview.width, imagePreview.height);
+
+    const msg = createMessage(chatId, 'image', textBody, null, null, payload, msgId);
+
+    triggerHapticSuccess();
+    triggerSendSound();
+    setBody('');
+    setImagePreview(null);
+    onSent?.();
+  }, [imagePreview, body, chatId, onSent, t, triggerHapticSuccess, triggerSendSound]);
+
+  const handleAttachImage = useCallback(async () => {
+    try {
+      const result = await pickAndCompressImage();
+      if (result) {
+        setImagePreview({ uri: result.uri, width: result.width, height: result.height });
+      }
+    } catch {
+      setImageErrorDialog(true);
+    }
+  }, []);
+
+  const handleRemoveImage = useCallback(() => {
+    setImagePreview(null);
+    setBody('');
+  }, []);
+
   const handleSend = useCallback(() => {
-    sendMessage('simple');
-  }, [sendMessage]);
+    if (imagePreview) {
+      sendImageMessage();
+    } else {
+      sendMessage('simple');
+    }
+  }, [sendMessage, sendImageMessage, imagePreview]);
 
   const handleReminder = useCallback(() => {
     setPickerDate(new Date());
@@ -297,9 +344,17 @@ export function MessageComposer({ chatId, onSent }: Props) {
   return (
     <>
     <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+      {imagePreview ? (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: imagePreview.uri }} style={styles.imagePreview} />
+          <Pressable style={styles.removeImageBtn} onPress={handleRemoveImage}>
+            <X size={18} color={text} />
+          </Pressable>
+        </View>
+      ) : null}
       <TextInput
           style={[styles.input, { color: text, borderColor: `${text}33` }]}
-          placeholder={t.messageInput}
+          placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
           placeholderTextColor={`${text}66`}
           multiline
           value={body}
@@ -307,16 +362,21 @@ export function MessageComposer({ chatId, onSent }: Props) {
           maxLength={4000}
         />
         <View style={styles.actions}>
-          <AnimatedPressable
-            onLongPress={handleMicLongPress}
-            delayLongPress={300}
-            style={styles.micBtn}>
-            <MicIcon size={22} color={`${text}99`} />
-          </AnimatedPressable>
-          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Paperclip} size={22} color={`${text}99`} onPress={handleAttachImage} onPressIn={triggerHapticTap} />
+          {!imagePreview && (
+            <>
+            <AnimatedPressable
+              onLongPress={handleMicLongPress}
+              delayLongPress={300}
+              style={styles.micBtn}>
+              <MicIcon size={22} color={`${text}99`} />
+            </AnimatedPressable>
+            <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+            <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+            <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
+            </>
+          )}
+          <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
         </View>
       </Animated.View>
 
@@ -359,6 +419,16 @@ export function MessageComposer({ chatId, onSent }: Props) {
           setAlarmGuideVisible(false);
           setPickerMode(null);
         }}
+      />
+
+      <AlertDialog
+        visible={imageErrorDialog}
+        title={t.error}
+        message={t.imagePickError}
+        buttons={[
+          { text: t.done, onPress: () => setImageErrorDialog(false) },
+        ]}
+        onClose={() => setImageErrorDialog(false)}
       />
     </>
   );
@@ -415,6 +485,27 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  imagePreview: {
+    width: '100%',
+    height: 120,
+    borderRadius: 12,
+    resizeMode: 'cover',
+  },
+  removeImageBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },

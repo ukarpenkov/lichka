@@ -12,9 +12,10 @@ export function createMessage(
   scheduledAt?: string | null,
   intervalMinutes?: number | null,
   payload?: string | null,
+  id?: string,
 ): Message {
   const db = getDatabase();
-  const id = generateId();
+  const msgId = id ?? generateId();
   const now = new Date().toISOString();
   const sAt = scheduledAt ?? null;
   const interval = intervalMinutes ?? null;
@@ -24,11 +25,11 @@ export function createMessage(
   db.executeSync(
     `INSERT INTO messages (id, chat_id, type, body, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, chatId, type, body, sAt, interval, enabled, pl, now, now],
+    [msgId, chatId, type, body, sAt, interval, enabled, pl, now, now],
   );
 
   return {
-    id,
+    id: msgId,
     chatId,
     type,
     body,

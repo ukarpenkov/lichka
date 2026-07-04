@@ -1,0 +1,98 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { ImageMessage } from '../ImageMessage';
+
+jest.mock('../../../shared/lib/mediaPath', () => {
+  const actual = jest.requireActual('../../../shared/lib/mediaPath');
+  return {
+    ...actual,
+    resolveMediaPath: (relative: string) => `/mock/docs/${relative}`,
+  };
+});
+
+beforeEach(() => {
+  jest.restoreAllMocks();
+});
+
+const createMessage = (overrides: Partial<{
+  type: string;
+  body: string;
+  payload: string;
+}> = {}) => ({
+  id: 'msg-1',
+  chatId: 'chat-1',
+  type: overrides.type ?? 'image',
+  body: overrides.body ?? '',
+  scheduledAt: null,
+  intervalMinutes: null,
+  enabled: false,
+  payload: overrides.payload ?? JSON.stringify({ uri: 'media/images/1.jpg', width: 800, height: 600 }),
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+});
+
+describe('ImageMessage', () => {
+  it('renders image with valid payload', () => {
+    const { UNSAFE_getByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { Image } = require('react-native');
+    const image = UNSAFE_getByType(Image);
+    expect(image.props.source.uri).toBe('file:///mock/docs/media/images/1.jpg');
+  });
+
+  it('renders caption when body is not empty', () => {
+    const { getByText } = render(
+      <ImageMessage message={createMessage({ body: 'My screenshot' })} />,
+    );
+
+    expect(getByText('My screenshot')).toBeTruthy();
+  });
+
+  it('does not render caption when body is empty', () => {
+    const { queryByText } = render(
+      <ImageMessage message={createMessage({ body: '' })} />,
+    );
+
+    const { Text } = require('../../../shared/ui/Text');
+    expect(queryByText('[image')).toBeFalsy();
+  });
+
+  it('shows fallback text when payload is missing uri', () => {
+    const { getByText } = render(
+      <ImageMessage message={createMessage({
+        payload: JSON.stringify({ foo: 'bar' }),
+        body: '[image]',
+      })} />,
+    );
+
+    expect(getByText('[image]')).toBeTruthy();
+  });
+
+  it('shows fallback text when payload is null', () => {
+    const { getByText } = render(
+      <ImageMessage message={createMessage({
+        payload: null,
+        body: '[image:800x600]',
+      })} />,
+    );
+
+    expect(getByText('[image:800x600]')).toBeTruthy();
+  });
+
+  it('computes image dimensions from payload width/height', () => {
+    const { UNSAFE_getByType } = render(
+      <ImageMessage message={createMessage({
+        payload: JSON.stringify({ uri: 'media/images/2.jpg', width: 400, height: 300 }),
+      })} />,
+    );
+
+    const { Image } = require('react-native');
+    const image = UNSAFE_getByType(Image);
+    const style = image.props.style[1];
+    expect(style).toBeDefined();
+    expect(style.height).toBeGreaterThan(0);
+    expect(style.height).toBeLessThanOrEqual(300);
+  });
+});
