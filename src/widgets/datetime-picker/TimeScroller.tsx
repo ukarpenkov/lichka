@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
+  AccessibilityInfo,
 } from 'react-native';
 import { Text } from '../../shared/ui';
 
@@ -13,6 +14,8 @@ const ITEM_HEIGHT = 46;
 const VISIBLE_ITEMS = 3;
 const LIST_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const COL_WIDTH = 64;
+const COPIES = 3;
+const MIDDLE_COPY = 1;
 
 type Props = {
   hour: number;
@@ -33,118 +36,198 @@ export function TimeScroller({
   onMinuteChange,
   onTick,
 }: Props) {
-  const hourListRef = useRef<FlatList<number | null>>(null);
-  const minListRef = useRef<FlatList<number | null>>(null);
-  const lastHourIdx = useRef(hour);
-  const lastMinIdx = useRef(minute);
+  const hourListRef = useRef<FlatList<number>>(null);
+  const minListRef = useRef<FlatList<number>>(null);
+  const lastHourValue = useRef(hour);
+  const lastMinValue = useRef(minute);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
-  const PAD = 1;
-  const hours = [null, ...Array.from({ length: 24 }, (_, i) => i), null];
-  const minutes = [null, ...Array.from({ length: 60 }, (_, i) => i), null];
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      (v) => setReduceMotion(v),
+    );
+    return () => sub.remove();
+  }, []);
+
+  const HOUR_COUNT = 24;
+  const MIN_COUNT = 60;
+
+  const hours = useMemo(() => {
+    const arr: number[] = [];
+    for (let c = 0; c < COPIES; c++) {
+      for (let i = 0; i < HOUR_COUNT; i++) arr.push(i);
+    }
+    return arr;
+  }, []);
+
+  const minutes = useMemo(() => {
+    const arr: number[] = [];
+    for (let c = 0; c < COPIES; c++) {
+      for (let i = 0; i < MIN_COUNT; i++) arr.push(i);
+    }
+    return arr;
+  }, []);
 
   const formatHour = useCallback((h: number) => `${h}`.padStart(2, '0'), []);
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
 
-  const scrollToIndex = useCallback(
-    (ref: React.RefObject<FlatList<number | null> | null>, index: number, animated: boolean) => {
-      ref.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated });
-    },
+  const dataIdxForHour = useCallback(
+    (h: number) => MIDDLE_COPY * HOUR_COUNT + h,
     [],
+  );
+  const dataIdxForMinute = useCallback(
+    (m: number) => MIDDLE_COPY * MIN_COUNT + m,
+    [],
+  );
+
+  const normalizeHour = useCallback(
+    (dataIdx: number) =>
+      ((Math.round(dataIdx) % HOUR_COUNT) + HOUR_COUNT) % HOUR_COUNT,
+    [],
+  );
+
+  const normalizeMinute = useCallback(
+    (dataIdx: number) =>
+      ((Math.round(dataIdx) % MIN_COUNT) + MIN_COUNT) % MIN_COUNT,
+    [],
+  );
+
+  const scrollToDataIndex = useCallback(
+    (
+      ref: React.RefObject<FlatList<number> | null>,
+      dataIdx: number,
+      animated: boolean,
+    ) => {
+      ref.current?.scrollToOffset({
+        offset: dataIdx * ITEM_HEIGHT,
+        animated: reduceMotion ? false : animated,
+      });
+    },
+    [reduceMotion],
+  );
+
+  const recenterHours = useCallback(
+    (dataIdx: number) => {
+      const real = normalizeHour(dataIdx);
+      const centered = dataIdxForHour(real);
+      if (centered !== dataIdx) {
+        hourListRef.current?.scrollToOffset({
+          offset: centered * ITEM_HEIGHT,
+          animated: false,
+        });
+      }
+    },
+    [normalizeHour, dataIdxForHour],
+  );
+
+  const recenterMinutes = useCallback(
+    (dataIdx: number) => {
+      const real = normalizeMinute(dataIdx);
+      const centered = dataIdxForMinute(real);
+      if (centered !== dataIdx) {
+        minListRef.current?.scrollToOffset({
+          offset: centered * ITEM_HEIGHT,
+          animated: false,
+        });
+      }
+    },
+    [normalizeMinute, dataIdxForMinute],
   );
 
   const handleHourScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(23, idx));
-      if (clamped !== lastHourIdx.current) {
-        lastHourIdx.current = clamped;
+      const clamped = normalizeHour(idx);
+      if (clamped !== lastHourValue.current) {
+        lastHourValue.current = clamped;
         onTick?.();
       }
     },
-    [onTick],
+    [onTick, normalizeHour],
   );
 
   const handleMinuteScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(59, idx));
-      if (clamped !== lastMinIdx.current) {
-        lastMinIdx.current = clamped;
+      const clamped = normalizeMinute(idx);
+      if (clamped !== lastMinValue.current) {
+        lastMinValue.current = clamped;
         onTick?.();
       }
     },
-    [onTick],
+    [onTick, normalizeMinute],
   );
 
   const handleHourScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(23, idx));
-      if (clamped !== hour) {
-        onHourChange(clamped);
-        scrollToIndex(hourListRef, clamped, true);
+      const real = normalizeHour(idx);
+      if (real !== hour) {
+        onHourChange(real);
       }
+      recenterHours(idx);
     },
-    [hour, onHourChange, scrollToIndex],
+    [hour, onHourChange, normalizeHour, recenterHours],
   );
 
   const handleMinuteScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-      const clamped = Math.max(0, Math.min(59, idx));
-      if (clamped !== minute) {
-        onMinuteChange(clamped);
-        scrollToIndex(minListRef, clamped, true);
+      const real = normalizeMinute(idx);
+      if (real !== minute) {
+        onMinuteChange(real);
       }
+      recenterMinutes(idx);
     },
-    [minute, onMinuteChange, scrollToIndex],
+    [minute, onMinuteChange, normalizeMinute, recenterMinutes],
   );
 
   const handleHourPress = useCallback(
-    (idx: number) => {
-      onHourChange(idx);
+    (real: number) => {
+      onHourChange(real);
       onTick?.();
-      scrollToIndex(hourListRef, idx, true);
+      lastHourValue.current = real;
+      scrollToDataIndex(hourListRef, dataIdxForHour(real), true);
     },
-    [onHourChange, onTick, scrollToIndex],
+    [onHourChange, onTick, scrollToDataIndex, dataIdxForHour],
   );
 
   const handleMinutePress = useCallback(
-    (idx: number) => {
-      onMinuteChange(idx);
+    (real: number) => {
+      onMinuteChange(real);
       onTick?.();
-      scrollToIndex(minListRef, idx, true);
+      lastMinValue.current = real;
+      scrollToDataIndex(minListRef, dataIdxForMinute(real), true);
     },
-    [onMinuteChange, onTick, scrollToIndex],
+    [onMinuteChange, onTick, scrollToDataIndex, dataIdxForMinute],
   );
 
   useEffect(() => {
-    if (lastHourIdx.current !== hour) {
-      lastHourIdx.current = hour;
-      scrollToIndex(hourListRef, hour, false);
+    if (lastHourValue.current !== hour) {
+      lastHourValue.current = hour;
+      scrollToDataIndex(hourListRef, dataIdxForHour(hour), !reduceMotion);
     }
-  }, [hour, scrollToIndex]);
+  }, [hour, scrollToDataIndex, dataIdxForHour, reduceMotion]);
 
   useEffect(() => {
-    if (lastMinIdx.current !== minute) {
-      lastMinIdx.current = minute;
-      scrollToIndex(minListRef, minute, false);
+    if (lastMinValue.current !== minute) {
+      lastMinValue.current = minute;
+      scrollToDataIndex(minListRef, dataIdxForMinute(minute), !reduceMotion);
     }
-  }, [minute, scrollToIndex]);
+  }, [minute, scrollToDataIndex, dataIdxForMinute, reduceMotion]);
 
   const renderItem = useCallback(
     (
-      item: number | null,
+      v: number,
       isSelected: boolean,
-      format: (v: number) => string,
-      onPress: (v: number) => void,
+      format: (val: number) => string,
+      onPress: (val: number) => void,
     ) => {
-      if (item === null) {
-        return <View style={{ height: ITEM_HEIGHT }} />;
-      }
       return (
         <Pressable
-          onPress={() => onPress(item)}
+          onPress={() => onPress(v)}
           style={[styles.item, { height: ITEM_HEIGHT }]}
         >
           <Text
@@ -155,7 +238,7 @@ export function TimeScroller({
               textAlign: 'center',
             }}
           >
-            {format(item)}
+            {format(v)}
           </Text>
         </Pressable>
       );
@@ -188,7 +271,7 @@ export function TimeScroller({
             index,
           })}
           style={styles.list}
-          onLayout={() => scrollToIndex(hourListRef, hour, false)}
+          onLayout={() => scrollToDataIndex(hourListRef, dataIdxForHour(hour), false)}
         />
       </View>
 
@@ -217,7 +300,7 @@ export function TimeScroller({
             index,
           })}
           style={styles.list}
-          onLayout={() => scrollToIndex(minListRef, minute, false)}
+          onLayout={() => scrollToDataIndex(minListRef, dataIdxForMinute(minute), false)}
         />
       </View>
     </View>
