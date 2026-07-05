@@ -131,6 +131,20 @@ export function deleteMessage(id: string): boolean {
   return true;
 }
 
+export function disableFiredMessages(): number {
+  const db = getDatabase();
+  const now = new Date().toISOString();
+  const result = db.executeSync(
+    `UPDATE messages SET enabled = 0
+     WHERE enabled = 1
+       AND type IN ('reminder', 'alarm')
+       AND scheduled_at IS NOT NULL
+       AND scheduled_at <= ?`,
+    [now],
+  );
+  return result.rowsAffected;
+}
+
 export function getScheduledMessages(): Message[] {
   const db = getDatabase();
   const now = new Date().toISOString();

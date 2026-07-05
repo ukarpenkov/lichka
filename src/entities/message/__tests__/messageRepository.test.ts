@@ -15,6 +15,7 @@ import {
   deleteMessage,
   getScheduledMessages,
   getMessagesForChatAtTime,
+  disableFiredMessages,
 } from '../model/messageRepository';
 
 const mockExecuteSync = jest.fn();
@@ -387,6 +388,38 @@ describe('messageRepository', () => {
 
       const [sql] = mockExecuteSync.mock.calls[0];
       expect(sql).toContain("type IN ('simple', 'periodic', 'image')");
+    });
+  });
+
+  describe('disableFiredMessages', () => {
+    it('should disable reminders and alarms with past scheduled_at', () => {
+      mockExecuteSync.mockReturnValue({ rowsAffected: 3 });
+
+      const affected = disableFiredMessages();
+
+      expect(affected).toBe(3);
+    });
+
+    it('should query with correct conditions', () => {
+      mockExecuteSync.mockReturnValue({ rowsAffected: 0 });
+      disableFiredMessages();
+
+      const [sql, params] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("enabled = 1");
+      expect(sql).toContain("type IN ('reminder', 'alarm')");
+      expect(sql).toContain('scheduled_at IS NOT NULL');
+      expect(sql).toContain('scheduled_at <= ?');
+      expect(params).toHaveLength(1);
+      expect(typeof params[0]).toBe('string');
+    });
+
+    it('should not affect periodic messages', () => {
+      mockExecuteSync.mockReturnValue({ rowsAffected: 0 });
+      disableFiredMessages();
+
+      const [sql] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("type IN ('reminder', 'alarm')");
+      expect(sql).not.toContain('periodic');
     });
   });
 });

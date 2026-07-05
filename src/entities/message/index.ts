@@ -8,5 +8,6 @@ export {
   deleteMessage,
   getScheduledMessages,
   getMessagesForChatAtTime,
+  disableFiredMessages,
 } from './model/messageRepository';
 export { searchMessages, type SearchResult } from '../../shared/db/search';
