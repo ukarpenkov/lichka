@@ -3,80 +3,185 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/alarm_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:keepScreenOn="true">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="8dp">
 
-        <FrameLayout
-            android:id="@+id/alarm_icon_container"
-            android:layout_width="140dp"
-            android:layout_height="140dp">
+        <!-- Top Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="4dp">
 
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Будильник"
+                android:textSize="13sp"
+                android:textColor="#666666"
+                android:fontFamily="sans-serif"
+                android:fontWeight="500"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:id="@+id/status_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="#666666"
+                android:fontFamily="sans-serif"
+                android:fontWeight="500"
+                android:letterSpacing="0.02" />
+        </LinearLayout>
+
+        <!-- Main Content -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- Alarm Icon with Pulse Rings -->
+            <FrameLayout
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                android:layout_gravity="center">
+
+                <!-- Pulse Ring 1 -->
+                <View
+                    android:id="@+id/alarm_pulse_ring_1"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_alarm_pulse_ring" />
+
+                <!-- Pulse Ring 2 (delayed) -->
+                <View
+                    android:id="@+id/alarm_pulse_ring_2"
+                    android:layout_width="140dp"
+                    android:layout_height="140dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_alarm_pulse_ring" />
+
+                <!-- Static Ring -->
+                <View
+                    android:id="@+id/alarm_icon_ring"
+                    android:layout_width="128dp"
+                    android:layout_height="128dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_alarm_icon_ring" />
+
+                <!-- Alarm Icon -->
+                <ImageView
+                    android:id="@+id/alarm_icon"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_alarm_clock" />
+            </FrameLayout>
+
+            <!-- Alarm Time -->
+            <TextView
+                android:id="@+id/alarm_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:textSize="64sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif"
+                android:fontWeight="200"
+                android:letterSpacing="-0.03" />
+
+            <!-- Alarm Label -->
+            <TextView
+                android:id="@+id/alarm_body"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textSize="20sp"
+                android:textColor="#888888"
+                android:fontFamily="sans-serif"
+                android:fontWeight="500"
+                android:letterSpacing="-0.01"
+                android:gravity="center"
+                android:maxWidth="340dp"
+                android:paddingHorizontal="16dp" />
+        </LinearLayout>
+
+        <!-- Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingBottom="20dp">
+
+            <!-- Dismiss Button -->
+            <TextView
+                android:id="@+id/btn_dismiss"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="18dp"
+                android:gravity="center"
+                android:text="Отключить"
+                android:textSize="17sp"
+                android:textColor="#ff5c5c"
+                android:fontFamily="sans-serif"
+                android:fontWeight="500"
+                android:letterSpacing="0.01"
+                android:drawableStart="@drawable/ic_dismiss"
+                android:drawablePadding="10dp"
+                android:background="@android:color/transparent"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <!-- Divider -->
             <View
-                android:id="@+id/alarm_ring"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_alarm_ring" />
+                android:layout_width="32dp"
+                android:layout_height="1dp"
+                android:layout_marginVertical="12dp"
+                android:background="#1e1e1e" />
 
-            <ImageView
-                android:id="@+id/alarm_icon"
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:layout_gravity="center"
-                android:src="@android:drawable/ic_lock_idle_alarm"
-                android:contentDescription="@null" />
-        </FrameLayout>
+            <!-- Snooze Button -->
+            <TextView
+                android:id="@+id/btn_snooze"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="10dp"
+                android:paddingHorizontal="18dp"
+                android:gravity="center"
+                android:text="Отложить · 5 мин"
+                android:textSize="17sp"
+                android:textColor="#555555"
+                android:fontFamily="sans-serif"
+                android:fontWeight="500"
+                android:letterSpacing="0.01"
+                android:drawableStart="@drawable/ic_snooze"
+                android:drawablePadding="10dp"
+                android:background="@android:color/transparent"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/alarm_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:fontFamily="sans-serif"
-            android:letterSpacing="0.04"
-            android:layout_marginTop="20dp" />
-
-        <TextView
-            android:id="@+id/alarm_body"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="44sp"
-            android:fontFamily="sans-serif-medium"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:maxWidth="340dp"
-            android:lineSpacingExtra="4dp"
-            android:paddingHorizontal="8dp"
-            android:layout_marginTop="8dp" />
-
-        <Button
-            android:id="@+id/btn_dismiss"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Отключить"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif-medium"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:layout_marginHorizontal="28dp"
-            android:layout_marginTop="36dp" />
-
-        <Button
-            android:id="@+id/btn_snooze"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Отложить · 5 мин"
-            android:textSize="16sp"
-            android:fontFamily="sans-serif-medium"
-            android:textStyle="bold"
-            android:layout_marginHorizontal="28dp"
-            android:layout_marginTop="14dp" />
+        <!-- Home Indicator -->
+        <View
+            android:layout_width="120dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_home_indicator" />
 
     </LinearLayout>
 

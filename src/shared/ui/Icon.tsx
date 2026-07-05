@@ -18,9 +18,14 @@ function SvgBase({ children, size }: { children: React.ReactNode; size: number }
   );
 }
 
-function StrokeGroup({ color, children, clipPath }: { color: string; children: React.ReactNode; clipPath?: string }) {
+function StrokeGroup({ color, children, clipPath, strokeWidth = 2 }: {
+  color: string;
+  children: React.ReactNode;
+  clipPath?: string;
+  strokeWidth?: number;
+}) {
   return (
-    <G fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" clipPath={clipPath}>
+    <G fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" clipPath={clipPath}>
       {children}
     </G>
   );
@@ -39,13 +44,13 @@ export function AlarmClockIcon({ color, size }: IconProps) {
           />
         </ClipPath>
       </Defs>
-      <StrokeGroup color={color}>
+      <StrokeGroup color={color} strokeWidth={1.5}>
         <Circle cx={12} cy={13} r={8} />
-        <Path d="M12 9v4l2 2" />
+        <Path d="M12 9v4l2.5 1.5" />
         <Path d="M5 3 2 6" />
         <Path d="m22 6-3-3" />
       </StrokeGroup>
-      <StrokeGroup color={color} clipPath={`url(#${clipId})`}>
+      <StrokeGroup color={color} strokeWidth={1.5} clipPath={`url(#${clipId})`}>
         <Path d="M6.38 18.7 4 21" />
         <Path d="M17.64 18.67 20 21" />
       </StrokeGroup>

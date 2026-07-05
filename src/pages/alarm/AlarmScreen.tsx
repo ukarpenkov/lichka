@@ -14,7 +14,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Clock, X } from 'lucide-react-native';
-import { useTheme } from '../../shared/config';
 import { Screen, Text, AlarmClockIcon, AnimatedPressable } from '../../shared/ui';
 import { hapticTap, hapticSuccess } from '../../shared/lib';
 import type { RootStackParamList } from '../../app/types';
@@ -27,10 +26,9 @@ const PULSE_DURATION = 2400;
 const PULSE_DELAY = 800;
 const SHAKE_DURATION = 600;
 const SHAKE_DEG = 3;
-const DESTRUCTIVE = '#FF6B6B';
+const DESTRUCTIVE = '#ff5c5c';
 
 export function AlarmScreen() {
-  const { text } = useTheme();
   const navigation = useNavigation();
   const route = useRoute<AlarmRouteProp>();
 
@@ -113,11 +111,13 @@ export function AlarmScreen() {
     navigation.goBack();
   }, [navigation]);
 
-  const dimmed = text + '66';
-  const ringBorder = text + '14';
-  const ringBg = text + '0A';
-  const pulseBorder = text + '0A';
-  const snoozeColor = text + '55';
+  const dimmed = '#666666';
+  const ringBorder = '#1e1e1e';
+  const ringBg = '#0f0f0f';
+  const pulseBorder = '#0AFFFFFF';
+  const snoozeColor = '#555555';
+  const dividerColor = '#1e1e1e';
+  const homeIndicatorColor = '#333333';
 
   return (
     <Screen style={styles.screen}>
@@ -159,7 +159,7 @@ export function AlarmScreen() {
         <View style={styles.alarmInfo}>
           <Text style={styles.alarmTime}>{timeStr}</Text>
           <Text
-            style={[styles.alarmLabel, { color: text + '88' }]}
+            style={[styles.alarmLabel, { color: '#888888' }]}
             numberOfLines={2}>
             {label}
           </Text>
@@ -177,7 +177,7 @@ export function AlarmScreen() {
           </Text>
         </AnimatedPressable>
 
-        <View style={[styles.divider, { backgroundColor: ringBorder }]} />
+        <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
         <AnimatedPressable
           style={styles.textAction}
@@ -190,7 +190,7 @@ export function AlarmScreen() {
         </AnimatedPressable>
       </View>
 
-      <View style={[styles.homeIndicator, { backgroundColor: text + '20' }]} />
+      <View style={[styles.homeIndicator, { backgroundColor: homeIndicatorColor }]} />
     </Screen>
   );
 }
