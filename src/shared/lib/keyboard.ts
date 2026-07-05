@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
 import { Keyboard } from 'react-native';
 import {
-  useAnimatedKeyboard,
   useSharedValue,
   runOnUI,
-  KeyboardState,
   type SharedValue,
 } from 'react-native-reanimated';
 
@@ -12,16 +10,17 @@ import {
  * Единый источник правды по высоте клавиатуры для всего приложения.
  *
  * Возвращает shared value с «эффективной» высотой клавиатуры: она ненулевая
- * только когда клавиатура реально открыта или открывается.
+ * только когда клавиатура реально открыта.
  *
- * В отличие от предыдущей реализации на `useDerivedValue`, использует
- * `useSharedValue` с JS‑лисенерами и `runOnUI` — это гарантирует, что
- * при повторном монтировании экрана значение будет 0, а не stale‑значение
- * от Reanimated (которое на Android с `adjustNothing` и react‑native‑screens
- * может не обновиться после переподключения native‑view).
+ * Использует JS‑лисенеры `keyboardDidShow`/`keyboardDidHide` как основной
+ * источник. `useAnimatedKeyboard` НЕ используется — на Android
+ * с `adjustNothing` и `react-native-screens` он может возвращать
+ * stale‑состояние OPEN после повторного монтирования экрана.
+ *
+ * `useSharedValue(0)` гарантирует начальное значение 0 при каждом mount.
+ * В cleanup — принудительный сброс в 0 на UI‑потоке.
  */
 export function useKeyboardHeight(): SharedValue<number> {
-  const keyboard = useAnimatedKeyboard();
   const kbHeight = useSharedValue(0);
 
   useEffect(() => {
@@ -32,22 +31,12 @@ export function useKeyboardHeight(): SharedValue<number> {
       kbHeight.value = 0;
     });
 
-    // Keyboard may already be open when the component mounts
-    // (e.g. deep link while typing). keyboardDidShow already fired,
-    // so we sync the current state via Reanimated on the UI thread.
-    runOnUI(() => {
-      const state = keyboard.state.value;
-      if (
-        state === KeyboardState.OPEN ||
-        state === KeyboardState.OPENING
-      ) {
-        kbHeight.value = keyboard.height.value;
-      }
-    })();
-
     return () => {
       showSub.remove();
       hideSub.remove();
+      runOnUI(() => {
+        kbHeight.value = 0;
+      })();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

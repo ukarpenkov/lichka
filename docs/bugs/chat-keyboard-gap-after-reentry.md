@@ -26,17 +26,29 @@
 
 Клавиатура скрыта, но под блоком инпута остаётся пустое пространство высотой ≈ с клавиатуру — как будто `paddingBottom` в `chatAreaAnimatedStyle` не сбросился в 0.
 
-## Причина
+## Причина (пересмотренная)
 
-`useKeyboardHeight()` использует `useDerivedValue`, который является read-only. При повторном монтировании экрана `useAnimatedKeyboard()` от Reanimated может кратковременно сохранять состояние клавиатуры от предыдущего жизненного цикла — особенно на Android с `adjustNothing`, где система не меняет размер окна, а react-native-screens может кешировать native view.
+Первая попытка исправления (замена `useDerivedValue` на `useSharedValue`) была **недостаточной**:
+- `useSharedValue(0)` действительно гарантирует начальное значение 0 при каждом mount.
+- Однако в `useEffect` остался блок `runOnUI`, который синхронизирует состояние с `useAnimatedKeyboard()`:
+  ```ts
+  runOnUI(() => {
+    const state = keyboard.state.value;
+    if (state === KeyboardState.OPEN || state === KeyboardState.OPENING) {
+      kbHeight.value = keyboard.height.value;
+    }
+  })();
+  ```
+- На Android с `adjustNothing` + `react-native-screens` `useAnimatedKeyboard()` может возвращать stale‑состояние `OPEN` после повторного монтирования — native view пересоздаётся, а Reanimated ещё не получил обновлённые window insets.
+- JS‑лисенеры (`keyboardDidShow`/`keyboardDidHide`) не срабатывают при повторном mount (клавиатура уже закрыта, событие не генерируется), поэтому stale‑значение из `runOnUI` не перезаписывается.
 
-`useDerivedValue` не может быть принудительно сброшен в 0 при unmount/mount — он только вычисляется из `useAnimatedKeyboard()`. Если Reanimated сообщает stale-значения (state ≠ CLOSED), padding остаётся.
+**Корневая причина:** `runOnUI`-синхронизация с `useAnimatedKeyboard()` **реинтродьюсит** stale‑значение, которое `useSharedValue(0)` изначально сбрасывает в 0.
 
-## Исправление
+## Исправление (итоговое)
 
-1. **`useKeyboardHeight`**: заменить `useDerivedValue` на `useSharedValue` + `useAnimatedReaction`. `useSharedValue(0)` гарантирует начальное значение 0 при каждом mount. JS-лисенеры `keyboardDidShow`/`keyboardDidHide` — страховочный механизм для коррекции на случай stale-данных от Reanimated. В cleanup — принудительный сброс в 0.
-2. **`ChatRoomScreen`**: добавить `Keyboard.dismiss()` в обработчик `onBack` — принудительно закрывать клавиатуру перед навигацией, чтобы `useAnimatedKeyboard()` успел обновить состояние до unmount.
+1. **`useKeyboardHeight`**: полностью убран `useAnimatedKeyboard` и блок `runOnUI`. JS‑лисенеры — **единственный** источник правды. В cleanup — принудительный `runOnUI(() => { kbHeight.value = 0 })` на случай, если `react-native-screens` переиспользует native view.
+2. **`ChatRoomScreen`**: добавлен `useEffect(() => { Keyboard.dismiss() }, [])` на mount — гарантирует закрытие клавиатуры при любом входе в чат.
 
 ## Статус
 
-fixed
+fixed (вторая итерация)

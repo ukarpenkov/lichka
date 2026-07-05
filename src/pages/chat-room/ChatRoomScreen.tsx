@@ -122,6 +122,10 @@ export function ChatRoomScreen() {
   );
 
   useEffect(() => {
+    Keyboard.dismiss();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => {
       Keyboard.dismiss();
     });
