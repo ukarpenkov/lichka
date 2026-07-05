@@ -84,6 +84,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom: keyboardHeight.value > 0 ? 0 : 12,
+    marginBottom: keyboardHeight.value > 0 ? 4 : 0,
   }));
 
   const triggerHapticTap = useCallback(() => {
