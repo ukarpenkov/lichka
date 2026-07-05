@@ -156,6 +156,15 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+    return () => sub.remove();
+  }, []);
+
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
   useEffect(() => {
