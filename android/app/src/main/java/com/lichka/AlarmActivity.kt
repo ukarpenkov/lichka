@@ -54,6 +54,8 @@ class AlarmActivity : Activity() {
         chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID) ?: ""
         val triggerTime = intent.getLongExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, 0)
 
+        cancelAlarmNotification()
+
         val themeBackground = ThemeModule.getBackground(this)
         val themeText = ThemeModule.getText(this)
 
