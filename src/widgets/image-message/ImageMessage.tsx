@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
-import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
 import type { Message } from '../../entities/message';
 
 type ImageMessageProps = {
   message: Message;
+  onPress?: (data: { uri: string; width: number; height: number }) => void;
 };
 
 function parseImagePayload(
@@ -27,7 +28,7 @@ function parseImagePayload(
   }
 }
 
-export function ImageMessage({ message }: ImageMessageProps) {
+export function ImageMessage({ message, onPress }: ImageMessageProps) {
   const { width: screenWidth } = useWindowDimensions();
 
   const imageData = useMemo(() => parseImagePayload(message.payload), [message.payload]);
@@ -37,6 +38,12 @@ export function ImageMessage({ message }: ImageMessageProps) {
   );
 
   const hasCaption = message.body && message.body.trim().length > 0;
+
+  const handlePress = useCallback(() => {
+    if (imageData && absoluteUri && onPress) {
+      onPress({ uri: absoluteUri, width: imageData.width, height: imageData.height });
+    }
+  }, [imageData, absoluteUri, onPress]);
 
   if (!imageData || !absoluteUri) {
     return (
@@ -56,16 +63,18 @@ export function ImageMessage({ message }: ImageMessageProps) {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: absoluteUri }}
-        style={[
-          styles.image,
-          { width: bubbleWidth, height: imageHeight },
-          hasCaption
-            ? { borderTopLeftRadius: 16, borderTopRightRadius: 16 }
-            : { borderRadius: imageRadius },
-        ]}
-      />
+      <Pressable onPress={handlePress}>
+        <Image
+          source={{ uri: absoluteUri }}
+          style={[
+            styles.image,
+            { width: bubbleWidth, height: imageHeight },
+            hasCaption
+              ? { borderTopLeftRadius: 16, borderTopRightRadius: 16 }
+              : { borderRadius: imageRadius },
+          ]}
+        />
+      </Pressable>
       {hasCaption && (
         <Text variant="body" style={styles.caption}>
           {message.body}

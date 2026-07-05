@@ -28,6 +28,7 @@ import {
 } from '../../entities/message';
 import { cancelNotification } from '../../features/notifications';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
+import { ImageViewer, useImageViewer } from '../../features';
 import { ChatForm } from '../../widgets/chat-form';
 import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
@@ -94,6 +95,7 @@ export function ChatRoomScreen() {
   } | null>(null);
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
+  const { open, close, visible: viewerVisible, data: viewerData } = useImageViewer();
 
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
@@ -282,10 +284,11 @@ export function ChatRoomScreen() {
         <MessageBubble
           message={item.message}
           onLongPress={setMenuMessage}
+          onImagePress={open}
         />
       );
     },
-    [],
+    [open],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -402,6 +405,8 @@ export function ChatRoomScreen() {
         buttons={dialog?.buttons}
         onClose={() => setDialog(null)}
       />
+
+      <ImageViewer visible={viewerVisible} data={viewerData} onClose={close} />
     </View>
   );
 }

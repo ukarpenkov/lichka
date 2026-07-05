@@ -22,3 +22,6 @@ export { exportToJSON } from './export';
 export { importFromJSON, type ImportMode, type ImportResult } from './import';
 
 export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup } from './google-drive';
+
+export { ImageViewer, useImageViewer } from './image-viewer';
+export type { ImageViewerData } from './image-viewer';

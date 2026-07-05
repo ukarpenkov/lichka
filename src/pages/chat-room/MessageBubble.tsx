@@ -14,6 +14,7 @@ type MessageBubbleProps = {
   message: Message;
   highlighted?: boolean;
   onLongPress: (message: Message) => void;
+  onImagePress?: (data: { uri: string; width: number; height: number }) => void;
 };
 
 function formatTime(iso: string): string {
@@ -51,7 +52,7 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
   image: undefined as any,
 };
 
-export function MessageBubble({ message, highlighted, onLongPress }: MessageBubbleProps) {
+export function MessageBubble({ message, highlighted, onLongPress, onImagePress }: MessageBubbleProps) {
   const { text } = useTheme();
   const { t } = useLocale();
   const reduceMotionRef = useRef(false);
@@ -98,7 +99,7 @@ export function MessageBubble({ message, highlighted, onLongPress }: MessageBubb
         {isVoice ? (
           <VoiceMessage message={message} />
         ) : isImage ? (
-          <ImageMessage message={message} />
+          <ImageMessage message={message} onPress={onImagePress} />
         ) : (
           <Text variant="body" style={styles.body}>
             {message.body}
