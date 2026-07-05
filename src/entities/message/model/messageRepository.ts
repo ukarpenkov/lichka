@@ -16,8 +16,8 @@ export function createMessage(
 ): Message {
   const db = getDatabase();
   const msgId = id ?? generateId();
-  const now = new Date().toISOString();
   const sAt = scheduledAt ?? null;
+  const now = sAt ?? new Date().toISOString();
   const interval = intervalMinutes ?? null;
   const enabled = type === 'simple' || type === 'image' ? 0 : 1;
   const pl = payload ?? null;

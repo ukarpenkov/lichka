@@ -124,6 +124,22 @@ describe('messageRepository', () => {
       expect(msg.enabled).toBe(true);
     });
 
+    it('should use scheduledAt as createdAt for alarm/reminder messages', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const msg = createMessage('chat-1', 'alarm', 'Wake up', '2026-06-01T07:00:00.000Z');
+
+      expect(msg.createdAt).toBe('2026-06-01T07:00:00.000Z');
+      expect(msg.updatedAt).toBe('2026-06-01T07:00:00.000Z');
+    });
+
+    it('should use current time as createdAt when scheduledAt is not provided', () => {
+      const before = new Date().toISOString();
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const msg = createMessage('chat-1', 'simple', 'Hello');
+
+      expect(msg.createdAt >= before).toBe(true);
+    });
+
     it('should create an image message with enabled=false', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
       const msg = createMessage('chat-1', 'image', '', null, null, '{"uri":"media/images/1.jpg"}');
