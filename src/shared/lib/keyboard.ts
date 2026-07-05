@@ -6,6 +6,12 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 
+/** Доп. подъём на Android: keyboardDidShow слегка занижает высоту клавиатуры. */
+export const KEYBOARD_ANDROID_LIFT_FUDGE = 5;
+
+/** Зазор между блоком ввода и верхней границей клавиатуры. */
+export const KEYBOARD_COMPOSER_GAP = 4;
+
 /**
  * Единый источник правды по высоте клавиатуры для всего приложения.
  *

@@ -14,7 +14,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale } from '../../shared/config';
-import { useKeyboardHeight } from '../../shared/lib';
+import { useKeyboardHeight, KEYBOARD_ANDROID_LIFT_FUDGE } from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
@@ -115,10 +115,11 @@ export function ChatRoomScreen() {
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
       Platform.OS === 'android'
-        ? Math.max(keyboardHeight.value - tabBarHeight + 4, 0)
-        : keyboardHeight.value > 0
-          ? 4
-          : 0,
+        ? Math.max(
+            keyboardHeight.value - tabBarHeight + KEYBOARD_ANDROID_LIFT_FUDGE,
+            0,
+          )
+        : 0,
   }));
 
   const loadData = useCallback(() => {

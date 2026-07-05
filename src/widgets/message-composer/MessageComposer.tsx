@@ -21,7 +21,17 @@ import {
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { Send, Bell, Repeat, X, Square, Paperclip } from 'lucide-react-native';
-import { hapticTap, hapticLongPress, hapticSuccess, playSendSound, useKeyboardHeight, generateId, pickAndCompressImage, saveImage } from '../../shared/lib';
+import {
+  hapticTap,
+  hapticLongPress,
+  hapticSuccess,
+  playSendSound,
+  useKeyboardHeight,
+  KEYBOARD_COMPOSER_GAP,
+  generateId,
+  pickAndCompressImage,
+  saveImage,
+} from '../../shared/lib';
 import { DateTimePicker } from '../datetime-picker';
 import { PeriodPicker } from '../period-picker';
 import { DocumentDirectoryPath } from 'react-native-fs';
@@ -84,6 +94,12 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom: keyboardHeight.value > 0 ? 0 : 12,
+    transform: [
+      {
+        translateY:
+          keyboardHeight.value > 0 ? -KEYBOARD_COMPOSER_GAP : 0,
+      },
+    ],
   }));
 
   const triggerHapticTap = useCallback(() => {

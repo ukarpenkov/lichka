@@ -18,5 +18,9 @@ export {
 } from './notificationChannels';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { playSendSound, playReminderSound } from './sounds';
-export { useKeyboardHeight } from './keyboard';
+export {
+  useKeyboardHeight,
+  KEYBOARD_ANDROID_LIFT_FUDGE,
+  KEYBOARD_COMPOSER_GAP,
+} from './keyboard';
 export { pickAndCompressImage, type CompressedImage } from './imageCompress';
