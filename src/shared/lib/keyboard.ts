@@ -10,7 +10,7 @@ import {
 export const KEYBOARD_ANDROID_LIFT_FUDGE = 5;
 
 /** Зазор между блоком ввода и верхней границей клавиатуры. */
-export const KEYBOARD_COMPOSER_GAP = 4;
+export const KEYBOARD_COMPOSER_GAP = 16;
 
 /**
  * Единый источник правды по высоте клавиатуры для всего приложения.
