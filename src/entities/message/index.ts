@@ -9,5 +9,8 @@ export {
   getScheduledMessages,
   getMessagesForChatAtTime,
   disableFiredMessages,
+  getPeriodicDisplayMessages,
+  isPeriodicDisplayId,
+  extractTemplateId,
 } from './model/messageRepository';
 export { searchMessages, type SearchResult } from '../../shared/db/search';

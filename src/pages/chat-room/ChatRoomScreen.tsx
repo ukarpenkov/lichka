@@ -20,6 +20,10 @@ import { getChatById, type Chat } from '../../entities/chat';
 import {
   getVisibleMessagesByChatId,
   deleteMessage,
+  getMessageById,
+  getPeriodicDisplayMessages,
+  isPeriodicDisplayId,
+  extractTemplateId,
   type Message,
 } from '../../entities/message';
 import { cancelNotification } from '../../features/notifications';
@@ -41,6 +45,8 @@ type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
 type ListItem =
   | { kind: 'date'; key: string; date: string }
   | { kind: 'message'; key: string; message: Message };
+
+const REFRESH_INTERVAL = 30_000;
 
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
@@ -93,6 +99,7 @@ export function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
   const keyboardHeight = useKeyboardHeight();
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -112,12 +119,24 @@ export function ChatRoomScreen() {
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
-    setMessages(getVisibleMessagesByChatId(chatId));
+    const regularMessages = getVisibleMessagesByChatId(chatId);
+    const periodicMessages = getPeriodicDisplayMessages(chatId);
+    const allMessages = [...regularMessages, ...periodicMessages].sort(
+      (a, b) => a.createdAt.localeCompare(b.createdAt),
+    );
+    setMessages(allMessages);
   }, [chatId]);
 
   useFocusEffect(
     useCallback(() => {
       loadData();
+      timerRef.current = setInterval(loadData, REFRESH_INTERVAL);
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
     }, [loadData]),
   );
 
@@ -145,9 +164,14 @@ export function ChatRoomScreen() {
 
   useEffect(() => {
     if (!messageId || listItems.length === 0) return;
-    const index = listItems.findIndex(
+    let index = listItems.findIndex(
       (item) => item.kind === 'message' && item.message.id === messageId,
     );
+    if (index === -1) {
+      index = listItems.findIndex(
+        (item) => item.kind === 'message' && item.message.id === `periodic:${messageId}`,
+      );
+    }
     if (index === -1) return;
     scrollToMessageId.current = true;
     const timer = setTimeout(() => {
@@ -180,8 +204,12 @@ export function ChatRoomScreen() {
 
   const handleSearchSelect = useCallback(
     (msgId: string) => {
+      let targetId = msgId;
+      if (!listItems.some((item) => item.kind === 'message' && item.message.id === msgId)) {
+        targetId = `periodic:${msgId}`;
+      }
       const index = listItems.findIndex(
-        (item) => item.kind === 'message' && item.message.id === msgId,
+        (item) => item.kind === 'message' && item.message.id === targetId,
       );
       if (index === -1) return;
       scrollToMessageId.current = true;
@@ -198,6 +226,9 @@ export function ChatRoomScreen() {
 
   const handleDeleteMessage = useCallback(() => {
     if (!menuMessage) return;
+    const actualId = isPeriodicDisplayId(menuMessage.id)
+      ? extractTemplateId(menuMessage.id)
+      : menuMessage.id;
     setDialog({
       title: t.deleteMessage,
       message: t.deleteMessageConfirm,
@@ -207,20 +238,28 @@ export function ChatRoomScreen() {
           text: t.delete,
           style: 'destructive',
           onPress: () => {
-            deleteMessage(menuMessage.id);
-            cancelNotification(menuMessage.id);
-            setMessages(getVisibleMessagesByChatId(chatId));
+            deleteMessage(actualId);
+            cancelNotification(actualId);
+            loadData();
           },
         },
       ],
     });
-  }, [menuMessage, chatId, t]);
+  }, [menuMessage, t, loadData]);
 
   const { saveEdit } = useEditMessage();
 
   const handleEditMessage = useCallback(() => {
     if (menuMessage) {
-      setEditMessage(menuMessage);
+      if (isPeriodicDisplayId(menuMessage.id)) {
+        const templateId = extractTemplateId(menuMessage.id);
+        const template = getMessageById(templateId);
+        if (template) {
+          setEditMessage(template);
+        }
+      } else {
+        setEditMessage(menuMessage);
+      }
     }
   }, [menuMessage]);
 
@@ -229,9 +268,9 @@ export function ChatRoomScreen() {
       if (!editMessage) return;
       saveEdit(editMessage, fields);
       setEditMessage(null);
-      setMessages(getVisibleMessagesByChatId(chatId));
+      loadData();
     },
-    [editMessage, saveEdit, chatId],
+    [editMessage, saveEdit, loadData],
   );
 
   const renderListItem = useCallback(

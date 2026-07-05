@@ -16,6 +16,9 @@ import {
   getScheduledMessages,
   getMessagesForChatAtTime,
   disableFiredMessages,
+  getPeriodicDisplayMessages,
+  isPeriodicDisplayId,
+  extractTemplateId,
 } from '../model/messageRepository';
 
 const mockExecuteSync = jest.fn();
@@ -382,12 +385,12 @@ describe('messageRepository', () => {
       expect(messages[0].type).toBe('image');
     });
 
-    it('should query with image in type filter', () => {
+    it('should exclude periodic messages', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
       getVisibleMessagesByChatId('chat-abc');
 
       const [sql] = mockExecuteSync.mock.calls[0];
-      expect(sql).toContain("type IN ('simple', 'periodic', 'image')");
+      expect(sql).toContain("type != 'periodic'");
     });
   });
 
@@ -420,6 +423,99 @@ describe('messageRepository', () => {
       const [sql] = mockExecuteSync.mock.calls[0];
       expect(sql).toContain("type IN ('reminder', 'alarm')");
       expect(sql).not.toContain('periodic');
+    });
+  });
+
+  describe('isPeriodicDisplayId / extractTemplateId', () => {
+    it('should detect periodic display ID', () => {
+      expect(isPeriodicDisplayId('periodic:abc123')).toBe(true);
+      expect(isPeriodicDisplayId('abc123')).toBe(false);
+      expect(isPeriodicDisplayId('simple:abc')).toBe(false);
+    });
+
+    it('should extract template ID from display ID', () => {
+      expect(extractTemplateId('periodic:abc123')).toBe('abc123');
+      expect(extractTemplateId('periodic:template')).toBe('template');
+    });
+  });
+
+  describe('getPeriodicDisplayMessages', () => {
+    it('should return empty when no periodic templates exist', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const messages = getPeriodicDisplayMessages('chat-1');
+      expect(messages).toHaveLength(0);
+    });
+
+    it('should return empty when periodic has not fired yet', () => {
+      const now = Date.now();
+      const periodicRow = {
+        ...sampleDbRow,
+        type: 'periodic',
+        interval_minutes: 60,
+        enabled: 1,
+        created_at: new Date(now).toISOString(),
+      };
+
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+      const messages = getPeriodicDisplayMessages('chat-1');
+      expect(messages).toHaveLength(0);
+    });
+
+    it('should return one display message for a fired periodic with correct fire time', () => {
+      const now = Date.now();
+      const createdMs = now - 120 * 60_000; // 2 hours ago
+      const intervalMinutes = 60; // 1 hour interval
+      const fires = Math.floor((now - createdMs) / (intervalMinutes * 60_000)); // should be 2
+      const latestFireAt = createdMs + fires * intervalMinutes * 60_000;
+
+      const periodicRow = {
+        ...sampleDbRow,
+        type: 'periodic',
+        interval_minutes: intervalMinutes,
+        enabled: 1,
+        created_at: new Date(createdMs).toISOString(),
+      };
+
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+      const messages = getPeriodicDisplayMessages('chat-1');
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0].id).toBe(`periodic:${periodicRow.id}`);
+      expect(messages[0].type).toBe('periodic');
+      expect(new Date(messages[0].createdAt).getTime()).toBe(latestFireAt);
+    });
+
+    it('should only include enabled periodic templates', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      getPeriodicDisplayMessages('chat-abc');
+
+      const [sql] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain('enabled = 1');
+    });
+
+    it('should skip periodic templates without intervalMinutes', () => {
+      const createdMs = Date.now() - 120 * 60_000;
+      const periodicRow = {
+        ...sampleDbRow,
+        type: 'periodic',
+        interval_minutes: null,
+        enabled: 1,
+        created_at: new Date(createdMs).toISOString(),
+      };
+
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+      const messages = getPeriodicDisplayMessages('chat-1');
+      expect(messages).toHaveLength(0);
+    });
+
+    it('should query only periodic messages for the given chat', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      getPeriodicDisplayMessages('chat-abc');
+
+      const [sql, params] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("type = 'periodic'");
+      expect(sql).toContain('enabled = 1');
+      expect(params[0]).toBe('chat-abc');
     });
   });
 });

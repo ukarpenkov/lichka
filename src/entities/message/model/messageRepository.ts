@@ -165,9 +165,9 @@ export function getVisibleMessagesByChatId(chatId: string): Message[] {
   const result = db.executeSync(
     `SELECT ${SELECT_COLUMNS} FROM messages
      WHERE chat_id = ?
+       AND type != 'periodic'
        AND (
-         type IN ('simple', 'periodic', 'image')
-         OR scheduled_at IS NULL
+         scheduled_at IS NULL
          OR REPLACE(SUBSTR(scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
        )
      ORDER BY created_at ASC`,
@@ -175,6 +175,51 @@ export function getVisibleMessagesByChatId(chatId: string): Message[] {
   );
 
   return result.rows.map(mapRow);
+}
+
+export const PERIODIC_DISPLAY_PREFIX = 'periodic:';
+
+export function isPeriodicDisplayId(id: string): boolean {
+  return id.startsWith(PERIODIC_DISPLAY_PREFIX);
+}
+
+export function extractTemplateId(displayId: string): string {
+  return displayId.slice(PERIODIC_DISPLAY_PREFIX.length);
+}
+
+export function getPeriodicDisplayMessages(chatId: string): Message[] {
+  const db = getDatabase();
+  const result = db.executeSync(
+    `SELECT ${SELECT_COLUMNS} FROM messages
+     WHERE chat_id = ?
+       AND type = 'periodic'
+       AND enabled = 1`,
+    [chatId],
+  );
+
+  const now = Date.now();
+  const displayMessages: Message[] = [];
+
+  for (const row of result.rows) {
+    const template = mapRow(row);
+    if (!template.intervalMinutes) continue;
+
+    const createdAtMs = new Date(template.createdAt).getTime();
+    const intervalMs = template.intervalMinutes * 60_000;
+    const fires = Math.floor((now - createdAtMs) / intervalMs);
+
+    if (fires > 0) {
+      const latestFireAt = createdAtMs + fires * intervalMs;
+      displayMessages.push({
+        ...template,
+        id: PERIODIC_DISPLAY_PREFIX + template.id,
+        createdAt: new Date(latestFireAt).toISOString(),
+        updatedAt: new Date(latestFireAt).toISOString(),
+      });
+    }
+  }
+
+  return displayMessages;
 }
 
 export function getMessagesForChatAtTime(chatId: string): Message[] {
