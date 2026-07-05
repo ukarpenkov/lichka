@@ -137,7 +137,7 @@ describe('MessageComposer', () => {
     expect(getByTestId('icon-Bell')).toBeTruthy();
   });
 
-  it('does not render scheduled buttons when image preview is active', () => {
+  it('renders scheduled buttons even when image preview is active', () => {
     const { queryByTestId } = render(<MessageComposer chatId="chat-1" />);
     expect(queryByTestId('icon-Repeat')).toBeTruthy();
     expect(queryByTestId('icon-Bell')).toBeTruthy();

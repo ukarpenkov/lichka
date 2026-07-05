@@ -12,7 +12,7 @@ import Animated, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, useLocale } from '../../shared/config';
 import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
-import { createMessage } from '../../entities/message';
+import { createMessage, type MessageType } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
 import {
   scheduleNotification,
@@ -110,46 +110,51 @@ export function MessageComposer({ chatId, onSent }: Props) {
   }, []);
 
   const sendMessage = useCallback(
-    (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number; payload?: string }) => {
+    async (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number }) => {
       const textBody = body.trim();
-      if (!textBody) return;
+      if (!textBody && !imagePreview) return;
 
-      const msg = createMessage(chatId, type, textBody, opts?.scheduledAt ?? null, opts?.intervalMinutes ?? null, opts?.payload ?? null);
-      if (type !== 'simple') {
+      let payload: string | null = null;
+      let msgId: string | undefined;
+
+      if (imagePreview) {
+        msgId = generateId();
+        const savedPath = await saveImage(imagePreview.uri, msgId);
+        payload = JSON.stringify({
+          uri: savedPath,
+          width: imagePreview.width,
+          height: imagePreview.height,
+        });
+      }
+
+      const hasImage = payload !== null;
+      const finalBody = textBody || (hasImage ? t.imageMessage(imagePreview!.width, imagePreview!.height) : '');
+      if (!finalBody) return;
+
+      const finalType: MessageType = (type === 'simple' && hasImage) ? 'image' : type;
+
+      const msg = createMessage(
+        chatId,
+        finalType,
+        finalBody,
+        opts?.scheduledAt ?? null,
+        opts?.intervalMinutes ?? null,
+        payload,
+        msgId,
+      );
+
+      if (finalType !== 'simple' && finalType !== 'image') {
         scheduleNotification(msg);
       }
+
       triggerHapticSuccess();
       triggerSendSound();
       setBody('');
+      setImagePreview(null);
       onSent?.();
     },
-    [body, chatId, onSent, triggerHapticSuccess, triggerSendSound],
+    [body, imagePreview, chatId, onSent, t, triggerHapticSuccess, triggerSendSound],
   );
-
-  const sendImageMessage = useCallback(async () => {
-    if (!imagePreview) return;
-
-    const msgId = generateId();
-    const savedPath = await saveImage(imagePreview.uri, msgId);
-
-    const payload = JSON.stringify({
-      uri: savedPath,
-      width: imagePreview.width,
-      height: imagePreview.height,
-    });
-
-    const textBody = body.trim()
-      ? body
-      : t.imageMessage(imagePreview.width, imagePreview.height);
-
-    const msg = createMessage(chatId, 'image', textBody, null, null, payload, msgId);
-
-    triggerHapticSuccess();
-    triggerSendSound();
-    setBody('');
-    setImagePreview(null);
-    onSent?.();
-  }, [imagePreview, body, chatId, onSent, t, triggerHapticSuccess, triggerSendSound]);
 
   const handleAttachImage = useCallback(async () => {
     try {
@@ -164,16 +169,11 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const handleRemoveImage = useCallback(() => {
     setImagePreview(null);
-    setBody('');
   }, []);
 
   const handleSend = useCallback(() => {
-    if (imagePreview) {
-      sendImageMessage();
-    } else {
-      sendMessage('simple');
-    }
-  }, [sendMessage, sendImageMessage, imagePreview]);
+    sendMessage('simple');
+  }, [sendMessage]);
 
   const handleReminder = useCallback(() => {
     setPickerDate(new Date());
@@ -366,18 +366,16 @@ export function MessageComposer({ chatId, onSent }: Props) {
         </View>
         <View style={styles.actions}>
           {!imagePreview && (
-            <>
             <AnimatedPressable
               onLongPress={handleMicLongPress}
               delayLongPress={300}
               style={styles.micBtn}>
               <MicIcon size={22} color={`${text}99`} />
             </AnimatedPressable>
-            <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-            <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-            <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!body.trim()} onPressIn={triggerHapticTap} />
-            </>
           )}
+          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
         </View>
       </Animated.View>
