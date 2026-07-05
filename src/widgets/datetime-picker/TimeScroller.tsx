@@ -184,6 +184,26 @@ export function TimeScroller({
     [minute, onMinuteChange, normalizeMinute, recenterMinutes],
   );
 
+  const handleHourDragEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const vy = e.nativeEvent.velocity?.y ?? 0;
+      if (Math.abs(vy) < 0.01) {
+        handleHourScrollEnd(e);
+      }
+    },
+    [handleHourScrollEnd],
+  );
+
+  const handleMinuteDragEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const vy = e.nativeEvent.velocity?.y ?? 0;
+      if (Math.abs(vy) < 0.01) {
+        handleMinuteScrollEnd(e);
+      }
+    },
+    [handleMinuteScrollEnd],
+  );
+
   const handleHourPress = useCallback(
     (real: number) => {
       onHourChange(real);
@@ -263,6 +283,7 @@ export function TimeScroller({
           decelerationRate="fast"
           scrollEventThrottle={16}
           onScroll={handleHourScroll}
+          onScrollEndDrag={handleHourDragEnd}
           onMomentumScrollEnd={handleHourScrollEnd}
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
@@ -290,6 +311,7 @@ export function TimeScroller({
           decelerationRate="fast"
           scrollEventThrottle={16}
           onScroll={handleMinuteScroll}
+          onScrollEndDrag={handleMinuteDragEnd}
           onMomentumScrollEnd={handleMinuteScrollEnd}
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
