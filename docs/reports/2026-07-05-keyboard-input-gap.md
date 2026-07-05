@@ -5,20 +5,21 @@
 
 ## Что сделано
 
-- Добавлен `marginBottom: 4` в `containerAnimatedStyle` компонента `MessageComposer` при открытой клавиатуре
-- Изменение работает на обеих платформах (Android + iOS)
+- Первая попытка: `marginBottom: 4` в `MessageComposer` — дала обратный эффект (блок оказался на 4px ниже клавиатуры)
+- Исправление: +4px перенесены в `chatAreaAnimatedStyle.paddingBottom` в `ChatRoomScreen` — туда, где уже считается компенсация высоты клавиатуры
+- `marginBottom` из `MessageComposer` убран
 
 ## Изменённые файлы
 
-- `src/widgets/message-composer/MessageComposer.tsx:86` — добавлено `marginBottom: keyboardHeight.value > 0 ? 4 : 0` в анимированный стиль контейнера
+- `src/pages/chat-room/ChatRoomScreen.tsx` — Android: `Math.max(keyboardHeight - tabBarHeight + 4, 0)`; iOS: `paddingBottom: 4` при открытой клавиатуре
+- `src/widgets/message-composer/MessageComposer.tsx` — удалён ошибочный `marginBottom: 4`
 
 ## Принятые решения
 
-- **Одно изменение — обе платформы.** `containerAnimatedStyle` уже использует `keyboardHeight` (Reanimated SharedValue) для переключения `paddingBottom` при появлении клавиатуры. Добавление `marginBottom` в тот же стиль создаёт отступ снизу контейнера, который:
-  - На **Android** (с `adjustNothing` и ручной компенсацией через `chatArea.paddingBottom`) — добавляет 4px к общему зазору от низа экрана до контейнера, создавая отступ между композером и верхней границей клавиатуры
-  - На **iOS** (нативная обработка клавиатуры через `react-native-screens`) — отодвигает композер на 4px вверх внутри `chatArea`, что визуально создаёт зазор над клавиатурой
-- Не стал трогать логику `ChatRoomScreen.tsx` (расчёт `chatAreaAnimatedStyle.paddingBottom` на Android), чтобы не вносить платформо-специфичные изменения без необходимости
-- При закрытой клавиатуре `marginBottom: 0` — поведение не меняется
+- **`marginBottom` на дочернем элементе не подходит.** При `paddingBottom` на родителе (`chatArea`) нижний margin композера фактически «съедает» часть padding и сдвигает блок вниз — отсюда эффект, противоположный ожидаемому
+- **+4px добавляются к уже существующей компенсации клавиатуры** в `ChatRoomScreen`, а не к стилям самого композера
+- На **Android** при закрытой клавиатуре формула `Math.max(0 - tabBarHeight + 4, 0)` даёт 0 — поведение без клавиатуры не меняется
+- На **iOS** при открытой клавиатуре `paddingBottom: 4` поднимает `chatArea` на 4px над системной зоной клавиатуры
 
 ## Известные ограничения
 
@@ -27,5 +28,4 @@
 ## Тестирование
 
 - TypeScript-компиляция без ошибок
-- ESLint без новых предупреждений
 - Визуальная проверка: отступ 4px между нижней границей блока ввода и верхней границей клавиатуры на Android/iOS

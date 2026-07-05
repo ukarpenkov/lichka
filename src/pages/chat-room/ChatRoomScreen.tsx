@@ -115,8 +115,10 @@ export function ChatRoomScreen() {
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
       Platform.OS === 'android'
-        ? Math.max(keyboardHeight.value - tabBarHeight, 0)
-        : 0,
+        ? Math.max(keyboardHeight.value - tabBarHeight + 4, 0)
+        : keyboardHeight.value > 0
+          ? 4
+          : 0,
   }));
 
   const loadData = useCallback(() => {
