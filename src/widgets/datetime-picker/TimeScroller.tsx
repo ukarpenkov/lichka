@@ -232,8 +232,9 @@ export function TimeScroller({
         >
           <Text
             style={{
-              fontSize: isSelected ? 28 : 22,
-              fontWeight: isSelected ? '600' : '400',
+              fontSize: 24,
+              lineHeight: ITEM_HEIGHT,
+              fontWeight: isSelected ? '700' : '400',
               color: isSelected ? accentColor : `${textColor}55`,
               textAlign: 'center',
             }}
