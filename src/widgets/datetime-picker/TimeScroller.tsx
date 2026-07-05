@@ -101,7 +101,7 @@ export function TimeScroller({
       animated: boolean,
     ) => {
       ref.current?.scrollToOffset({
-        offset: dataIdx * ITEM_HEIGHT,
+        offset: (dataIdx - 1) * ITEM_HEIGHT,
         animated: reduceMotion ? false : animated,
       });
     },
@@ -114,7 +114,7 @@ export function TimeScroller({
       const centered = dataIdxForHour(real);
       if (centered !== dataIdx) {
         hourListRef.current?.scrollToOffset({
-          offset: centered * ITEM_HEIGHT,
+          offset: (centered - 1) * ITEM_HEIGHT,
           animated: false,
         });
       }
@@ -128,7 +128,7 @@ export function TimeScroller({
       const centered = dataIdxForMinute(real);
       if (centered !== dataIdx) {
         minListRef.current?.scrollToOffset({
-          offset: centered * ITEM_HEIGHT,
+          offset: (centered - 1) * ITEM_HEIGHT,
           animated: false,
         });
       }
@@ -260,11 +260,9 @@ export function TimeScroller({
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
-          disableIntervalMomentum
           scrollEventThrottle={16}
           onScroll={handleHourScroll}
           onMomentumScrollEnd={handleHourScrollEnd}
-          onScrollEndDrag={handleHourScrollEnd}
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
             offset: ITEM_HEIGHT * index,
@@ -289,11 +287,9 @@ export function TimeScroller({
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
-          disableIntervalMomentum
           scrollEventThrottle={16}
           onScroll={handleMinuteScroll}
           onMomentumScrollEnd={handleMinuteScrollEnd}
-          onScrollEndDrag={handleMinuteScrollEnd}
           getItemLayout={(_, index) => ({
             length: ITEM_HEIGHT,
             offset: ITEM_HEIGHT * index,
