@@ -152,7 +152,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       if (scale.value > 1) {
         imageTranslateX.value = savedImageTranslateX.value + e.translationX;
         imageTranslateY.value = savedImageTranslateY.value + e.translationY;
-      } else {
+      } else if (e.numberOfPointers < 2) {
         containerTranslateY.value = Math.max(0, e.translationY);
         overlayOpacity.value = 1 - Math.min(1, containerTranslateY.value / 300);
       }
@@ -161,7 +161,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       if (scale.value > 1) {
         savedImageTranslateX.value = imageTranslateX.value;
         savedImageTranslateY.value = imageTranslateY.value;
-      } else {
+      } else if (e.numberOfPointers < 2) {
         if (containerTranslateY.value > 150 || e.velocityY > 500) {
           runOnJS(dismiss)();
         } else {
@@ -182,6 +182,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
   );
 
   const backgroundPanGesture = Gesture.Pan()
+    .maxPointers(1)
     .onUpdate((e) => {
       if (scale.value <= 1) {
         containerTranslateY.value = Math.max(0, e.translationY);
@@ -295,9 +296,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  imageWrapper: {
-    overflow: 'hidden',
-  },
+  imageWrapper: {},
   closeButton: {
     position: 'absolute',
     zIndex: 10,

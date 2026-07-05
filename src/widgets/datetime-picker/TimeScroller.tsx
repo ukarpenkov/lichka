@@ -74,23 +74,23 @@ export function TimeScroller({
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
 
   const dataIdxForHour = useCallback(
-    (h: number) => MIDDLE_COPY * HOUR_COUNT + h,
+    (h: number) => MIDDLE_COPY * HOUR_COUNT + h - 1,
     [],
   );
   const dataIdxForMinute = useCallback(
-    (m: number) => MIDDLE_COPY * MIN_COUNT + m,
+    (m: number) => MIDDLE_COPY * MIN_COUNT + m - 1,
     [],
   );
 
   const normalizeHour = useCallback(
     (dataIdx: number) =>
-      ((Math.round(dataIdx) % HOUR_COUNT) + HOUR_COUNT) % HOUR_COUNT,
+      ((Math.round(dataIdx + 1) % HOUR_COUNT) + HOUR_COUNT) % HOUR_COUNT,
     [],
   );
 
   const normalizeMinute = useCallback(
     (dataIdx: number) =>
-      ((Math.round(dataIdx) % MIN_COUNT) + MIN_COUNT) % MIN_COUNT,
+      ((Math.round(dataIdx + 1) % MIN_COUNT) + MIN_COUNT) % MIN_COUNT,
     [],
   );
 
