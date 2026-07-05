@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   AccessibilityInfo,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -139,20 +139,19 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
     })
     .onEnd(() => {
       if (scale.value <= 1) {
-        resetZoom(true);
+        runOnJS(resetZoom)(true);
       } else {
         savedScale.value = scale.value;
       }
     });
 
   const imagePanGesture = Gesture.Pan()
-    .minPointers(1)
-    .maxPointers(2)
+    .maxPointers(1)
     .onUpdate((e) => {
       if (scale.value > 1) {
         imageTranslateX.value = savedImageTranslateX.value + e.translationX;
         imageTranslateY.value = savedImageTranslateY.value + e.translationY;
-      } else if (e.numberOfPointers < 2) {
+      } else {
         containerTranslateY.value = Math.max(0, e.translationY);
         overlayOpacity.value = 1 - Math.min(1, containerTranslateY.value / 300);
       }
@@ -161,12 +160,10 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       if (scale.value > 1) {
         savedImageTranslateX.value = imageTranslateX.value;
         savedImageTranslateY.value = imageTranslateY.value;
-      } else if (e.numberOfPointers < 2) {
-        if (containerTranslateY.value > 150 || e.velocityY > 500) {
-          runOnJS(dismiss)();
-        } else {
-          runOnJS(snapBack)();
-        }
+      } else if (containerTranslateY.value > 150 || e.velocityY > 500) {
+        runOnJS(dismiss)();
+      } else {
+        runOnJS(snapBack)();
       }
     });
 
@@ -247,47 +244,52 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       statusBarTranslucent
       onRequestClose={close}
     >
-      <StatusBar
-        translucent
-        backgroundColor={background}
-        barStyle={isLightBackground(background) ? 'dark-content' : 'light-content'}
-      />
-      <Animated.View style={[styles.overlay, { backgroundColor: background }, overlayAnimatedStyle]}>
-        <GestureDetector gesture={outerGesture}>
-          <Animated.View style={[styles.container, containerAnimatedStyle]}>
-            <GestureDetector gesture={imageGesture}>
-              <Animated.View style={[styles.imageWrapper, imageAnimatedStyle]}>
-                <Image
-                  source={{ uri: data.uri }}
-                  style={{ width: displayWidth, height: displayHeight }}
-                  resizeMode="contain"
-                />
+      <GestureHandlerRootView style={styles.root}>
+        <StatusBar
+          translucent
+          backgroundColor={background}
+          barStyle={isLightBackground(background) ? 'dark-content' : 'light-content'}
+        />
+        <Animated.View style={[styles.overlay, { backgroundColor: background }, overlayAnimatedStyle]}>
+          <GestureDetector gesture={outerGesture}>
+            <Animated.View style={[styles.container, containerAnimatedStyle]}>
+              <GestureDetector gesture={imageGesture}>
+                <Animated.View style={[styles.imageWrapper, imageAnimatedStyle]}>
+                  <Image
+                    source={{ uri: data.uri }}
+                    style={{ width: displayWidth, height: displayHeight }}
+                    resizeMode="contain"
+                  />
+                </Animated.View>
+              </GestureDetector>
+            </Animated.View>
+          </GestureDetector>
+          {/* Close button */}
+          <Animated.View
+            style={[
+              styles.closeButton,
+              {
+                top: insets.top + 8,
+                right: Math.max(insets.right, 16),
+              },
+            ]}
+          >
+            <GestureDetector gesture={Gesture.Tap().onEnd(() => runOnJS(close)())}>
+              <Animated.View style={styles.closeHitArea}>
+                <X size={28} color={text} />
               </Animated.View>
             </GestureDetector>
           </Animated.View>
-        </GestureDetector>
-        {/* Close button */}
-        <Animated.View
-          style={[
-            styles.closeButton,
-            {
-              top: insets.top + 8,
-              right: Math.max(insets.right, 16),
-            },
-          ]}
-        >
-          <GestureDetector gesture={Gesture.Tap().onEnd(() => runOnJS(close)())}>
-            <Animated.View style={styles.closeHitArea}>
-              <X size={28} color={text} />
-            </Animated.View>
-          </GestureDetector>
         </Animated.View>
-      </Animated.View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
   },
