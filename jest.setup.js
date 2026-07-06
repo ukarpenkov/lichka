@@ -142,6 +142,11 @@ jest.mock('react-native-fs', () => ({
   readFile: jest.fn(),
 }));
 
+jest.mock('react-native-zip-archive', () => ({
+  zip: jest.fn().mockResolvedValue(''),
+  unzip: jest.fn().mockResolvedValue(''),
+}));
+
 jest.mock('@op-engineering/op-sqlite', () => ({
   open: () => ({
     executeSync: jest.fn().mockReturnValue({ rows: [] }),
