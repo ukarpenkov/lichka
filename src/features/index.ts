@@ -18,8 +18,8 @@ export type { VoicePlayerState } from './voice-play';
 export { useEditMessage } from './edit-message';
 export type { EditFields } from './edit-message';
 
-export { exportToJSON } from './export';
-export { importFromJSON, type ImportMode, type ImportResult } from './import';
+export { exportToJSON, exportToZIP } from './export';
+export { importFromJSON, importFromZIP, type ImportMode, type ImportResult, type ZipImportResult } from './import';
 
 export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup } from './google-drive';
 

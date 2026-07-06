@@ -79,6 +79,9 @@ export interface LocaleDictionary {
   messagesAdded: (n: number) => string;
   messagesUpdated: (n: number) => string;
   settingsImported: string;
+  mediaRestored: (n: number) => string;
+  importFailed: string;
+  notBackupFile: string;
   version: string;
 
   // Chat Form
@@ -212,6 +215,9 @@ export const ru: LocaleDictionary = {
   messagesAdded: (n) => `Добавлено сообщений: ${n}`,
   messagesUpdated: (n) => `Обновлено сообщений: ${n}`,
   settingsImported: 'Настройки импортированы',
+  mediaRestored: (n) => `Восстановлено медиа: ${n}`,
+  importFailed: 'Не удалось импортировать данные',
+  notBackupFile: 'Выбранный файл не является резервной копией',
   version: 'Версия',
 
   // Chat Form
@@ -345,6 +351,9 @@ export const en: LocaleDictionary = {
   messagesAdded: (n) => `Messages added: ${n}`,
   messagesUpdated: (n) => `Messages updated: ${n}`,
   settingsImported: 'Settings imported',
+  mediaRestored: (n) => `Media restored: ${n}`,
+  importFailed: 'Failed to import data',
+  notBackupFile: 'Selected file is not a backup',
   version: 'Version',
 
   // Chat Form

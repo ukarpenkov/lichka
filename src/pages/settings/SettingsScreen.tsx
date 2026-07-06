@@ -2,12 +2,12 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, View, Switch, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileJson, FileUp, Info, ChevronRight } from 'lucide-react-native';
+import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from 'lucide-react-native';
 
 import { Screen, Text, AlertDialog, type AlertButton } from '../../shared/ui';
-import { useTheme, getTheme, useLocale } from '../../shared/config';
+import { useTheme, getTheme, useLocale, type LocaleDictionary } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToJSON, importFromJSON, getGoogleToken, uploadBackup, downloadBackup } from '../../features';
+import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import type { SettingsStackParamList } from '../../app/types';
@@ -17,6 +17,26 @@ import { SettingsRow } from './SettingsRow';
 type Nav = NativeStackNavigationProp<SettingsStackParamList, 'Settings'>;
 
 const APP_VERSION = '0.1';
+
+interface ImportSummary {
+  chatsAdded: number;
+  chatsUpdated: number;
+  messagesAdded: number;
+  messagesUpdated: number;
+  settingsImported: boolean;
+  mediaRestored?: number;
+}
+
+function formatImportResult(t: LocaleDictionary, r: ImportSummary): string {
+  const parts: string[] = [];
+  if (r.chatsAdded > 0) parts.push(t.chatsAdded(r.chatsAdded));
+  if (r.chatsUpdated > 0) parts.push(t.chatsUpdated(r.chatsUpdated));
+  if (r.messagesAdded > 0) parts.push(t.messagesAdded(r.messagesAdded));
+  if (r.messagesUpdated > 0) parts.push(t.messagesUpdated(r.messagesUpdated));
+  if (r.settingsImported) parts.push(t.settingsImported);
+  if (r.mediaRestored && r.mediaRestored > 0) parts.push(t.mediaRestored(r.mediaRestored));
+  return parts.length > 0 ? parts.join('\n') : t.noNewData;
+}
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
@@ -58,24 +78,34 @@ export function SettingsScreen() {
         const file = await DocumentPicker.pickSingle({
           type: [DocumentPicker.types.allFiles],
         });
-        const json = await RNFS.readFile(file.uri, 'utf8');
-        const result = importFromJSON(json, mode);
+        const name = (file.name ?? file.uri ?? '').toLowerCase();
+        const isZip = name.endsWith('.zip');
 
-        const parts: string[] = [];
-        if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
-        if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
-        if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
-        if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
-        if (result.settingsImported) parts.push(t.settingsImported);
+        let summary: ImportSummary;
+        if (isZip) {
+          const tmpZip = `${RNFS.CachesDirectoryPath}/lichka-import-src-${Date.now()}.zip`;
+          await RNFS.copyFile(file.uri, tmpZip);
+          try {
+            const result: ZipImportResult = await importFromZIP(tmpZip, mode);
+            summary = result;
+          } finally {
+            await RNFS.unlink(tmpZip).catch(() => {});
+          }
+        } else {
+          const json = await RNFS.readFile(file.uri, 'utf8');
+          summary = importFromJSON(json, mode);
+        }
 
+        const message = formatImportResult(t, summary);
         setTimeout(() => {
-          setDialog({ title: t.importComplete, message: parts.length > 0 ? parts.join('\n') : t.noNewData, buttons: [{ text: t.done }] });
+          setDialog({ title: t.importComplete, message, buttons: [{ text: t.done }] });
         }, 300);
         setSettings(getSettings());
       } catch (e: any) {
         if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
+        const message = e?.message === 'NOT_A_BACKUP' ? t.notBackupFile : t.importFailed;
         setTimeout(() => {
-          setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
+          setDialog({ title: t.error, message, buttons: [{ text: t.done }] });
         }, 300);
       }
     },
@@ -261,10 +291,10 @@ export function SettingsScreen() {
           />
           <SettingsRow
             label={t.exportToFile}
-            icon={FileJson}
+            icon={FileArchive}
             onPress={async () => {
               try {
-                const filePath = await exportToJSON();
+                const filePath = await exportToZIP();
                 setDialog({ title: t.done, message: t.exportDone(filePath), buttons: [{ text: t.done }] });
               } catch {
                 setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
