@@ -41,6 +41,8 @@ export function TimeScroller({
   const lastHourValue = useRef(hour);
   const lastMinValue = useRef(minute);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [centerHourIdx, setCenterHourIdx] = useState<number | null>(null);
+  const [centerMinIdx, setCenterMinIdx] = useState<number | null>(null);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -74,11 +76,11 @@ export function TimeScroller({
   const formatMinute = useCallback((m: number) => `${m}`.padStart(2, '0'), []);
 
   const dataIdxForHour = useCallback(
-    (h: number) => MIDDLE_COPY * HOUR_COUNT + h - 1,
+    (h: number) => MIDDLE_COPY * HOUR_COUNT + h,
     [],
   );
   const dataIdxForMinute = useCallback(
-    (m: number) => MIDDLE_COPY * MIN_COUNT + m - 1,
+    (m: number) => MIDDLE_COPY * MIN_COUNT + m,
     [],
   );
 
@@ -140,6 +142,7 @@ export function TimeScroller({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = normalizeHour(idx);
+      setCenterHourIdx(idx + 1);
       if (clamped !== lastHourValue.current) {
         lastHourValue.current = clamped;
         onTick?.();
@@ -152,6 +155,7 @@ export function TimeScroller({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const clamped = normalizeMinute(idx);
+      setCenterMinIdx(idx + 1);
       if (clamped !== lastMinValue.current) {
         lastMinValue.current = clamped;
         onTick?.();
@@ -164,6 +168,7 @@ export function TimeScroller({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const real = normalizeHour(idx);
+      setCenterHourIdx(idx + 1);
       if (real !== hour) {
         onHourChange(real);
       }
@@ -176,6 +181,7 @@ export function TimeScroller({
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
       const real = normalizeMinute(idx);
+      setCenterMinIdx(idx + 1);
       if (real !== minute) {
         onMinuteChange(real);
       }
@@ -209,6 +215,7 @@ export function TimeScroller({
       onHourChange(real);
       onTick?.();
       lastHourValue.current = real;
+      setCenterHourIdx(dataIdxForHour(real));
       scrollToDataIndex(hourListRef, dataIdxForHour(real), true);
     },
     [onHourChange, onTick, scrollToDataIndex, dataIdxForHour],
@@ -219,6 +226,7 @@ export function TimeScroller({
       onMinuteChange(real);
       onTick?.();
       lastMinValue.current = real;
+      setCenterMinIdx(dataIdxForMinute(real));
       scrollToDataIndex(minListRef, dataIdxForMinute(real), true);
     },
     [onMinuteChange, onTick, scrollToDataIndex, dataIdxForMinute],
@@ -241,10 +249,12 @@ export function TimeScroller({
   const renderItem = useCallback(
     (
       v: number,
-      isSelected: boolean,
+      index: number,
+      centerIdx: number | null,
       format: (val: number) => string,
       onPress: (val: number) => void,
     ) => {
+      const isCenter = index === centerIdx;
       return (
         <Pressable
           onPress={() => onPress(v)}
@@ -254,8 +264,8 @@ export function TimeScroller({
             style={{
               fontSize: 24,
               lineHeight: ITEM_HEIGHT,
-              fontWeight: isSelected ? '700' : '400',
-              color: isSelected ? accentColor : `${textColor}55`,
+              fontWeight: isCenter ? '700' : '400',
+              color: isCenter ? accentColor : `${textColor}55`,
               textAlign: 'center',
             }}
           >
@@ -275,8 +285,8 @@ export function TimeScroller({
           ref={hourListRef}
           data={hours}
           keyExtractor={(_item, index) => `h-${index}`}
-          renderItem={({ item }) =>
-            renderItem(item, item === hour, formatHour, handleHourPress)
+          renderItem={({ item, index }) =>
+            renderItem(item, index, centerHourIdx, formatHour, handleHourPress)
           }
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
@@ -303,8 +313,8 @@ export function TimeScroller({
           ref={minListRef}
           data={minutes}
           keyExtractor={(_item, index) => `m-${index}`}
-          renderItem={({ item }) =>
-            renderItem(item, item === minute, formatMinute, handleMinutePress)
+          renderItem={({ item, index }) =>
+            renderItem(item, index, centerMinIdx, formatMinute, handleMinutePress)
           }
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
