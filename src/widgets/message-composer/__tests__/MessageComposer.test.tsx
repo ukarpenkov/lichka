@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { MessageComposer } from '../MessageComposer';
 
 const mockCreateMessage = jest.fn();
@@ -141,5 +142,15 @@ describe('MessageComposer', () => {
     const { queryByTestId } = render(<MessageComposer chatId="chat-1" />);
     expect(queryByTestId('icon-Repeat')).toBeTruthy();
     expect(queryByTestId('icon-Bell')).toBeTruthy();
+  });
+
+  it('vertically centers text inside the input field', () => {
+    const { getByPlaceholderText, getByTestId } = render(<MessageComposer chatId="chat-1" />);
+    const input = getByPlaceholderText('Message...');
+    expect(input.props.textAlignVertical).toBe('center');
+
+    const wrapper = getByTestId('composer-input-wrapper');
+    const wrapperStyle = StyleSheet.flatten(wrapper.props.style);
+    expect(wrapperStyle.alignItems).toBe('center');
   });
 });

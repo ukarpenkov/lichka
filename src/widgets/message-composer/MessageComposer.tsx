@@ -368,12 +368,13 @@ export function MessageComposer({ chatId, onSent }: Props) {
           </Pressable>
         </View>
       ) : null}
-      <View style={[styles.inputWrapper, { borderColor: `${text}33` }]}>
+      <View testID="composer-input-wrapper" style={[styles.inputWrapper, { borderColor: `${text}33` }]}>
           <TextInput
             style={[styles.input, { color: text }]}
             placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
             placeholderTextColor={`${text}66`}
             multiline
+            textAlignVertical="center"
             value={body}
             onChangeText={setBody}
             maxLength={4000}
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 20,
     paddingLeft: 16,
