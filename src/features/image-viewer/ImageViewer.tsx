@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   Modal,
   StatusBar,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
+  cancelAnimation,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -27,6 +27,8 @@ const PINCH_SENSITIVITY = 3;
 const DOUBLE_TAP_SCALE = 2.5;
 const DISMISS_DISTANCE = 150;
 const DISMISS_VELOCITY = 500;
+const OPEN_DURATION = 200;
+const CLOSE_DURATION = 200;
 
 function isLightBackground(hex: string): boolean {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -103,6 +105,9 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [internalVisible, setInternalVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -117,6 +122,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
   const imageTranslateY = useSharedValue(0);
   const containerTranslateY = useSharedValue(0);
   const overlayOpacity = useSharedValue(0);
+  const imageOpacity = useSharedValue(0);
 
   const pinchStartScale = useSharedValue(1);
   const pinchStartTranslateX = useSharedValue(0);
@@ -139,34 +145,40 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
 
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsClosing(false);
+      setInternalVisible(true);
+      cancelAnimation(overlayOpacity);
+      cancelAnimation(containerTranslateY);
+      cancelAnimation(imageOpacity);
       scale.value = 1;
       imageTranslateX.value = 0;
       imageTranslateY.value = 0;
       containerTranslateY.value = 0;
-      overlayOpacity.value = reduceMotion ? 1 : withTiming(1, { duration: 200 });
+      panStartTranslateX.value = 0;
+      panStartTranslateY.value = 0;
+      imageOpacity.value = 0;
+      overlayOpacity.value = reduceMotion ? 1 : withTiming(1, { duration: OPEN_DURATION });
+    } else if (internalVisible) {
+      if (reduceMotion) {
+        setInternalVisible(false);
+      } else {
+        overlayOpacity.value = withTiming(0, { duration: CLOSE_DURATION }, () => {
+          runOnJS(setInternalVisible)(false);
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, reduceMotion]);
 
   const close = useCallback(() => {
-    if (reduceMotion) {
-      onClose();
-    } else {
-      overlayOpacity.value = withTiming(0, { duration: 200 }, () => {
-        runOnJS(onClose)();
-      });
+    if (isClosingRef.current) {
+      return;
     }
-  }, [reduceMotion, onClose, overlayOpacity]);
-
-  const dismiss = useCallback(() => {
-    if (reduceMotion) {
-      onClose();
-    } else {
-      overlayOpacity.value = withTiming(0, { duration: 200 }, () => {
-        runOnJS(onClose)();
-      });
-    }
-  }, [reduceMotion, onClose, overlayOpacity]);
+    isClosingRef.current = true;
+    setIsClosing(true);
+    onClose();
+  }, [onClose]);
 
   const snapBack = useCallback(() => {
     containerTranslateY.value = withSpring(0, reduceMotion ? { duration: 0 } as any : undefined);
@@ -290,7 +302,6 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
     });
 
   const panGesture = Gesture.Pan()
-    .maxPointers(1)
     .onStart(() => {
       if (isPinching.value) {
         return;
@@ -349,7 +360,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       }
 
       if (containerTranslateY.value > DISMISS_DISTANCE || e.velocityY > DISMISS_VELOCITY) {
-        runOnJS(dismiss)();
+        runOnJS(close)();
       } else {
         runOnJS(snapBack)();
       }
@@ -376,7 +387,7 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
 
   const composedGesture = Gesture.Simultaneous(
     Gesture.Exclusive(doubleTapGesture, singleTapGesture),
-    Gesture.Exclusive(pinchGesture, panGesture),
+    Gesture.Simultaneous(pinchGesture, panGesture),
   );
 
   const overlayAnimatedStyle = useAnimatedStyle(() => ({
@@ -393,6 +404,10 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       { translateY: imageTranslateY.value },
       { scale: scale.value },
     ],
+  }));
+
+  const imageOpacityStyle = useAnimatedStyle(() => ({
+    opacity: imageOpacity.value,
   }));
 
   const layout = useMemo(() => {
@@ -435,8 +450,8 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
 
   return (
     <Modal
-      visible={visible}
-      transparent={false}
+      visible={internalVisible}
+      transparent
       animationType="none"
       statusBarTranslucent
       onRequestClose={close}
@@ -447,7 +462,10 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
           backgroundColor={background}
           barStyle={isLightBackground(background) ? 'dark-content' : 'light-content'}
         />
-        <Animated.View style={[styles.overlay, { backgroundColor: background }, overlayAnimatedStyle]}>
+        <Animated.View
+          style={[styles.overlay, { backgroundColor: background }, overlayAnimatedStyle]}
+          pointerEvents={isClosing ? 'none' : 'auto'}
+        >
           <GestureDetector gesture={composedGesture}>
             <Animated.View style={[styles.container, containerAnimatedStyle]}>
               <Animated.View
@@ -457,10 +475,15 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
                   imageAnimatedStyle,
                 ]}
               >
-                <Image
+                <Animated.Image
                   source={{ uri: data.uri }}
-                  style={styles.image}
+                  style={[styles.image, imageOpacityStyle]}
                   resizeMode="contain"
+                  onLoad={() => {
+                    imageOpacity.value = reduceMotion
+                      ? 1
+                      : withTiming(1, { duration: OPEN_DURATION });
+                  }}
                 />
               </Animated.View>
             </Animated.View>
