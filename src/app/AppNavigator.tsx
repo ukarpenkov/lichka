@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  BaseNavigationContainer,
+  NavigationIndependentTree,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
 import { useSharedValue, withSpring } from 'react-native-reanimated';
@@ -38,52 +42,68 @@ function NotificationHandler() {
 
 function ChatStackScreen() {
   const { text, background } = useTheme();
+  const navTheme = React.useMemo(
+    () => buildNavTheme(text, background),
+    [text, background],
+  );
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: background },
-        headerTintColor: text,
-        headerTitleStyle: { color: text },
-        contentStyle: { backgroundColor: background },
-      }}>
-      <Stack.Screen
-        name="ChatList"
-        component={ChatListScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ChatRoom"
-        component={ChatRoomScreen}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
+    <NavigationIndependentTree>
+      <BaseNavigationContainer theme={navTheme}>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: background },
+            headerTintColor: text,
+            headerTitleStyle: { color: text },
+            contentStyle: { backgroundColor: background },
+          }}>
+          <Stack.Screen
+            name="ChatList"
+            component={ChatListScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ChatRoom"
+            component={ChatRoomScreen}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </BaseNavigationContainer>
+    </NavigationIndependentTree>
   );
 }
 
 function SettingsStackScreen() {
   const { text, background } = useTheme();
   const { t } = useLocale();
+  const navTheme = React.useMemo(
+    () => buildNavTheme(text, background),
+    [text, background],
+  );
 
   return (
-    <SettingsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: background },
-        headerTintColor: text,
-        headerTitleStyle: { color: text },
-        contentStyle: { backgroundColor: background },
-      }}>
-      <SettingsStack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ headerShown: false }}
-      />
-      <SettingsStack.Screen
-        name="ThemePicker"
-        component={ThemePickerScreen}
-        options={{ title: t.themeTitle }}
-      />
-    </SettingsStack.Navigator>
+    <NavigationIndependentTree>
+      <BaseNavigationContainer theme={navTheme}>
+        <SettingsStack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: background },
+            headerTintColor: text,
+            headerTitleStyle: { color: text },
+            contentStyle: { backgroundColor: background },
+          }}>
+          <SettingsStack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ headerShown: false }}
+          />
+          <SettingsStack.Screen
+            name="ThemePicker"
+            component={ThemePickerScreen}
+            options={{ title: t.themeTitle }}
+          />
+        </SettingsStack.Navigator>
+      </BaseNavigationContainer>
+    </NavigationIndependentTree>
   );
 }
 
@@ -93,6 +113,27 @@ function isBackgroundDark(background: string): boolean {
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
   return r * 0.299 + g * 0.587 + b * 0.114 < 128;
+}
+
+function buildNavTheme(text: string, background: string) {
+  const isDark = isBackgroundDark(background);
+  return {
+    dark: isDark,
+    colors: {
+      primary: text,
+      background: background,
+      card: background,
+      text: text,
+      border: text + '20',
+      notification: text,
+    },
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: '400' as const },
+      medium: { fontFamily: 'System', fontWeight: '500' as const },
+      bold: { fontFamily: 'System', fontWeight: '700' as const },
+      heavy: { fontFamily: 'System', fontWeight: '900' as const },
+    },
+  };
 }
 
 const TAB_ICONS = [MessageCircle, CalendarDays, Settings];
@@ -161,24 +202,8 @@ export function AppNavigator() {
   const isDark = isBackgroundDark(background);
 
   const navTheme = React.useMemo(
-    () => ({
-      dark: isDark,
-      colors: {
-        primary: text,
-        background: background,
-        card: background,
-        text: text,
-        border: text + '20',
-        notification: text,
-      },
-      fonts: {
-        regular: { fontFamily: 'System', fontWeight: '400' as const },
-        medium: { fontFamily: 'System', fontWeight: '500' as const },
-        bold: { fontFamily: 'System', fontWeight: '700' as const },
-        heavy: { fontFamily: 'System', fontWeight: '900' as const },
-      },
-    }),
-    [text, background, isDark],
+    () => buildNavTheme(text, background),
+    [text, background],
   );
 
   return (
