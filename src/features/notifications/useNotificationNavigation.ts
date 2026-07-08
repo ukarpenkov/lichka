@@ -1,39 +1,20 @@
 import { useCallback, useEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
-import { getInitialChatId, getInitialMessageId, consumeInitialChatId } from '../../shared/lib/notificationChannels';
 
-let pendingPayload: { chatId: string; messageId?: string } | null = null;
-let navReady = false;
-
-export function setNavigationReady() {
-  navReady = true;
-  if (pendingPayload && navRef) {
-    const p = pendingPayload;
-    pendingPayload = null;
-    navRef('ChatsTab', { screen: 'ChatRoom', params: { chatId: p.chatId, messageId: p.messageId } });
-  }
-}
-
-type NavigateFn = (name: string, params: any) => void;
-let navRef: NavigateFn | null = null;
+import {
+  getInitialChatId,
+  getInitialMessageId,
+  consumeInitialChatId,
+} from '../../shared/lib/notificationChannels';
+import { setNavigationReady, navigateToChat } from '../../app/mainTabsApi';
 
 export function useNotificationNavigation() {
-  const navigation = useNavigation<any>();
-
   useEffect(() => {
-    navRef = (name: string, params: any) => navigation.navigate(name, params);
-    if (navigation.isReady?.()) {
-      setNavigationReady();
-    }
-  }, [navigation]);
+    setNavigationReady();
+  }, []);
 
-  const navigateToChat = useCallback((chatId: string, messageId?: string) => {
-    if (navReady && navRef) {
-      navRef('ChatsTab', { screen: 'ChatRoom', params: { chatId, messageId } });
-    } else {
-      pendingPayload = { chatId, messageId };
-    }
+  const navigateToChatRoom = useCallback((chatId: string, messageId?: string) => {
+    navigateToChat(chatId, messageId);
   }, []);
 
   useEffect(() => {
@@ -43,7 +24,7 @@ export function useNotificationNavigation() {
       ([chatId, messageId]) => {
         if (chatId) {
           consumeInitialChatId();
-          navigateToChat(chatId, messageId || undefined);
+          navigateToChatRoom(chatId, messageId || undefined);
         }
       },
     );
@@ -53,10 +34,10 @@ export function useNotificationNavigation() {
       'onNotificationOpen',
       (event: { chatId: string; messageId?: string }) => {
         if (event.chatId) {
-          navigateToChat(event.chatId, event.messageId);
+          navigateToChatRoom(event.chatId, event.messageId);
         }
       },
     );
     return () => sub.remove();
-  }, [navigateToChat]);
+  }, [navigateToChatRoom]);
 }

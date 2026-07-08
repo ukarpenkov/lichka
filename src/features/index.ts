@@ -6,7 +6,6 @@ export {
   ensureExactAlarmPermission,
   requestBatteryOptimizationExemption,
   useNotificationNavigation,
-  setNavigationReady,
 } from './notifications';
 
 export { useVoiceRecorder, requestMicrophonePermission } from './voice-record';
