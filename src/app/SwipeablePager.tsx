@@ -11,6 +11,7 @@ import Animated, {
 
 import { AnimatedPressable } from '../shared/ui';
 import { SPRING_SNAP } from '../shared/lib/animations';
+import { PAGER_TAB_BAR_HEIGHT } from '../shared/lib';
 
 export type SwipeablePagerProps = {
   /** Текущий активный индекс (контролируемый). */
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    height: 56,
+    height: PAGER_TAB_BAR_HEIGHT,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   tabButton: {

@@ -261,6 +261,7 @@ export function TimeScroller({
           style={[styles.item, { height: ITEM_HEIGHT }]}
         >
           <Text
+            // eslint-disable-next-line react-native/no-inline-styles
             style={{
               fontSize: 24,
               lineHeight: ITEM_HEIGHT,

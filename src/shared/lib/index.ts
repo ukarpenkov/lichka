@@ -23,5 +23,6 @@ export {
   KEYBOARD_ANDROID_LIFT_FUDGE,
   KEYBOARD_COMPOSER_GAP,
   CHAT_LIST_KEYBOARD_BOTTOM_INSET,
+  PAGER_TAB_BAR_HEIGHT,
 } from './keyboard';
 export { pickAndCompressImage, type CompressedImage } from './imageCompress';

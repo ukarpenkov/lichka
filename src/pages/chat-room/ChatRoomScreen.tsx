@@ -8,7 +8,6 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import {
   useKeyboardHeight,
   KEYBOARD_ANDROID_LIFT_FUDGE,
   CHAT_LIST_KEYBOARD_BOTTOM_INSET,
+  PAGER_TAB_BAR_HEIGHT,
 } from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
@@ -84,7 +84,7 @@ export function ChatRoomScreen() {
   const { background, text } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = PAGER_TAB_BAR_HEIGHT;
 
   const [chat, setChat] = useState<Chat | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -113,8 +113,9 @@ export function ChatRoomScreen() {
     },
   });
 
-  // Экран чата вложен в таб-навигатор, поэтому нижний tab bar уже занимает
-  // `tabBarHeight` над краем экрана — вычитаем его из высоты клавиатуры.
+  // Экран чата вложен в кастомный pager (SwipeablePager + PagerTabBar),
+  // поэтому нижний tab bar уже занимает `tabBarHeight` над краем экрана —
+  // вычитаем его из высоты клавиатуры.
   // На iOS клавиатуру поднимает система, ручная компенсация не нужна.
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
