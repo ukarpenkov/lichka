@@ -14,7 +14,11 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale } from '../../shared/config';
-import { useKeyboardHeight, KEYBOARD_ANDROID_LIFT_FUDGE } from '../../shared/lib';
+import {
+  useKeyboardHeight,
+  KEYBOARD_ANDROID_LIFT_FUDGE,
+  CHAT_LIST_KEYBOARD_BOTTOM_INSET,
+} from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
@@ -120,6 +124,11 @@ export function ChatRoomScreen() {
             0,
           )
         : 0,
+  }));
+
+  const listContentAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom:
+      keyboardHeight.value > 0 ? CHAT_LIST_KEYBOARD_BOTTOM_INSET : 4,
   }));
 
   const loadData = useCallback(() => {
@@ -370,7 +379,7 @@ export function ChatRoomScreen() {
           renderItem={renderListItem}
           keyExtractor={keyExtractor}
           style={styles.list}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, listContentAnimatedStyle]}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
@@ -448,6 +457,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingVertical: 4,
+    paddingTop: 4,
   },
 });
