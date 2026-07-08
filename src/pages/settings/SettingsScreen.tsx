@@ -8,6 +8,7 @@ import { Screen, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, type LocaleDictionary } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
+import { useOnTabVisible } from '../../app/MainTabsContext';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
 import type { SettingsStackParamList } from '../../app/types';
@@ -54,6 +55,8 @@ export function SettingsScreen() {
       setSettings(getSettings());
     }, []),
   );
+
+  useOnTabVisible(2, () => setSettings(getSettings()), []);
 
   const handleToggle = useCallback(
     (key: 'hapticEnabled' | 'soundEnabled', value: boolean) => {

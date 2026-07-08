@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { getScheduledMessages, disableFiredMessages, type Message } from '../../entities/message';
 import { getChatById } from '../../entities/chat';
+import { useTabVisible } from '../../app/MainTabsContext';
+import { navigateToChat } from '../../app/mainTabsApi';
 
 import { ScheduledItem } from './ScheduledItem';
 
@@ -17,7 +18,6 @@ type ScheduledEntry = {
 const REFRESH_INTERVAL = 15_000;
 
 export function ScheduledScreen() {
-  const navigation = useNavigation();
   const { text } = useTheme();
   const { t } = useLocale();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
@@ -34,7 +34,9 @@ export function ScheduledScreen() {
     setEntries(items);
   }, []);
 
-  useFocusEffect(
+  // Таб "Запланировано" (индекс 1). Обновляемся при появлении и чистим таймер при уходе.
+  useTabVisible(
+    1,
     useCallback(() => {
       loadEntries();
       timerRef.current = setInterval(loadEntries, REFRESH_INTERVAL);
@@ -49,12 +51,9 @@ export function ScheduledScreen() {
 
   const handlePress = useCallback(
     (entry: ScheduledEntry) => {
-      (navigation as any).navigate('ChatsTab', {
-        screen: 'ChatRoom',
-        params: { chatId: entry.message.chatId, messageId: entry.message.id },
-      });
+      navigateToChat(entry.message.chatId, entry.message.id);
     },
-    [navigation],
+    [],
   );
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,9 @@ import { Screen, Text, IconButton, AnimatedPressable, AlertDialog, type AlertBut
 import { useTheme, useLocale } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import type { ChatStackParamList } from '../../app/types';
+import { useOnTabVisible } from '../../app/MainTabsContext';
 import { ChatForm } from '../../widgets/chat-form';
+import { setChatStackNavigation } from '../../app/mainTabsApi';
 
 import { ChatListItem } from './ChatListItem';
 import { ChatContextMenu } from './ChatContextMenu';
@@ -40,6 +42,13 @@ export function ChatListScreen() {
   const refresh = useCallback(() => {
     setChats(getChats());
   }, []);
+
+  useOnTabVisible(0, refresh, [refresh]);
+
+  useEffect(() => {
+    setChatStackNavigation(navigation);
+    return () => setChatStackNavigation(null);
+  }, [navigation]);
 
   const handleDelete = useCallback(() => {
     if (!menuChat) return;
