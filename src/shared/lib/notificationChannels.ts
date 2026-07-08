@@ -2,10 +2,19 @@ import { NativeModules, Platform } from 'react-native';
 
 const { NotificationModule } = NativeModules;
 
+function requireNotificationModule(): NonNullable<typeof NotificationModule> {
+  if (!NotificationModule) {
+    throw new Error(
+      'NotificationModule is not linked. Rebuild the native app (android).',
+    );
+  }
+  return NotificationModule;
+}
+
 /** Register Android notification channels (reminders + alarms). No-op on iOS. */
 export function registerNotificationChannels(): void {
   if (Platform.OS === 'android') {
-    NotificationModule.registerChannels();
+    requireNotificationModule().registerChannels();
   }
 }
 
@@ -16,7 +25,13 @@ export function scheduleReminder(
   chatTitle: string,
   triggerAtMillis: number,
 ): void {
-  NotificationModule.scheduleReminder(messageId, chatId, body, chatTitle, triggerAtMillis);
+  requireNotificationModule().scheduleReminder(
+    messageId,
+    chatId,
+    body,
+    chatTitle,
+    triggerAtMillis,
+  );
 }
 
 export function schedulePeriodic(
@@ -27,7 +42,7 @@ export function schedulePeriodic(
   intervalMinutes: number,
   triggerAtMillis: number,
 ): void {
-  NotificationModule.schedulePeriodic(
+  requireNotificationModule().schedulePeriodic(
     messageId,
     chatId,
     body,
@@ -38,7 +53,7 @@ export function schedulePeriodic(
 }
 
 export function cancelAlarm(messageId: string): void {
-  NotificationModule.cancelAlarm(messageId);
+  requireNotificationModule().cancelAlarm(messageId);
 }
 
 export function scheduleAlarm(
@@ -48,32 +63,38 @@ export function scheduleAlarm(
   chatTitle: string,
   triggerAtMillis: number,
 ): void {
-  NotificationModule.scheduleAlarm(messageId, chatId, body, chatTitle, triggerAtMillis);
+  requireNotificationModule().scheduleAlarm(
+    messageId,
+    chatId,
+    body,
+    chatTitle,
+    triggerAtMillis,
+  );
 }
 
 export function canScheduleExactAlarms(): Promise<boolean> {
-  return NotificationModule.canScheduleExactAlarms();
+  return requireNotificationModule().canScheduleExactAlarms();
 }
 
 export function requestIgnoreBatteryOptimizations(): void {
-  NotificationModule.requestIgnoreBatteryOptimizations();
+  requireNotificationModule().requestIgnoreBatteryOptimizations();
 }
 
 /** Открывает системный экран запроса разрешения SCHEDULE_EXACT_ALARM (Android 12). */
 export function requestScheduleExactAlarm(): void {
-  NotificationModule.requestScheduleExactAlarm();
+  requireNotificationModule().requestScheduleExactAlarm();
 }
 
 export function getInitialChatId(): Promise<string | null> {
-  return NotificationModule.getInitialChatId();
+  return requireNotificationModule().getInitialChatId();
 }
 
 export function getInitialMessageId(): Promise<string | null> {
-  return NotificationModule.getInitialMessageId();
+  return requireNotificationModule().getInitialMessageId();
 }
 
 export function consumeInitialChatId(): void {
-  NotificationModule.consumeInitialChatId();
+  requireNotificationModule().consumeInitialChatId();
 }
 
 export const CHANNEL_REMINDERS = 'reminders';

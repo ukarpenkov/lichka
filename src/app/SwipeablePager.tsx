@@ -22,8 +22,12 @@ export type SwipeablePagerProps = {
   children: React.ReactNode[];
 };
 
-const PAN_ACTIVE_OFFSET_X = 20;
-const PAN_FAIL_OFFSET_Y = 12;
+const PAN_ACTIVE_OFFSET_X = 8;
+const PAN_FAIL_OFFSET_Y = 28;
+const SWIPE_DISTANCE_RATIO = 0.18;
+const SWIPE_DISTANCE_MAX = 96;
+const SWIPE_MIN_DISTANCE = 28;
+const SWIPE_VELOCITY_THRESHOLD = 450;
 
 function clamp(value: number, min: number, max: number) {
   'worklet';
@@ -69,7 +73,7 @@ export function SwipeablePager({
       .failOffsetY([-PAN_FAIL_OFFSET_Y, PAN_FAIL_OFFSET_Y])
       .onStart(() => {
         gesturingSV.value = 1;
-        startIndexSV.value = indexSV.value;
+        startIndexSV.value = Math.round(indexSV.value);
         gestureXSV.value = 0;
       })
       .onUpdate((event) => {
@@ -80,9 +84,21 @@ export function SwipeablePager({
       .onEnd((event) => {
         const currentTranslate = -indexSV.value * widthSV.value + gestureXSV.value;
         const currentVisualIndex = -currentTranslate / widthSV.value;
-        const velocityBias = (event.velocityX / widthSV.value) * 0.25;
+        const distance = Math.abs(gestureXSV.value);
+        const distanceThreshold = clamp(
+          widthSV.value * SWIPE_DISTANCE_RATIO,
+          SWIPE_MIN_DISTANCE,
+          SWIPE_DISTANCE_MAX,
+        );
+        const isFastSwipe =
+          distance >= SWIPE_MIN_DISTANCE &&
+          Math.abs(event.velocityX) >= SWIPE_VELOCITY_THRESHOLD;
+        const shouldSwitch = distance >= distanceThreshold || isFastSwipe;
 
-        let target = Math.round(currentVisualIndex + velocityBias);
+        let target = startIndexSV.value;
+        if (shouldSwitch) {
+          target += gestureXSV.value < 0 ? 1 : -1;
+        }
         target = clamp(target, 0, count - 1);
 
         // Плавно передаём управление от жеста к пружинной анимации индекса:
@@ -124,7 +140,7 @@ export function SwipeablePager({
             animatedStyle,
           ]}>
           {children.map((child, i) => (
-            <View key={i} style={{ width, flex: 1 }}>
+            <View key={i} style={[styles.page, { width }]}>
               {child}
             </View>
           ))}
@@ -135,7 +151,6 @@ export function SwipeablePager({
 }
 
 export type PagerTabBarProps = {
-  count: number;
   activeIndex: number;
   onIndexChange: (index: number, fromGesture: boolean) => void;
   icons: React.ComponentType<{ color: string; size: number }>[];
@@ -146,7 +161,6 @@ export type PagerTabBarProps = {
 };
 
 export function PagerTabBar({
-  count,
   activeIndex,
   onIndexChange,
   icons,
@@ -195,6 +209,9 @@ const styles = StyleSheet.create({
   track: {
     flex: 1,
     flexDirection: 'row',
+  },
+  page: {
+    flex: 1,
   },
   tabBar: {
     flexDirection: 'row',

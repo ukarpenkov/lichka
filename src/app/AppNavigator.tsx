@@ -184,7 +184,6 @@ function MainTabs() {
         <SettingsStackScreen />
       </SwipeablePager>
       <PagerTabBar
-        count={3}
         activeIndex={activeIndex}
         onIndexChange={handleIndexChange}
         icons={TAB_ICONS}

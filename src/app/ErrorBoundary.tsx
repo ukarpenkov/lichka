@@ -1,5 +1,5 @@
 import React, { Component, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { DEFAULT_LIGHT } from '../shared/config/theme';
 
 interface Props {
@@ -20,8 +20,15 @@ export class ErrorBoundary extends Component<Props, State> {
     return { error };
   }
 
+  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    console.error('[ErrorBoundary]', error.message, info.componentStack);
+  }
+
   render() {
     if (this.state.error) {
+      const message = this.state.error.message || String(this.state.error);
+      const stack = this.state.error.stack;
+
       return (
         <View style={[styles.container, { backgroundColor: DEFAULT_LIGHT.background }]}>
           <View style={styles.content}>
@@ -29,9 +36,23 @@ export class ErrorBoundary extends Component<Props, State> {
               <View style={[styles.exclamation, { backgroundColor: DEFAULT_LIGHT.text }]} />
               <View style={[styles.dot, { backgroundColor: DEFAULT_LIGHT.text }]} />
             </View>
-            <View style={[styles.title, { backgroundColor: DEFAULT_LIGHT.text }]} />
-            <View style={[styles.message1, { backgroundColor: DEFAULT_LIGHT.text + '40' }]} />
-            <View style={[styles.message2, { backgroundColor: DEFAULT_LIGHT.text + '40' }]} />
+            <Text style={[styles.title, { color: DEFAULT_LIGHT.text }]}>
+              Something went wrong
+            </Text>
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+            >
+              <Text style={[styles.message, { color: DEFAULT_LIGHT.text }]} selectable>
+                {message}
+              </Text>
+              {__DEV__ && stack ? (
+                <Text style={[styles.stack, { color: DEFAULT_LIGHT.text + '99' }]} selectable>
+                  {stack}
+                </Text>
+              ) : null}
+            </ScrollView>
           </View>
         </View>
       );
@@ -51,6 +72,8 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     gap: 16,
+    maxWidth: 360,
+    width: '100%',
   },
   icon: {
     width: 64,
@@ -72,18 +95,25 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   title: {
-    width: 160,
-    height: 16,
-    borderRadius: 4,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  message1: {
-    width: 220,
-    height: 12,
-    borderRadius: 4,
+  scroll: {
+    maxHeight: 280,
+    width: '100%',
   },
-  message2: {
-    width: 180,
-    height: 12,
-    borderRadius: 4,
+  scrollContent: {
+    gap: 12,
+  },
+  message: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  stack: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: 'monospace',
   },
 });

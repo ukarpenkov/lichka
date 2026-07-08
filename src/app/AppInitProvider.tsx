@@ -23,9 +23,30 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       try {
-        runMigrations();
-        seedDefaultChat();
-        registerNotificationChannels();
+        try {
+          runMigrations();
+        } catch (e) {
+          throw new Error(
+            `Database migration failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+
+        try {
+          seedDefaultChat();
+        } catch (e) {
+          throw new Error(
+            `Seed default chat failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+
+        try {
+          registerNotificationChannels();
+        } catch (e) {
+          throw new Error(
+            `Notification channels failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+
         requestNotificationPermission().catch(() => {});
         cleanupOrphanMedia().catch(() => {});
 
@@ -33,6 +54,7 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
           setState({ status: 'ready' });
         }
       } catch (e) {
+        console.error('[AppInit]', e);
         if (!cancelled) {
           setState({ status: 'error', error: e instanceof Error ? e : new Error(String(e)) });
         }
