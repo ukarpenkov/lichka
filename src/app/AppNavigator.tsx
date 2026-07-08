@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
+import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
@@ -12,7 +12,12 @@ import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
 import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
 import { AlarmScreen } from '../pages/alarm';
-import { useNotificationNavigation, setNavigationReady } from '../features/notifications';
+import { useNotificationNavigation } from '../features/notifications';
+import { SPRING_SNAP } from '../shared/lib/animations';
+
+import { SwipeablePager, PagerTabBar } from './SwipeablePager';
+import { MainTabsProvider } from './MainTabsContext';
+import { setMainTabsApi, setNavigationReady } from './mainTabsApi';
 
 import type {
   RootStackParamList,
@@ -25,7 +30,6 @@ import type {
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Stack = createNativeStackNavigator<ChatStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
-const Tab = createBottomTabNavigator();
 
 function NotificationHandler() {
   useNotificationNavigation();
@@ -91,49 +95,64 @@ function isBackgroundDark(background: string): boolean {
   return r * 0.299 + g * 0.587 + b * 0.114 < 128;
 }
 
+const TAB_ICONS = [MessageCircle, CalendarDays, Settings];
+
 function MainTabs() {
   const { text, background } = useTheme();
+  const indexSV = useSharedValue(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const fromGestureRef = useRef(false);
+
+  const handleIndexChange = useCallback(
+    (index: number, fromGesture: boolean) => {
+      if (fromGesture) {
+        fromGestureRef.current = true;
+      }
+      setActiveIndex(index);
+    },
+    [],
+  );
+
+  // Программный переход (тап по иконке / вызов API) — анимируем shared value.
+  useEffect(() => {
+    if (fromGestureRef.current) {
+      fromGestureRef.current = false;
+      return;
+    }
+    indexSV.value = withSpring(activeIndex, SPRING_SNAP);
+  }, [activeIndex, indexSV]);
+
+  // Регистрируем imperative API для программного переключения табов
+  // (уведомления, переходы из Запланировано).
+  useEffect(() => {
+    const api = {
+      switchToTab: (i: number) => handleIndexChange(i, false),
+    };
+    setMainTabsApi(api);
+    return () => setMainTabsApi(null);
+  }, [handleIndexChange]);
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: background,
-          borderTopColor: text + '20',
-        },
-        tabBarActiveTintColor: text,
-        tabBarInactiveTintColor: text + '60',
-      }}>
-      <Tab.Screen
-        name="ChatsTab"
-        component={ChatStackScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MessageCircle color={color} size={size} />
-          ),
-        }}
+    <MainTabsProvider activeIndex={activeIndex}>
+      <SwipeablePager
+        index={activeIndex}
+        onIndexChange={handleIndexChange}
+        enabled={true}>
+        <ChatStackScreen />
+        <ScheduledScreen />
+        <SettingsStackScreen />
+      </SwipeablePager>
+      <PagerTabBar
+        count={3}
+        activeIndex={activeIndex}
+        onIndexChange={handleIndexChange}
+        icons={TAB_ICONS}
+        activeColor={text}
+        inactiveColor={text + '60'}
+        backgroundColor={background}
+        borderColor={text + '20'}
       />
-      <Tab.Screen
-        name="ScheduledTab"
-        component={ScheduledScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <CalendarDays color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsStackScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Settings color={color} size={size} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+    </MainTabsProvider>
   );
 }
 
