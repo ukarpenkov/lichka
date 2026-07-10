@@ -235,6 +235,34 @@ export function getMessagesForChatAtTime(chatId: string): Message[] {
   return result.rows.map(mapRow);
 }
 
+export function getUnreadCounts(): Record<string, number> {
+  const db = getDatabase();
+  const result = db.executeSync(
+    `SELECT chat_id, COUNT(*) AS cnt
+     FROM messages
+     WHERE chat_id NOT IN (
+       SELECT chat_id FROM chat_read_markers
+       WHERE last_read_at >= messages.created_at
+     )
+     GROUP BY chat_id`,
+  );
+
+  const counts: Record<string, number> = {};
+  for (const row of result.rows) {
+    counts[row.chat_id as string] = row.cnt as number;
+  }
+  return counts;
+}
+
+export function markChatAsRead(chatId: string): void {
+  const db = getDatabase();
+  const now = new Date().toISOString();
+  db.executeSync(
+    'INSERT OR REPLACE INTO chat_read_markers (chat_id, last_read_at) VALUES (?, ?)',
+    [chatId, now],
+  );
+}
+
 function mapRow(row: Record<string, unknown>): Message {
   return {
     id: row.id as string,

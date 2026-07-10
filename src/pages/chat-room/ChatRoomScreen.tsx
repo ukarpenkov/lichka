@@ -31,6 +31,7 @@ import {
   type Message,
 } from '../../entities/message';
 import { cancelNotification } from '../../features/notifications';
+import { markChatAsRead } from '../../features/unread-badges';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
 import { ImageViewer, useImageViewer } from '../../features';
 import { ChatForm } from '../../widgets/chat-form';
@@ -144,6 +145,7 @@ export function ChatRoomScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      markChatAsRead(chatId);
       loadData();
       timerRef.current = setInterval(loadData, REFRESH_INTERVAL);
       return () => {
@@ -152,7 +154,7 @@ export function ChatRoomScreen() {
           timerRef.current = null;
         }
       };
-    }, [loadData]),
+    }, [chatId, loadData]),
   );
 
   useEffect(() => {

@@ -24,3 +24,5 @@ export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup } from './g
 
 export { ImageViewer, useImageViewer } from './image-viewer';
 export type { ImageViewerData } from './image-viewer';
+
+export { getUnreadCounts, markChatAsRead } from './unread-badges';

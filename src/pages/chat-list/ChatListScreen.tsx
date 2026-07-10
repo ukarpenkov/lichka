@@ -7,6 +7,7 @@ import { Plus, Search } from 'lucide-react-native';
 import { Screen, Text, IconButton, AnimatedPressable, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
+import { getUnreadCounts } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import { ChatForm } from '../../widgets/chat-form';
@@ -23,6 +24,7 @@ export function ChatListScreen() {
   const { text, background } = useTheme();
   const { t } = useLocale();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [menuChat, setMenuChat] = useState<Chat | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   const [editChat, setEditChat] = useState<Chat | null>(null);
@@ -36,11 +38,13 @@ export function ChatListScreen() {
   useFocusEffect(
     useCallback(() => {
       setChats(getChats());
+      setUnreadCounts(getUnreadCounts());
     }, []),
   );
 
   const refresh = useCallback(() => {
     setChats(getChats());
+    setUnreadCounts(getUnreadCounts());
   }, []);
 
   useOnTabVisible(0, refresh, [refresh]);
@@ -112,6 +116,7 @@ export function ChatListScreen() {
           renderItem={({ item }) => (
             <ChatListItem
               chat={item}
+              unreadCount={unreadCounts[item.id] ?? 0}
               onPress={() => navigation.navigate('ChatRoom', { chatId: item.id })}
               onLongPress={() => setMenuChat(item)}
             />

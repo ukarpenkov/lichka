@@ -72,6 +72,12 @@ const MIGRATIONS: Record<number, string> = {
     DROP TABLE messages;
     ALTER TABLE messages_new RENAME TO messages;
   `,
+  7: `
+    CREATE TABLE IF NOT EXISTS chat_read_markers (
+      chat_id TEXT PRIMARY KEY NOT NULL,
+      last_read_at TEXT NOT NULL
+    );
+  `,
 };
 
 let dbInstance: DB | null = null;

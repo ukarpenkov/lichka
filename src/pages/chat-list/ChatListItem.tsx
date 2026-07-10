@@ -1,17 +1,18 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
-import { Text, SharedElementAvatar, AnimatedPressable } from '../../shared/ui';
+import { Text, SharedElementAvatar, AnimatedPressable, Badge } from '../../shared/ui';
 import { useTheme } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
 export type ChatListItemProps = {
   chat: Chat;
+  unreadCount?: number;
   onPress: () => void;
   onLongPress: () => void;
 };
 
-export function ChatListItem({ chat, onPress, onLongPress }: ChatListItemProps) {
+export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: ChatListItemProps) {
   const { text } = useTheme();
 
   return (
@@ -23,7 +24,10 @@ export function ChatListItem({ chat, onPress, onLongPress }: ChatListItemProps) 
         onLongPress={onLongPress}
         pressStyle={{ opacity: 0.7 }}
         style={[styles.row, { borderBottomColor: text + '15' }]}>
-        <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
+        <View style={styles.avatarContainer}>
+          <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
+          {unreadCount > 0 && <Badge count={unreadCount} />}
+        </View>
         <Text numberOfLines={1} style={styles.title}>
           {chat.title}
         </Text>
@@ -39,6 +43,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  avatarContainer: {
+    position: 'relative',
   },
   title: {
     marginLeft: 12,

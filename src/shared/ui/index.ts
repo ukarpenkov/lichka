@@ -9,3 +9,4 @@ export { AnimatedPressable } from './AnimatedPressable';
 export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';
 export { AlertDialog, type AlertButton } from './AlertDialog';
 export { AlarmClockIcon, MicIcon, type IconProps } from './Icon';
+export { Badge } from './Badge';
