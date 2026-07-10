@@ -76,3 +76,4 @@ document-picker/
 
 # Claude Code
 .claude
+.mimocode/.cron-lock
