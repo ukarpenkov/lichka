@@ -12,5 +12,7 @@ export {
   getPeriodicDisplayMessages,
   isPeriodicDisplayId,
   extractTemplateId,
+  getUnreadCounts,
+  markChatAsRead,
 } from './model/messageRepository';
 export { searchMessages, type SearchResult } from '../../shared/db/search';
