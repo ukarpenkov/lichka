@@ -26,11 +26,15 @@ export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: Ch
         style={[styles.row, { borderBottomColor: text + '15' }]}>
         <View style={styles.avatarContainer}>
           <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
-          {unreadCount > 0 && <Badge count={unreadCount} />}
         </View>
         <Text numberOfLines={1} style={styles.title}>
           {chat.title}
         </Text>
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Badge count={unreadCount} />
+          </View>
+        )}
       </AnimatedPressable>
     </Animated.View>
   );
@@ -51,5 +55,8 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
     fontSize: 16,
+  },
+  badge: {
+    marginLeft: 8,
   },
 });
