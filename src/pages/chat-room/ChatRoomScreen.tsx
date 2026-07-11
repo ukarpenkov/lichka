@@ -168,18 +168,12 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
-  // Scroll to end when keyboard opens or content size changes (layout settled)
-  const handleContentSizeChange = useCallback(() => {
-    if (keyboardHeight.value > 0) {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }
-  }, []);
-
   useEffect(() => {
     const sub = Keyboard.addListener('keyboardDidShow', () => {
+      // Delay ensures layout has settled after keyboard animation
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      }, 300);
     });
     return () => sub.remove();
   }, []);
@@ -394,7 +388,6 @@ export function ChatRoomScreen() {
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          onContentSizeChange={handleContentSizeChange}
           onScrollToIndexFailed={(info: any) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({
