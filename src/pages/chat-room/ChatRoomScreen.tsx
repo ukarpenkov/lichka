@@ -168,6 +168,13 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  // Scroll to end when keyboard opens or content size changes (layout settled)
+  const handleContentSizeChange = useCallback(() => {
+    if (keyboardHeight.value > 0) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }
+  }, []);
+
   useEffect(() => {
     const sub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => {
@@ -387,6 +394,7 @@ export function ChatRoomScreen() {
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          onContentSizeChange={handleContentSizeChange}
           onScrollToIndexFailed={(info: any) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({

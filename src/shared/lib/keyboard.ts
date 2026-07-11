@@ -17,8 +17,10 @@ export const PAGER_TAB_BAR_HEIGHT = 56;
 /** Зазор между блоком ввода и верхней границей клавиатуры. */
 export const KEYBOARD_COMPOSER_GAP = 16;
 
-/** Отступ списка сообщений снизу при открытой клавиатуре (компенсация translateY composer + визуальный зазор). */
-export const CHAT_LIST_KEYBOARD_BOTTOM_INSET = KEYBOARD_COMPOSER_GAP + 12;
+/** Отступ списка сообщений снизу при открытой клавиатуре.
+ *  Должен перекрывать визуальную высоту MessageComposer (~80px) + зазор,
+ *  чтобы translateY на composer не скрывал последнее сообщение. */
+export const CHAT_LIST_KEYBOARD_BOTTOM_INSET = 80;
 
 /**
  * Единый источник правды по высоте клавиатуры для всего приложения.
