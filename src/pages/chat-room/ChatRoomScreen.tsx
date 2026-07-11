@@ -100,6 +100,7 @@ export function ChatRoomScreen() {
   } | null>(null);
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const { open, close, visible: viewerVisible, data: viewerData } = useImageViewer();
 
   const scrollY = useSharedValue(0);
@@ -128,10 +129,9 @@ export function ChatRoomScreen() {
         : 0,
   }));
 
-  const listContentAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom:
-      keyboardHeight.value > 0 ? CHAT_LIST_KEYBOARD_BOTTOM_INSET : 4,
-  }));
+  const listContentPaddingBottom = keyboardOpen
+    ? CHAT_LIST_KEYBOARD_BOTTOM_INSET
+    : 4;
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
@@ -169,14 +169,23 @@ export function ChatRoomScreen() {
   }, [navigation]);
 
   useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      // Delay ensures layout has settled after keyboard animation
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 300);
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardOpen(true);
     });
-    return () => sub.remove();
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardOpen(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, []);
+
+  const handleContentSizeChange = useCallback(() => {
+    if (keyboardOpen && !scrollToMessageId.current) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }
+  }, [keyboardOpen]);
 
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
@@ -383,7 +392,8 @@ export function ChatRoomScreen() {
           renderItem={renderListItem}
           keyExtractor={keyExtractor}
           style={styles.list}
-          contentContainerStyle={[styles.listContent, listContentAnimatedStyle]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: listContentPaddingBottom }]}
+          onContentSizeChange={handleContentSizeChange}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
