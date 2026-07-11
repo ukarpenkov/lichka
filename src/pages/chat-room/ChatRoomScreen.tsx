@@ -393,6 +393,7 @@ export function ChatRoomScreen() {
           keyExtractor={keyExtractor}
           style={styles.list}
           contentContainerStyle={[styles.listContent, { paddingBottom: listContentPaddingBottom }]}
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
           onContentSizeChange={handleContentSizeChange}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
