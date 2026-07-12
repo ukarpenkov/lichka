@@ -399,6 +399,8 @@ export function ChatRoomScreen() {
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
+          bounces={!keyboardOpen}
+          overScrollMode={keyboardOpen ? 'never' : 'auto'}
           onScrollToIndexFailed={(info: any) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({
