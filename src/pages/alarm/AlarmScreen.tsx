@@ -114,7 +114,7 @@ export function AlarmScreen() {
   }, [navigation]);
 
   return (
-    <Screen style={styles.screen}>
+    <Screen edges={['top', 'left', 'right', 'bottom']} style={styles.screen}>
       <View style={styles.topBar}>
         <Text variant="caption" tone="muted">
           БУДИЛЬНИК

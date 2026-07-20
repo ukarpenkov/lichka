@@ -9,9 +9,10 @@ import {
 /** Доп. подъём на Android: keyboardDidShow слегка занижает высоту клавиатуры. */
 export const KEYBOARD_ANDROID_LIFT_FUDGE = 5;
 
-/** Высота нижней панели табов (кастомный PagerTabBar).
- * Применяется в формуле компенсации клавиатуры: эта зона уже учтена layout-ом,
- * поэтому вычитается из keyboardHeight на Android. */
+/** Высота контентной зоны нижней панели табов (иконки), без safe-area.
+ * Полная высота панели = PAGER_TAB_BAR_HEIGHT + insets.bottom.
+ * В формуле компенсации клавиатуры на Android вычитается полная высота —
+ * эта зона уже занята layout-ом над краем экрана. */
 export const PAGER_TAB_BAR_HEIGHT = 56;
 
 /**

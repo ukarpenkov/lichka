@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, FlatList, TextInput, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from '../../shared/ui/pixel';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
@@ -16,6 +17,7 @@ type Props = {
 export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<TextInput>(null);
@@ -51,7 +53,10 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
     <Animated.View
       entering={SlideInDown.duration(200).springify().damping(20).stiffness(200)}
       exiting={FadeOut.duration(150)}
-      style={[styles.container, { backgroundColor: colors.canvas }]}>
+      style={[
+        styles.container,
+        { backgroundColor: colors.canvas, paddingTop: insets.top },
+      ]}>
       <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}

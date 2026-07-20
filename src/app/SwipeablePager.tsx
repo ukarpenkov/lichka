@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '../shared/ui';
 import { SPRING_SNAP } from '../shared/lib/animations';
@@ -168,6 +169,8 @@ export function PagerTabBar({
   inactiveColor,
   backgroundColor,
 }: PagerTabBarProps) {
+  const insets = useSafeAreaInsets();
+
   const handlePress = useCallback(
     (i: number) => {
       onIndexChange(i, false);
@@ -181,6 +184,9 @@ export function PagerTabBar({
         styles.tabBar,
         {
           backgroundColor,
+          // Контент иконок — фиксированные 56px; home indicator — в paddingBottom.
+          height: PAGER_TAB_BAR_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
         },
       ]}>
       {icons.map((Icon, i) => {
@@ -214,7 +220,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    height: PAGER_TAB_BAR_HEIGHT,
   },
   // Три равные зоны: каждая занимает 1/3 ширины и всю высоту панели.
   tabButton: {

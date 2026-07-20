@@ -86,7 +86,8 @@ export function ChatRoomScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
-  const tabBarHeight = PAGER_TAB_BAR_HEIGHT;
+  // Полная высота PagerTabBar: контент иконок + нижний safe-area (home indicator).
+  const tabBarHeight = PAGER_TAB_BAR_HEIGHT + insets.bottom;
 
   const [chat, setChat] = useState<Chat | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
