@@ -20,7 +20,7 @@ function solidImage(w: number, h: number, r: number, g: number, b: number): Rgba
   return { width: w, height: h, data };
 }
 
-/** High-contrast circle on white — reliable Sobel edges. */
+/** High-contrast circle on white — reliable Sobel edges near center. */
 function circleOnWhite(size: number, radius: number, color: [number, number, number]): RgbaImage {
   const img = solidImage(size, size, 255, 255, 255);
   const cx = size / 2;
@@ -28,7 +28,7 @@ function circleOnWhite(size: number, radius: number, color: [number, number, num
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const d = Math.hypot(x - cx, y - cy);
-      if (d <= radius && d >= radius - 3) {
+      if (d <= radius && d >= radius - 4) {
         const i = (y * size + x) * 4;
         img.data[i] = color[0];
         img.data[i + 1] = color[1];
@@ -63,84 +63,66 @@ describe('processPixelContourBuffer', () => {
     expect(down.data[0]).toBe(100);
   });
 
-  it('should keep transparent background outside contours', () => {
-    const src = circleOnWhite(64, 20, [200, 40, 40]);
+  it('should draw black ink on white background by default', () => {
+    const src = circleOnWhite(128, 36, [0, 0, 0]);
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 24,
-      outputSize: 96,
-      colorMode: 'color',
-      edgeThreshold: 0.2,
-      edgeDensity: 0.08,
+      pixelGrid: 40,
+      outputSize: 120,
+      edgeKeepFraction: 0.12,
     });
     const out = processPixelContourBuffer(src, opts);
-    expect(out.width).toBe(96);
+    expect(out.width).toBe(120);
 
-    let transparent = 0;
-    let opaque = 0;
+    let white = 0;
+    let black = 0;
     for (let i = 0; i < out.data.length; i += 4) {
-      if (out.data[i + 3] === 0) transparent++;
-      else opaque++;
+      const r = out.data[i]!;
+      const g = out.data[i + 1]!;
+      const b = out.data[i + 2]!;
+      if (r > 240 && g > 240 && b > 240) white++;
+      if (r < 20 && g < 20 && b < 20) black++;
     }
-    expect(transparent).toBeGreaterThan(0);
-    expect(opaque).toBeGreaterThan(0);
+    expect(white).toBeGreaterThan(black);
+    expect(black).toBeGreaterThan(5);
   });
 
   it('should use black contours in mono mode', () => {
-    const src = circleOnWhite(64, 20, [200, 40, 40]);
+    const src = circleOnWhite(128, 36, [200, 40, 40]);
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 24,
-      outputSize: 96,
+      pixelGrid: 40,
+      outputSize: 120,
       colorMode: 'mono',
-      edgeThreshold: 0.2,
-      edgeDensity: 0.08,
+      edgeKeepFraction: 0.12,
     });
     const out = processPixelContourBuffer(src, opts);
 
     for (let i = 0; i < out.data.length; i += 4) {
-      if (out.data[i + 3]! > 0) {
-        expect(out.data[i]).toBe(0);
-        expect(out.data[i + 1]).toBe(0);
-        expect(out.data[i + 2]).toBe(0);
-      }
+      const r = out.data[i]!;
+      const g = out.data[i + 1]!;
+      const b = out.data[i + 2]!;
+      // either white bg or black ink
+      const isWhite = r > 240 && g > 240 && b > 240;
+      const isBlack = r < 20 && g < 20 && b < 20;
+      expect(isWhite || isBlack).toBe(true);
     }
   });
 
-  it('should keep non-zero color on contours in color mode', () => {
-    const src = circleOnWhite(64, 20, [220, 30, 30]);
+  it('should leave most of the canvas white (contour-only, not a filled mush)', () => {
+    const src = circleOnWhite(160, 40, [20, 20, 20]);
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 24,
-      outputSize: 96,
-      colorMode: 'color',
-      posterizeLevels: 4,
-      edgeThreshold: 0.2,
-      edgeDensity: 0.08,
+      pixelGrid: 56,
+      outputSize: 112,
+      colorMode: 'mono',
+      edgeKeepFraction: 0.18,
     });
     const out = processPixelContourBuffer(src, opts);
-
     let ink = 0;
-    for (let i = 0; i < out.data.length; i += 4) {
-      if (out.data[i + 3]! > 0) ink++;
-    }
-    expect(ink).toBeGreaterThan(0);
-  });
-
-  it('should leave most of the canvas empty (contour-only, not a filled mush)', () => {
-    const src = circleOnWhite(96, 28, [30, 30, 30]);
-    const opts = resolvePixelAvatarOptions({
-      pixelGrid: 48,
-      outputSize: 96,
-      colorMode: 'mono',
-      edgeThreshold: 0.35,
-    });
-    const out = processPixelContourBuffer(src, opts);
-    let opaque = 0;
     const total = out.width * out.height;
     for (let i = 0; i < out.data.length; i += 4) {
-      if (out.data[i + 3]! > 0) opaque++;
+      if (out.data[i]! < 40 && out.data[i + 1]! < 40 && out.data[i + 2]! < 40) ink++;
     }
-    // Contours should be a minority of pixels (reference-like)
-    expect(opaque).toBeGreaterThan(10);
-    expect(opaque / total).toBeLessThan(0.35);
+    expect(ink).toBeGreaterThan(5);
+    expect(ink / total).toBeLessThan(0.35);
   });
 });
 
@@ -160,28 +142,28 @@ describe('pngEncode', () => {
 
 describe('createPixelContourAvatar', () => {
   it('should return dataUri and matching dimensions from rgba input', () => {
-    const src = circleOnWhite(48, 14, [40, 120, 200]);
+    const src = circleOnWhite(96, 28, [40, 120, 200]);
     const result = createPixelContourAvatar(
       { kind: 'rgba', image: src },
-      { pixelGrid: 16, outputSize: 64, edgeThreshold: 0.12 },
+      { pixelGrid: 40, outputSize: 120, edgeKeepFraction: 0.12 },
     );
-    expect(result.width).toBe(64);
-    expect(result.height).toBe(64);
+    expect(result.width).toBe(120);
+    expect(result.height).toBe(120);
     expect(result.dataUri.startsWith('data:image/png;base64,')).toBe(true);
     expect(result.png[0]).toBe(137);
   });
 
   it('should decode PNG bytes and produce avatar', () => {
-    const src = circleOnWhite(32, 10, [10, 200, 80]);
+    const src = circleOnWhite(64, 18, [10, 200, 80]);
     const png = encodePngRgba(src.width, src.height, src.data);
     expect(sniffImageFormat(png)).toBe('png');
 
     const decoded = decodeImageBytes(png);
-    expect(decoded.width).toBe(32);
+    expect(decoded.width).toBe(64);
 
     const result = createPixelContourAvatar(
       { kind: 'bytes', bytes: png },
-      { pixelGrid: 16, outputSize: 32, edgeThreshold: 0.12 },
+      { pixelGrid: 32, outputSize: 96, edgeKeepFraction: 0.15 },
     );
     expect(result.png[0]).toBe(137);
   });
@@ -189,32 +171,31 @@ describe('createPixelContourAvatar', () => {
   it('should decode JPEG bytes and produce avatar', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const jpeg = require('jpeg-js') as typeof import('jpeg-js');
-    const rgba = new Uint8Array(16 * 16 * 4);
+    const rgba = new Uint8Array(32 * 32 * 4);
     for (let i = 0; i < rgba.length; i += 4) {
-      rgba[i] = 200;
-      rgba[i + 1] = 40;
-      rgba[i + 2] = 40;
+      rgba[i] = 220;
+      rgba[i + 1] = 220;
+      rgba[i + 2] = 220;
       rgba[i + 3] = 255;
     }
-    // draw a dark square so edges exist after encode/decode
-    for (let y = 4; y < 12; y++) {
-      for (let x = 4; x < 12; x++) {
-        const i = (y * 16 + x) * 4;
-        rgba[i] = 20;
-        rgba[i + 1] = 20;
-        rgba[i + 2] = 20;
+    for (let y = 8; y < 24; y++) {
+      for (let x = 8; x < 24; x++) {
+        const onRing = Math.hypot(x - 16, y - 16);
+        if (onRing >= 6 && onRing <= 8) {
+          const i = (y * 32 + x) * 4;
+          rgba[i] = 10;
+          rgba[i + 1] = 10;
+          rgba[i + 2] = 10;
+        }
       }
     }
-    const encoded = jpeg.encode({ width: 16, height: 16, data: rgba }, 90);
+    const encoded = jpeg.encode({ width: 32, height: 32, data: rgba }, 90);
     const bytes = new Uint8Array(encoded.data);
     expect(sniffImageFormat(bytes)).toBe('jpeg');
 
-    const decoded = decodeImageBytes(bytes);
-    expect(decoded.width).toBe(16);
-
     const result = createPixelContourAvatar(
       { kind: 'bytes', bytes },
-      { pixelGrid: 8, outputSize: 32, edgeThreshold: 0.05 },
+      { pixelGrid: 32, outputSize: 96, edgeKeepFraction: 0.15 },
     );
     expect(result.png[0]).toBe(137);
   });

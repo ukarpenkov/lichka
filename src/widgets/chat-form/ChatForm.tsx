@@ -245,7 +245,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     }
     if (avatarUri) {
       return (
-        <View style={[styles.avatarIcon, { backgroundColor: text + '15' }]}>
+        <View style={[styles.avatarIcon, { backgroundColor: '#ffffff' }]}>
           <Image
             source={{ uri: avatarUri }}
             style={[styles.avatarImage, { borderColor: text + '33' }]}

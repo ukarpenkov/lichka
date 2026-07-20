@@ -93,11 +93,25 @@ function decodeJpeg(bytes: Uint8Array): RgbaImage {
       tolerantDecoding: true,
       maxResolutionInMP: 40,
     });
-    return {
-      width: decoded.width,
-      height: decoded.height,
-      data: decoded.data as Uint8Array,
-    };
+    const { width, height } = decoded;
+    const src = decoded.data as Uint8Array;
+    const need = width * height * 4;
+    // Hermes/jpeg-js quirks: sometimes RGB packed as 3 bytes despite formatAsRGBA
+    if (src.length >= need) {
+      return { width, height, data: src.length === need ? src : src.subarray(0, need) };
+    }
+    if (src.length >= width * height * 3) {
+      const rgba = new Uint8Array(need);
+      for (let i = 0, j = 0; i < width * height; i++, j += 3) {
+        const o = i * 4;
+        rgba[o] = src[j]!;
+        rgba[o + 1] = src[j + 1]!;
+        rgba[o + 2] = src[j + 2]!;
+        rgba[o + 3] = 255;
+      }
+      return { width, height, data: rgba };
+    }
+    throw new Error(`Unexpected JPEG buffer length ${src.length} for ${width}x${height}`);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`JPEG decode failed (${bytes.length} B, head ${hexPreview(bytes)}): ${msg}`);

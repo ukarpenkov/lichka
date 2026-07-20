@@ -50,6 +50,7 @@
 - Harden: `buffer` package для base64, contiguous copy + `useTArray` для jpeg-js, чтение temp/`content://`, понятные ошибки с hex-head.
 ## Fix 2026-07-21 (quality — «каша»)
 
-- Старый пайплайн: слабый порог + цветные блоки по любому краю → шум.
-- Новый: blur → Sobel → NMS (тонкие линии) → высокий порог → despeckle → grid-snap с `edgeDensity` → тёмный ink-цвет.
-- Defaults: grid 48, threshold 0.42, output 192; контуры редкие, как на референсе.
+- Старый пайплайн: слабый порог + цветные блоки по любому краю → шум / «закрашенное» фото.
+- Новый (как референс): **skin-crop** → downsample на сетку → Sobel → top-% линий → чёрные контуры на **белом** фоне (`mono` default).
+- Убраны длинные border-линии шкафов; JPEG RGB→RGBA safety.
+- Сложные кадры (кухня, лицо сбоку) всё ещё хуже студийного портрета — дальше: face-detect crop.

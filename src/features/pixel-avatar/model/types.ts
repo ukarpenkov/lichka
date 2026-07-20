@@ -1,57 +1,53 @@
 export type PixelColorMode = 'color' | 'mono';
 
 export type PixelAvatarOptions = {
-  /** Low-res grid size (blocky look). Default 48. */
+  /** Low-res grid size. Default 56 — close to reference. */
   pixelGrid?: number;
-  /** Final PNG edge length. Default 192. */
+  /** Final PNG edge length. Default 224. */
   outputSize?: number;
-  /** Luminance contrast multiplier. Default 1.8. */
+  /** Luminance contrast. Default 1.6. */
   contrast?: number;
-  /** Edge magnitude threshold 0..1 after normalization. Default 0.42. */
-  edgeThreshold?: number;
-  /** Posterize levels per channel in color mode. Default 4. */
+  /**
+   * Keep this fraction of strongest (center-weighted) edges, 0..1.
+   * Default 0.07 — sparse lines like the reference, not a filled mush.
+   */
+  edgeKeepFraction?: number;
+  /** Posterize levels in color mode. Default 3. */
   posterizeLevels?: number;
-  /** Colored (dark-tinted) contours vs pure black. Default 'color'. */
+  /** Pure black vs dark local tint. Default 'mono' (reference look). */
   colorMode?: PixelColorMode;
-  /** Morphological dilate on the low-res grid (0–1). Default 0. */
-  edgeDilate?: number;
-  /** Min fraction of work-cell that must be edge to light a pixel. Default 0.18. */
-  edgeDensity?: number;
+  /** Opaque white background (reference) vs transparent. Default true. */
+  whiteBackground?: boolean;
 };
 
 export type ResolvedPixelAvatarOptions = {
   pixelGrid: number;
   outputSize: number;
   contrast: number;
-  edgeThreshold: number;
+  edgeKeepFraction: number;
   posterizeLevels: number;
   colorMode: PixelColorMode;
-  edgeDilate: number;
-  edgeDensity: number;
+  whiteBackground: boolean;
 };
 
 export const DEFAULT_PIXEL_AVATAR_OPTIONS: ResolvedPixelAvatarOptions = {
-  pixelGrid: 48,
-  outputSize: 192,
-  contrast: 1.8,
-  edgeThreshold: 0.42,
-  posterizeLevels: 4,
-  colorMode: 'color',
-  edgeDilate: 0,
-  edgeDensity: 0.18,
+  pixelGrid: 56,
+  outputSize: 224,
+  contrast: 2.0,
+  edgeKeepFraction: 0.18,
+  posterizeLevels: 3,
+  colorMode: 'mono',
+  whiteBackground: true,
 };
 
 export type RgbaImage = {
   width: number;
   height: number;
-  /** length = width * height * 4 */
   data: Uint8Array;
 };
 
 export type PixelAvatarResult = {
-  /** PNG bytes */
   png: Uint8Array;
-  /** data:image/png;base64,... for Image preview */
   dataUri: string;
   width: number;
   height: number;
@@ -62,14 +58,13 @@ export function resolvePixelAvatarOptions(
 ): ResolvedPixelAvatarOptions {
   const o = { ...DEFAULT_PIXEL_AVATAR_OPTIONS, ...options };
   return {
-    pixelGrid: clampInt(o.pixelGrid, 24, 64),
-    outputSize: clampInt(o.outputSize, 64, 512),
-    contrast: clamp(o.contrast, 0.5, 5),
-    edgeThreshold: clamp(o.edgeThreshold, 0.15, 0.85),
-    posterizeLevels: clampInt(o.posterizeLevels, 2, 8),
-    colorMode: o.colorMode === 'mono' ? 'mono' : 'color',
-    edgeDilate: clampInt(o.edgeDilate, 0, 1),
-    edgeDensity: clamp(o.edgeDensity ?? DEFAULT_PIXEL_AVATAR_OPTIONS.edgeDensity, 0.05, 0.5),
+    pixelGrid: clampInt(o.pixelGrid, 32, 72),
+    outputSize: clampInt(o.outputSize, 96, 512),
+    contrast: clamp(o.contrast, 0.5, 4),
+    edgeKeepFraction: clamp(o.edgeKeepFraction ?? DEFAULT_PIXEL_AVATAR_OPTIONS.edgeKeepFraction, 0.03, 0.2),
+    posterizeLevels: clampInt(o.posterizeLevels, 2, 6),
+    colorMode: o.colorMode === 'color' ? 'color' : 'mono',
+    whiteBackground: o.whiteBackground !== false,
   };
 }
 

@@ -66,7 +66,8 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
             width: size,
             height: size,
             borderRadius: radius,
-            backgroundColor: text + '15',
+            // Pixel-contour avatars are white+black ink; keep white plate under PNG
+            backgroundColor: avatarPath.endsWith('.png') ? '#ffffff' : text + '15',
             overflow: 'hidden',
           },
         ]}>
