@@ -407,7 +407,7 @@ export function ChatRoomScreen() {
         />
       )}
 
-      {stickyDate && (
+      {stickyDate && !searchVisible && (
         <Animated.View
           key={stickyDate}
           entering={FadeIn.duration(200)}

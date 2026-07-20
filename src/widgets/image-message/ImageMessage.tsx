@@ -1,8 +1,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Text } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
+import { radii } from '../../shared/config';
 import type { Message } from '../../entities/message';
+
+const IMAGE_RADIUS = radii.md;
+const MAX_IMAGE_HEIGHT = 300;
 
 type ImageMessageProps = {
   message: Message;
@@ -28,6 +33,36 @@ function parseImagePayload(
   }
 }
 
+function ImageVignette({
+  width,
+  height,
+  gradientId,
+}: {
+  width: number;
+  height: number;
+  gradientId: string;
+}) {
+  return (
+    <Svg
+      width={width}
+      height={height}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Defs>
+        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="72%" ry="72%">
+          <Stop offset="0%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="55%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="100%" stopColor="#000" stopOpacity={0.28} />
+        </RadialGradient>
+      </Defs>
+      <Rect width={width} height={height} fill={`url(#${gradientId})`} />
+    </Svg>
+  );
+}
+
 export function ImageMessage({ message, onPress }: ImageMessageProps) {
   const { width: screenWidth } = useWindowDimensions();
 
@@ -37,7 +72,8 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     [imageData],
   );
 
-  const hasCaption = message.body && message.body.trim().length > 0;
+  const hasCaption = Boolean(message.body && message.body.trim().length > 0);
+  const vignetteId = `img-vignette-${message.id}`;
 
   const handlePress = useCallback(() => {
     if (imageData && absoluteUri && onPress) {
@@ -58,22 +94,27 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     imageData.width > 0 && imageData.height > 0
       ? imageData.width / imageData.height
       : 1;
-  const imageHeight = Math.min(bubbleWidth / aspectRatio, 300);
-  const imageRadius = hasCaption ? undefined : 16;
+  const imageHeight = Math.min(bubbleWidth / aspectRatio, MAX_IMAGE_HEIGHT);
+  const frameStyle = {
+    width: bubbleWidth,
+    height: imageHeight,
+    borderRadius: IMAGE_RADIUS,
+  };
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={handlePress}>
-        <Image
-          source={{ uri: absoluteUri }}
-          style={[
-            styles.image,
-            { width: bubbleWidth, height: imageHeight },
-            hasCaption
-              ? { borderTopLeftRadius: 16, borderTopRightRadius: 16 }
-              : { borderRadius: imageRadius },
-          ]}
-        />
+      <Pressable onPress={handlePress} accessibilityRole="imagebutton">
+        <View style={[styles.frame, frameStyle]}>
+          <Image
+            source={{ uri: absoluteUri }}
+            style={[styles.image, { width: bubbleWidth, height: imageHeight }]}
+          />
+          <ImageVignette
+            width={bubbleWidth}
+            height={imageHeight}
+            gradientId={vignetteId}
+          />
+        </View>
       </Pressable>
       {hasCaption && (
         <Text variant="body" style={styles.caption}>
@@ -89,6 +130,9 @@ const styles = StyleSheet.create({
     marginHorizontal: -12,
     marginVertical: -8,
     gap: 4,
+  },
+  frame: {
+    overflow: 'hidden',
   },
   image: {
     resizeMode: 'cover',

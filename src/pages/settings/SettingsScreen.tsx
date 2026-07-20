@@ -204,7 +204,7 @@ export function SettingsScreen() {
               try {
                 const token = await getGoogleToken();
                 await uploadBackup(token);
-                setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
+                setDialog({ title: t.done, message: t.backupSavedNoMedia, buttons: [{ text: t.done }] });
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
                 setDialog({ title: t.error, message: t.backupFailed, buttons: [{ text: t.done }] });
@@ -221,7 +221,7 @@ export function SettingsScreen() {
 
                 setDialog({
                   title: t.restoreTitle,
-                  message: t.chooseImportMode,
+                  message: `${t.driveRestoreNoMedia}\n\n${t.chooseImportMode}`,
                   buttons: [
                     { text: t.cancel, style: 'cancel' },
                     {

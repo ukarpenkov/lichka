@@ -29,6 +29,7 @@ jest.mock('../../../entities/chat', () => ({
 }));
 jest.mock('../../../entities/message', () => ({
   getMessagesByChatId: (chatId: string) => mockGetMessagesByChatId(chatId),
+  getAllReadMarkers: () => ({}),
 }));
 jest.mock('../../../entities/settings', () => ({
   getSettings: () => mockGetSettings(),
@@ -38,7 +39,12 @@ beforeEach(() => {
   jest.clearAllMocks();
   (RNFS.exists as jest.Mock).mockResolvedValue(true);
   (zip as jest.Mock).mockResolvedValue('/mock/download/licka-backup.zip');
-  mockGetSettings.mockReturnValue({ locale: 'en', theme: 'light', hapticEnabled: false, soundEnabled: false });
+  mockGetSettings.mockReturnValue({
+    locale: 'en',
+    themePresetId: 'light',
+    hapticEnabled: false,
+    soundEnabled: false,
+  });
 });
 
 const chat = (id: string, avatarPath: string | null) => ({
@@ -76,8 +82,10 @@ describe('exportToZIP', () => {
     const backupCall = writeFileCalls.find((c: string[]) => c[0].endsWith('/backup.json'));
     expect(backupCall).toBeDefined();
     const json = JSON.parse(backupCall![1] as string);
-    expect(json.schema_version).toBe(1);
+    expect(json.schema_version).toBe(2);
     expect(json.chats).toHaveLength(1);
+    expect(json.chats[0].isSystem).toBe(false);
+    expect(json.readMarkers).toEqual({});
 
     expect(zip).toHaveBeenCalledTimes(1);
     const [sourceDir, targetPath] = (zip as jest.Mock).mock.calls[0];

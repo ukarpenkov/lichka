@@ -1,8 +1,16 @@
 import { open, type DB } from '@op-engineering/op-sqlite';
+import { normalizeSearchText } from './normalizeSearchText';
 
 const DB_NAME = 'lichka.db';
 
-const MIGRATIONS: Record<number, string> = {
+type MigrationDef =
+  | string
+  | {
+      sql: string;
+      after?: (db: DB) => void;
+    };
+
+const MIGRATIONS: Record<number, MigrationDef> = {
   1: `
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY NOT NULL,
@@ -30,15 +38,8 @@ const MIGRATIONS: Record<number, string> = {
       version INTEGER PRIMARY KEY
     );
   `,
-  // TODO: re-enable when op-sqlite is built with FTS5 support (add op-sqlite.json)
-  // 2: `
-  //   CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
-  //     body,
-  //     content=messages,
-  //     content_rowid=rowid
-  //   );
-  //   ...
-  // `,
+  // TODO: re-enable as a NEW migration number (never reuse 2) when op-sqlite ships FTS5
+  // 2 was FTS5 — skipped intentionally (gap in applied versions is OK)
   3: `
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY NOT NULL,
@@ -78,6 +79,36 @@ const MIGRATIONS: Record<number, string> = {
       last_read_at TEXT NOT NULL
     );
   `,
+  8: {
+    sql: `
+      ALTER TABLE messages ADD COLUMN body_lc TEXT;
+      CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
+      CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+      CREATE INDEX IF NOT EXISTS idx_messages_body_lc ON messages(body_lc);
+      CREATE INDEX IF NOT EXISTS idx_messages_scheduled_at ON messages(scheduled_at);
+
+      CREATE TABLE IF NOT EXISTS chat_read_markers_new (
+        chat_id TEXT PRIMARY KEY NOT NULL,
+        last_read_at TEXT NOT NULL,
+        FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+      );
+      INSERT OR IGNORE INTO chat_read_markers_new (chat_id, last_read_at)
+        SELECT m.chat_id, m.last_read_at
+        FROM chat_read_markers m
+        INNER JOIN chats c ON c.id = m.chat_id;
+      DROP TABLE chat_read_markers;
+      ALTER TABLE chat_read_markers_new RENAME TO chat_read_markers;
+    `,
+    after: (db) => {
+      const result = db.executeSync('SELECT id, body FROM messages');
+      for (const row of result.rows) {
+        db.executeSync('UPDATE messages SET body_lc = ? WHERE id = ?', [
+          normalizeSearchText(String(row.body ?? '')),
+          row.id as string,
+        ]);
+      }
+    },
+  },
 };
 
 let dbInstance: DB | null = null;
@@ -85,8 +116,17 @@ let dbInstance: DB | null = null;
 export function getDatabase(): DB {
   if (!dbInstance) {
     dbInstance = open({ name: DB_NAME });
+    dbInstance.executeSync('PRAGMA foreign_keys = ON');
   }
   return dbInstance;
+}
+
+function migrationSql(def: MigrationDef): string {
+  return typeof def === 'string' ? def : def.sql;
+}
+
+function migrationAfter(def: MigrationDef): ((db: DB) => void) | undefined {
+  return typeof def === 'string' ? undefined : def.after;
 }
 
 export function runMigrations(): void {
@@ -110,9 +150,10 @@ export function runMigrations(): void {
   for (const version of versions) {
     if (applied.has(version)) continue;
 
+    const def = MIGRATIONS[version];
     db.executeSync('BEGIN TRANSACTION');
     try {
-      const sql = MIGRATIONS[version];
+      const sql = migrationSql(def);
       const statements = sql
         .split(';')
         .map((s) => s.trim())
@@ -121,6 +162,8 @@ export function runMigrations(): void {
       for (const stmt of statements) {
         db.executeSync(stmt);
       }
+
+      migrationAfter(def)?.(db);
 
       db.executeSync(
         'INSERT INTO schema_migrations (version) VALUES (?)',

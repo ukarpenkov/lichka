@@ -106,6 +106,7 @@ describe('messageRepository', () => {
           'chat-1',
           'reminder',
           'Test',
+          'test',
           '2026-06-01T10:00:00.000Z',
           null,
           1,

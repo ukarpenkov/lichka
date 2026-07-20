@@ -244,6 +244,14 @@ describe('chatRepository', () => {
 
       expect(deleteChat('1')).toBe(true);
       expect(mockExecuteSync).toHaveBeenCalledWith(
+        'DELETE FROM messages WHERE chat_id = ?',
+        ['1'],
+      );
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'DELETE FROM chat_read_markers WHERE chat_id = ?',
+        ['1'],
+      );
+      expect(mockExecuteSync).toHaveBeenCalledWith(
         'DELETE FROM chats WHERE id = ?',
         ['1'],
       );

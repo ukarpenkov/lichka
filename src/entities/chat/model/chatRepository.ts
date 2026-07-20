@@ -76,6 +76,9 @@ export function deleteChat(id: string): boolean {
   if (!chat) return false;
   if (chat.isSystem) return false;
 
+  // Explicit cleanup (FK CASCADE also applies when PRAGMA foreign_keys=ON)
+  db.executeSync('DELETE FROM messages WHERE chat_id = ?', [id]);
+  db.executeSync('DELETE FROM chat_read_markers WHERE chat_id = ?', [id]);
   db.executeSync('DELETE FROM chats WHERE id = ?', [id]);
 
   if (chat.avatarPath) {

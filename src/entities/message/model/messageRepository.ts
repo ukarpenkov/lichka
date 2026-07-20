@@ -1,4 +1,5 @@
 import { getDatabase } from '../../../shared/db';
+import { normalizeSearchText } from '../../../shared/db/normalizeSearchText';
 import { generateId } from '../../../shared/lib';
 import type { Message, MessageType } from './types';
 
@@ -21,11 +22,12 @@ export function createMessage(
   const interval = intervalMinutes ?? null;
   const enabled = type === 'simple' || type === 'image' ? 0 : 1;
   const pl = payload ?? null;
+  const bodyLc = normalizeSearchText(body);
 
   db.executeSync(
-    `INSERT INTO messages (id, chat_id, type, body, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [msgId, chatId, type, body, sAt, interval, enabled, pl, now, now],
+    `INSERT INTO messages (id, chat_id, type, body, body_lc, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [msgId, chatId, type, body, bodyLc, sAt, interval, enabled, pl, now, now],
   );
 
   return {
@@ -91,8 +93,17 @@ export function updateMessage(
   const now = new Date().toISOString();
 
   db.executeSync(
-    `UPDATE messages SET body = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, updated_at = ? WHERE id = ?`,
-    [body, scheduledAt, intervalMinutes, enabled, payload, now, id],
+    `UPDATE messages SET body = ?, body_lc = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, updated_at = ? WHERE id = ?`,
+    [
+      body,
+      normalizeSearchText(body),
+      scheduledAt,
+      intervalMinutes,
+      enabled,
+      payload,
+      now,
+      id,
+    ],
   );
 
   return {
@@ -261,6 +272,19 @@ export function markChatAsRead(chatId: string): void {
     'INSERT OR REPLACE INTO chat_read_markers (chat_id, last_read_at) VALUES (?, ?)',
     [chatId, now],
   );
+}
+
+/** All read markers for backup export. */
+export function getAllReadMarkers(): Record<string, string> {
+  const db = getDatabase();
+  const result = db.executeSync(
+    'SELECT chat_id, last_read_at FROM chat_read_markers',
+  );
+  const markers: Record<string, string> = {};
+  for (const row of result.rows) {
+    markers[row.chat_id as string] = row.last_read_at as string;
+  }
+  return markers;
 }
 
 function mapRow(row: Record<string, unknown>): Message {

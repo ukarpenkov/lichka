@@ -14,5 +14,6 @@ export {
   extractTemplateId,
   getUnreadCounts,
   markChatAsRead,
+  getAllReadMarkers,
 } from './model/messageRepository';
 export { searchMessages, type SearchResult } from '../../shared/db/search';

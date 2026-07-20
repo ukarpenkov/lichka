@@ -24,10 +24,11 @@ jest.mock('../importFromJSON', () => ({
 }));
 
 const exportData = {
-  schema_version: 1,
+  schema_version: 2,
   exported_at: '2026-01-01T00:00:00.000Z',
   chats: [{
     id: 'chat-1', title: 'Test', avatarPath: 'media/avatars/chat-1.jpg',
+    isSystem: false,
     createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
     messages: [{
       id: 'msg-1', type: 'image', body: '',
@@ -36,7 +37,13 @@ const exportData = {
       createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
     }],
   }],
-  settings: { locale: 'en', theme: 'light', hapticEnabled: false, soundEnabled: false },
+  settings: {
+    locale: 'en',
+    themePresetId: 'light',
+    hapticEnabled: false,
+    soundEnabled: false,
+  },
+  readMarkers: {},
 };
 
 beforeEach(() => {

@@ -95,4 +95,28 @@ describe('ImageMessage', () => {
     expect(style.height).toBeGreaterThan(0);
     expect(style.height).toBeLessThanOrEqual(300);
   });
+
+  it('rounds preview corners and overlays a vignette', () => {
+    const { UNSAFE_getByType, UNSAFE_getAllByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { View } = require('react-native');
+    const Svg = require('react-native-svg').default;
+    const frames = UNSAFE_getAllByType(View).filter(
+      (node: { props: { style?: unknown } }) => {
+        const style = node.props.style;
+        if (!Array.isArray(style)) return false;
+        return style.some(
+          (entry) =>
+            entry &&
+            typeof entry === 'object' &&
+            'borderRadius' in entry &&
+            entry.borderRadius === 12,
+        );
+      },
+    );
+    expect(frames.length).toBeGreaterThan(0);
+    expect(UNSAFE_getByType(Svg)).toBeTruthy();
+  });
 });

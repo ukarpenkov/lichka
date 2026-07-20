@@ -81,4 +81,29 @@ describe('db migrations', () => {
       expect(allSql).toContain('COMMIT');
     });
   });
+
+  describe('migration 8 — body_lc and indexes', () => {
+    it('should apply migration 8 for body_lc and indexes when 1-7 applied', () => {
+      mockExecuteSync.mockReturnValueOnce({ rows: [] });
+      mockExecuteSync.mockReturnValueOnce({
+        rows: [
+          { version: 1 },
+          { version: 3 },
+          { version: 4 },
+          { version: 5 },
+          { version: 6 },
+          { version: 7 },
+        ],
+      });
+      mockExecuteSync.mockReturnValue({ rows: [{ id: 'm1', body: 'Привет' }] });
+
+      runMigrations();
+
+      const allSql = mockExecuteSync.mock.calls.map((c: unknown[]) => c[0] as string).join(' ');
+      expect(allSql).toContain('ALTER TABLE messages ADD COLUMN body_lc');
+      expect(allSql).toContain('idx_messages_chat_id');
+      expect(allSql).toContain('chat_read_markers_new');
+      expect(allSql).toContain('UPDATE messages SET body_lc');
+    });
+  });
 });

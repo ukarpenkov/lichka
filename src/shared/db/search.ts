@@ -1,4 +1,8 @@
 import { getDatabase } from './db';
+import {
+  escapeLikePattern,
+  normalizeSearchText,
+} from './normalizeSearchText';
 
 type RawRow = Record<string, unknown>;
 
@@ -12,6 +16,15 @@ export interface SearchResult {
   created_at: string;
   updated_at: string;
 }
+
+/** Same visibility rules as the chat timeline (excludes future + periodic templates). */
+const VISIBLE_MESSAGE_FILTER = `
+  AND m.type != 'periodic'
+  AND (
+    m.scheduled_at IS NULL
+    OR REPLACE(SUBSTR(m.scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
+  )
+`;
 
 export function searchMessages(
   query: string,
@@ -33,7 +46,7 @@ function searchMessagesFts(
   const ftsQuery = query
     .split(/\s+/)
     .filter(Boolean)
-    .map((w) => `"${w}"*`)
+    .map((w) => `"${w.replace(/"/g, '""')}"*`)
     .join(' ');
 
   if (!ftsQuery) return [];
@@ -56,7 +69,9 @@ function searchMessagesFts(
     JOIN messages m ON m.rowid = messages_fts.rowid
     JOIN chats c ON c.id = m.chat_id
     WHERE messages_fts MATCH ? ${where}
+      ${VISIBLE_MESSAGE_FILTER}
     ORDER BY rank
+    LIMIT 50
   `;
 
   const result = db.executeSync(sql, params);
@@ -71,7 +86,8 @@ function searchMessagesLike(
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const likeQuery = `%${trimmed}%`;
+  const needle = normalizeSearchText(trimmed);
+  const likeQuery = `%${escapeLikePattern(needle)}%`;
   const chatFilter = chatId ? 'AND m.chat_id = ?' : '';
   const params: (string | null)[] = [likeQuery];
   if (chatId) params.push(chatId);
@@ -87,7 +103,9 @@ function searchMessagesLike(
       m.updated_at
     FROM messages m
     JOIN chats c ON c.id = m.chat_id
-    WHERE m.body LIKE ? ${chatFilter}
+    WHERE COALESCE(m.body_lc, m.body) LIKE ? ESCAPE '\\'
+      ${chatFilter}
+      ${VISIBLE_MESSAGE_FILTER}
     ORDER BY m.created_at DESC
     LIMIT 50
   `;

@@ -159,9 +159,7 @@ export function MessageLine({
                   <TypeIcon size={14} color={colors.muted} />
                 </View>
               ) : null}
-              <View style={styles.imageWrap}>
-                <ImageMessage message={message} onPress={onImagePress} />
-              </View>
+              <ImageMessage message={message} onPress={onImagePress} />
             </View>
           ) : (
             <View style={styles.textRow}>
@@ -226,10 +224,6 @@ const styles = StyleSheet.create({
   },
   mediaBlock: {
     gap: spacing.xs,
-  },
-  imageWrap: {
-    borderRadius: 0,
-    overflow: 'hidden',
   },
   editedAlone: {
     marginTop: spacing.xxs,

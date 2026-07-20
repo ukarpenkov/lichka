@@ -1,6 +1,14 @@
 import { getChats } from '../../entities/chat';
-import { getMessagesByChatId } from '../../entities/message';
+import {
+  getMessagesByChatId,
+  getAllReadMarkers,
+} from '../../entities/message';
 import { getSettings, type AppSettings } from '../../entities/settings';
+
+/** Current export format version (independent of DB migration versions). */
+export const EXPORT_SCHEMA_VERSION = 2;
+export const MIN_SUPPORTED_EXPORT_SCHEMA = 1;
+export const MAX_SUPPORTED_EXPORT_SCHEMA = 2;
 
 export interface ExportMessage {
   id: string;
@@ -18,6 +26,7 @@ export interface ExportChat {
   id: string;
   title: string;
   avatarPath: string | null;
+  isSystem: boolean;
   createdAt: string;
   updatedAt: string;
   messages: ExportMessage[];
@@ -28,11 +37,14 @@ export interface ExportData {
   exported_at: string;
   chats: ExportChat[];
   settings: AppSettings;
+  /** chatId → last_read_at ISO */
+  readMarkers: Record<string, string>;
 }
 
 export function buildExportData(): ExportData {
   const chats = getChats();
   const settings = getSettings();
+  const readMarkers = getAllReadMarkers();
 
   const exportChats: ExportChat[] = chats.map((chat) => {
     const messages = getMessagesByChatId(chat.id);
@@ -40,6 +52,7 @@ export function buildExportData(): ExportData {
       id: chat.id,
       title: chat.title,
       avatarPath: chat.avatarPath,
+      isSystem: chat.isSystem,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
       messages: messages.map((m) => ({
@@ -57,9 +70,10 @@ export function buildExportData(): ExportData {
   });
 
   return {
-    schema_version: 1,
+    schema_version: EXPORT_SCHEMA_VERSION,
     exported_at: new Date().toISOString(),
     chats: exportChats,
     settings,
+    readMarkers,
   };
 }

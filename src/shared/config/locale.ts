@@ -67,9 +67,11 @@ export interface LocaleDictionary {
   exportToFile: string;
   importFromFile: string;
   backupSaved: string;
+  backupSavedNoMedia: string;
   backupFailed: string;
   restoreTitle: string;
   chooseImportMode: string;
+  driveRestoreNoMedia: string;
   restoreComplete: string;
   noNewData: string;
   replaceAllConfirm: string;
@@ -211,9 +213,11 @@ export const ru: LocaleDictionary = {
   exportToFile: 'Экспорт в файл',
   importFromFile: 'Импорт из файла',
   backupSaved: 'Бэкап сохранён в Google Drive',
+  backupSavedNoMedia: 'Бэкап сохранён в Google Drive.\nМедиафайлы (фото, голосовые, аватары) не входят в этот бэкап — для полного архива используйте «Экспорт в файл» (ZIP).',
   backupFailed: 'Не удалось сохранить бэкап',
   restoreTitle: 'Восстановление',
   chooseImportMode: 'Выберите режим импорта:',
+  driveRestoreNoMedia: 'Внимание: бэкап Google Drive не содержит медиафайлы. Фото, голосовые и аватары нужно восстанавливать из ZIP-экспорта.',
   restoreComplete: 'Восстановление завершено',
   noNewData: 'Нет новых данных',
   replaceAllConfirm: 'Заменить всё?',
@@ -355,9 +359,11 @@ export const en: LocaleDictionary = {
   exportToFile: 'Export to file',
   importFromFile: 'Import from file',
   backupSaved: 'Backup saved to Google Drive',
+  backupSavedNoMedia: 'Backup saved to Google Drive.\nMedia files (photos, voice notes, avatars) are not included — use “Export to file” (ZIP) for a full archive.',
   backupFailed: 'Failed to save backup',
   restoreTitle: 'Restore',
   chooseImportMode: 'Choose import mode:',
+  driveRestoreNoMedia: 'Warning: Google Drive backup does not include media files. Photos, voice notes, and avatars require a ZIP export to restore.',
   restoreComplete: 'Restore complete',
   noNewData: 'No new data',
   replaceAllConfirm: 'Replace all?',
