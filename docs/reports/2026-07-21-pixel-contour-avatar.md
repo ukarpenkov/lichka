@@ -34,11 +34,16 @@
 
 ## Известные ограничения
 
-- Decode ожидает JPEG (пикер с `quality` обычно отдаёт JPEG); PNG/HEIC без конвертации пикером могут упасть.
+- Decode: JPEG и PNG (sniff по magic bytes). WebP пока не поддержан — на Android лучше брать файл с `uri` пикера (resized), а не `asset.base64` оригинала.
 - Нет face-detect кадрирования (можно добавить позже: Vision / ML Kit).
 - Нет UI-переключателя mono/color — сейчас defaults; опции есть в API.
 
 ## Тестирование
 
-- Unit: crop, downsample, NN upscale, transparent bg, mono/color, PNG signature, `createPixelContourAvatar`, `saveAvatarPng` — **16 tests passed**.
-- Ручное: выбрать фото в ChatForm → превью контуров → сохранить → список/хедер чата.
+- Unit: crop, downsample, NN upscale, transparent bg, mono/color, PNG signature, PNG decode round-trip, `createPixelContourAvatar`, `saveAvatarPng`.
+- Ручное: Android gallery → фото → превью контуров без ошибки decode.
+
+## Fix 2026-07-21 (Android gallery)
+
+- Ошибка `expected JPEG`: на Android `asset.base64` часто оригинал (PNG), а не JPEG.
+- Читаем байты с temp `uri` пикера; декод JPEG/PNG через sniff + `upng-js`.

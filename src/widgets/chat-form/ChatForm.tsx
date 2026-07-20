@@ -17,7 +17,7 @@ import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
-import { createPixelContourAvatarFromBase64 } from '../../features/pixel-avatar';
+import { createPixelContourAvatarFromBytes, base64ToBytes } from '../../features/pixel-avatar';
 
 import { IconGrid } from './IconGrid';
 
@@ -27,6 +27,30 @@ type ChatFormProps = {
   onSaved: () => void;
   editChat?: Chat | null;
 };
+
+async function loadPickedImageBytes(uri: string, pickerBase64?: string): Promise<Uint8Array> {
+  const filePath = uri.startsWith('file://') ? uri.replace('file://', '') : uri.startsWith('/') ? uri : null;
+
+  if (filePath) {
+    try {
+      const exists = await RNFS.exists(filePath);
+      if (exists) {
+        const b64 = await RNFS.readFile(filePath, 'base64');
+        return base64ToBytes(b64);
+      }
+    } catch {
+      // fall through to picker base64 / content uri
+    }
+  }
+
+  if (pickerBase64) {
+    return base64ToBytes(pickerBase64.replace(/\s/g, ''));
+  }
+
+  const fallbackPath = uri.replace(/^file:\/\//, '');
+  const b64 = await RNFS.readFile(fallbackPath, 'base64');
+  return base64ToBytes(b64);
+}
 
 export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps) {
   const { text, background } = useTheme();
@@ -76,14 +100,13 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   }, [visible, editChat]);
 
   const applyPixelAvatar = useCallback(
-    async (uri: string, base64?: string) => {
+    async (uri: string, pickerBase64?: string) => {
       setProcessingAvatar(true);
       try {
-        let b64 = base64;
-        if (!b64) {
-          b64 = await RNFS.readFile(uri.replace('file://', ''), 'base64');
-        }
-        const result = createPixelContourAvatarFromBase64(b64);
+        // Prefer the picker temp file (resized) over asset.base64 — on Android
+        // base64 is often the original PNG/WebP while uri points to a JPEG.
+        const bytes = await loadPickedImageBytes(uri, pickerBase64);
+        const result = createPixelContourAvatarFromBytes(bytes);
         setAvatarUri(result.dataUri);
         setPendingPngBase64(result.dataUri);
         setIconAvatar(null);

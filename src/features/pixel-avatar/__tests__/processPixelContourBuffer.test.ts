@@ -7,6 +7,7 @@ import {
 import { resolvePixelAvatarOptions, type RgbaImage } from '../model/types';
 import { encodePngRgba, bytesToBase64, base64ToBytes } from '../model/pngEncode';
 import { createPixelContourAvatar } from '../model/createPixelContourAvatar';
+import { sniffImageFormat, decodeImageBytes } from '../model/decodeImage';
 
 function solidImage(w: number, h: number, r: number, g: number, b: number): RgbaImage {
   const data = new Uint8Array(w * h * 4);
@@ -148,5 +149,25 @@ describe('createPixelContourAvatar', () => {
     expect(result.height).toBe(64);
     expect(result.dataUri.startsWith('data:image/png;base64,')).toBe(true);
     expect(result.png[0]).toBe(137);
+  });
+
+  it('should decode PNG bytes and produce avatar', () => {
+    const src = circleOnWhite(32, 10, [10, 200, 80]);
+    const png = encodePngRgba(src.width, src.height, src.data);
+    expect(sniffImageFormat(png)).toBe('png');
+
+    const decoded = decodeImageBytes(png);
+    expect(decoded.width).toBe(32);
+
+    const result = createPixelContourAvatar(
+      { kind: 'bytes', bytes: png },
+      { pixelGrid: 16, outputSize: 32, edgeThreshold: 0.12 },
+    );
+    expect(result.png[0]).toBe(137);
+  });
+
+  it('should sniff jpeg magic bytes', () => {
+    expect(sniffImageFormat(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe('jpeg');
+    expect(sniffImageFormat(new Uint8Array([0x00, 0x01, 0x02]))).toBe('unknown');
   });
 });
