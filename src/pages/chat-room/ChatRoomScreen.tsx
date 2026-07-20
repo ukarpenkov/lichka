@@ -142,32 +142,10 @@ export function ChatRoomScreen() {
     setChat(getChatById(chatId) ?? null);
     const regularMessages = getVisibleMessagesByChatId(chatId);
     const periodicMessages = getPeriodicDisplayMessages(chatId);
-    let allMessages = [...regularMessages, ...periodicMessages];
-
-    // Будущие reminder/alarm и ещё не сработавшие periodic скрыты из ленты —
-    // при переходе из «Запланировано» временно показываем целевое сообщение.
-    if (messageId) {
-      const alreadyVisible = allMessages.some(
-        (m) => m.id === messageId || m.id === `periodic:${messageId}`,
-      );
-      if (!alreadyVisible) {
-        const target = getMessageById(messageId);
-        if (target && target.chatId === chatId) {
-          if (target.type === 'periodic') {
-            allMessages.push({
-              ...target,
-              id: `periodic:${target.id}`,
-            });
-          } else {
-            allMessages.push(target);
-          }
-        }
-      }
-    }
-
+    const allMessages = [...regularMessages, ...periodicMessages];
     allMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     setMessages(allMessages);
-  }, [chatId, messageId]);
+  }, [chatId]);
 
   useFocusEffect(
     useCallback(() => {

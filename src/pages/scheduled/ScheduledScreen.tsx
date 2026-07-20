@@ -62,7 +62,13 @@ export function ScheduledScreen() {
 
   const handlePress = useCallback(
     (entry: ScheduledEntry) => {
-      navigateToChat(entry.message.chatId, entry.message.id);
+      // reminder/alarm — просто открыть чат (будущие в ленте не показываем).
+      // periodic — скролл + подсветка последнего сработавшего display-сообщения.
+      if (entry.message.type === 'periodic') {
+        navigateToChat(entry.message.chatId, entry.message.id);
+      } else {
+        navigateToChat(entry.message.chatId);
+      }
     },
     [],
   );
