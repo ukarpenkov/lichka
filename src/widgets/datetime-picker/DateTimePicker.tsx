@@ -31,7 +31,7 @@ import { hapticTap } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import { Bezel } from './Bezel';
 import { TimeScroller } from './TimeScroller';
-import { YearPicker } from './YearPicker';
+import { YearPicker, MIN_YEAR, MAX_YEAR } from './YearPicker';
 import { YearGridModal } from './YearGridModal';
 import { makeGeometry } from './geometry';
 import { daysInMonth } from './circularMath';
@@ -49,6 +49,12 @@ const MONTH_STEP = 360 / MONTH_COUNT;
 const RING_DAY = 1;
 const RING_MONTH = 0;
 const RING_NONE = -1;
+
+/** Hidden horizontal swipe: distance / velocity to flip value. */
+const SWIPE_DIST = 36;
+const SWIPE_VELOCITY = 420;
+
+const SPRING = { damping: 22, stiffness: 220 };
 
 type Props = {
   visible: boolean;
@@ -150,6 +156,106 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     setYear(y);
   }, []);
 
+  /** Hidden swipe: left = next (+1), right = prev (−1). */
+  const swipeDelta = useCallback((translationX: number, velocityX: number) => {
+    if (Math.abs(translationX) < SWIPE_DIST && Math.abs(velocityX) < SWIPE_VELOCITY) {
+      return 0;
+    }
+    if (translationX <= -SWIPE_DIST || velocityX <= -SWIPE_VELOCITY) return 1;
+    if (translationX >= SWIPE_DIST || velocityX >= SWIPE_VELOCITY) return -1;
+    return 0;
+  }, []);
+
+  const stepYearBy = useCallback(
+    (delta: number) => {
+      if (delta === 0) return;
+      const next = year + delta;
+      if (next < MIN_YEAR || next > MAX_YEAR) return;
+      setYear(next);
+      triggerHaptic();
+    },
+    [year, triggerHaptic],
+  );
+
+  const stepMonthBy = useCallback(
+    (delta: number) => {
+      if (delta === 0) return;
+      const next = ((month + delta) % MONTH_COUNT + MONTH_COUNT) % MONTH_COUNT;
+      setMonth(next);
+      monthRotation.value = withSpring(-next * MONTH_STEP, SPRING);
+      triggerHaptic();
+    },
+    [month, triggerHaptic, monthRotation],
+  );
+
+  const stepDayBy = useCallback(
+    (delta: number) => {
+      if (delta === 0) return;
+      const next = ((day - 1 + delta) % dayCount + dayCount) % dayCount + 1;
+      setDay(next);
+      dayRotation.value = withSpring(-(next - 1) * dayStep(dayCount), SPRING);
+      triggerHaptic();
+    },
+    [day, dayCount, triggerHaptic, dayRotation],
+  );
+
+  const onYearSwipeEnd = useCallback(
+    (translationX: number, velocityX: number) => {
+      stepYearBy(swipeDelta(translationX, velocityX));
+    },
+    [stepYearBy, swipeDelta],
+  );
+
+  const onMonthSwipeEnd = useCallback(
+    (translationX: number, velocityX: number) => {
+      stepMonthBy(swipeDelta(translationX, velocityX));
+    },
+    [stepMonthBy, swipeDelta],
+  );
+
+  const onDaySwipeEnd = useCallback(
+    (translationX: number, velocityX: number) => {
+      stepDayBy(swipeDelta(translationX, velocityX));
+    },
+    [stepDayBy, swipeDelta],
+  );
+
+  const yearSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-20, 20])
+        .failOffsetY([-12, 12])
+        .onEnd((e) => {
+          'worklet';
+          runOnJS(onYearSwipeEnd)(e.translationX, e.velocityX);
+        }),
+    [onYearSwipeEnd],
+  );
+
+  const monthSwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-20, 20])
+        .failOffsetY([-12, 12])
+        .onEnd((e) => {
+          'worklet';
+          runOnJS(onMonthSwipeEnd)(e.translationX, e.velocityX);
+        }),
+    [onMonthSwipeEnd],
+  );
+
+  const daySwipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-20, 20])
+        .failOffsetY([-12, 12])
+        .onEnd((e) => {
+          'worklet';
+          runOnJS(onDaySwipeEnd)(e.translationX, e.velocityX);
+        }),
+    [onDaySwipeEnd],
+  );
+
   const handleToday = useCallback(() => {
     const now = new Date();
     const y = now.getFullYear();
@@ -164,8 +270,8 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     setHour(h);
     setMinute(min);
     dayCountSV.value = count;
-    dayRotation.value = withSpring(-(d - 1) * dayStep(count));
-    monthRotation.value = withSpring(-m * MONTH_STEP);
+    dayRotation.value = withSpring(-(d - 1) * dayStep(count), SPRING);
+    monthRotation.value = withSpring(-m * MONTH_STEP, SPRING);
   }, [dayCountSV, dayRotation, monthRotation]);
 
   const handleCancel = useCallback(() => {
@@ -348,38 +454,52 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
             onPress={() => {}}
           >
             <Animated.View style={[styles.header, headerStyle]}>
-              <YearPicker
-                year={year}
-                textColor={text}
-                accentColor={ACCENT}
-                onChange={handleYearChange}
-                onLongPress={handleOpenYearModal}
-              />
-              <Text
-                variant="body"
-                style={{
-                  fontSize: 16,
-                  fontFamily: fonts.medium,
-                  color: `${text}66`,
-                  marginTop: 4,
-                }}
-              >
-                {monthFull[month]}
-              </Text>
-              <Animated.Text
-                style={[
-                  {
-                    fontSize: 44,
-                    fontFamily: fonts.bold,
-                    fontWeight: '700',
-                    color: dayActive ? ACCENT : text,
-                    lineHeight: 48,
-                  },
-                  dayTextStyle,
-                ]}
-              >
-                {day}
-              </Animated.Text>
+              <GestureDetector gesture={yearSwipe}>
+                <View style={styles.swipeZone}>
+                  <YearPicker
+                    year={year}
+                    textColor={text}
+                    accentColor={ACCENT}
+                    onChange={handleYearChange}
+                    onLongPress={handleOpenYearModal}
+                  />
+                </View>
+              </GestureDetector>
+              <GestureDetector gesture={monthSwipe}>
+                <View style={styles.swipeZone}>
+                  <Text
+                    variant="body"
+                    style={{
+                      fontSize: 16,
+                      fontFamily: fonts.medium,
+                      color: `${text}66`,
+                      marginTop: 4,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {monthFull[month]}
+                  </Text>
+                </View>
+              </GestureDetector>
+              <GestureDetector gesture={daySwipe}>
+                <Animated.View style={styles.swipeZone}>
+                  <Animated.Text
+                    style={[
+                      {
+                        fontSize: 44,
+                        fontFamily: fonts.bold,
+                        fontWeight: '700',
+                        color: dayActive ? ACCENT : text,
+                        lineHeight: 48,
+                        textAlign: 'center',
+                      },
+                      dayTextStyle,
+                    ]}
+                  >
+                    {day}
+                  </Animated.Text>
+                </Animated.View>
+              </GestureDetector>
             </Animated.View>
 
             <View style={[styles.ringArea, { width: RING_SIZE, height: RING_SIZE }]}>
@@ -515,6 +635,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     paddingHorizontal: 4,
+  },
+  swipeZone: {
+    width: '100%',
+    alignItems: 'center',
   },
   ringArea: {
     alignItems: 'center',

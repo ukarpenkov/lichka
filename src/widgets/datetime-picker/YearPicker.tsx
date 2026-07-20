@@ -3,8 +3,8 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../../shared/ui';
 import { ChevronLeft, ChevronRight } from '../../shared/ui/pixel';
 
-const MIN_YEAR = 2020;
-const MAX_YEAR = 2035;
+export const MIN_YEAR = 2020;
+export const MAX_YEAR = 2035;
 
 type Props = {
   year: number;
