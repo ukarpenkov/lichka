@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
@@ -7,7 +7,7 @@ import Animated, {
   Extrapolation,
   type SharedValue,
 } from 'react-native-reanimated';
-import { fonts } from '../../shared/config';
+import { monoWeight } from '../../shared/config';
 
 type Props = {
   index: number;
@@ -89,8 +89,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: fonts.semiBold,
-    fontWeight: Platform.OS === 'ios' ? '600' : 'normal',
+    ...monoWeight('semiBold'),
     textAlign: 'center',
     includeFontPadding: false,
   },

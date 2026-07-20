@@ -8,6 +8,7 @@ export {
 export { ThemeProvider, useTheme } from './ThemeProvider';
 export {
   fonts,
+  monoWeight,
   spacing,
   radii,
   typography,

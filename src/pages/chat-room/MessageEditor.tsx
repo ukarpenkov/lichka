@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, View, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useTheme, useLocale, formatScheduledAt, formatInterval, radii } from '../../shared/config';
+import { useTheme, useLocale, formatScheduledAt, formatInterval, radii, fonts } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: fonts.regular,
     minHeight: 80,
     maxHeight: 160,
     textAlignVertical: 'top',

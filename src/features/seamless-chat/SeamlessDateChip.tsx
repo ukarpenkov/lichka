@@ -3,6 +3,7 @@ import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Text } from '../../shared/ui';
+import { monoWeight } from '../../shared/config';
 import { useSeamlessChatStyles } from './useSeamlessChatStyles';
 import { SEAMLESS_SPACING } from './layout';
 
@@ -50,7 +51,7 @@ const baseStyles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: '500',
+    ...monoWeight('medium'),
     textAlign: 'center',
   },
 });

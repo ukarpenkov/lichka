@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text as RNText, StyleSheet } from 'react-native';
+import { monoWeight } from '../config';
 
 type BadgeProps = {
   count: number;
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
   text: {
     color: '#FFFFFF',
     fontSize: 11,
-    fontWeight: '700',
+    ...monoWeight('bold'),
     textAlign: 'center',
     lineHeight: 20,
   },

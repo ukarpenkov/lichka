@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from '../../shared/ui/pixel';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow } from '../../shared/config';
+import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow, fonts } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
 
@@ -90,6 +90,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
             {
               color: colors.ink,
               backgroundColor: colors.surfaceSoft,
+              fontFamily: fonts.regular,
             },
           ]}
           returnKeyType="search"

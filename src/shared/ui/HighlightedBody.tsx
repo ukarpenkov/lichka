@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from './Text';
-import { useTheme } from '../config';
+import { useTheme, monoWeight } from '../config';
 import { withAlpha } from '../lib/color';
 
 type Props = {
@@ -22,7 +22,7 @@ export function HighlightedBody({ text: input, style }: Props) {
             tone="ink"
             style={{
               backgroundColor: withAlpha(colors.ink, 0.18),
-              fontWeight: '600',
+              ...monoWeight('semiBold'),
             }}>
             {seg.text}
           </Text>

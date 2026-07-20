@@ -51,14 +51,23 @@ export const radii = {
 
 export type Radii = typeof radii;
 
+/**
+ * Safe JetBrains Mono weight — pick the face file; do not rely on faux fontWeight.
+ * On Android, numeric fontWeight with a custom family often falls back to system sans.
+ */
+export function monoWeight(weight: FontWeightKey): TextStyle {
+  return {
+    fontFamily: fonts[weight],
+    fontWeight: Platform.OS === 'ios' ? weightToNumeric(weight) : 'normal',
+  };
+}
+
 function monoFace(
   weight: FontWeightKey,
   metrics: Omit<TextStyle, 'fontFamily' | 'fontWeight'>,
 ): TextStyle {
   return {
-    fontFamily: fonts[weight],
-    // Avoid Android faux-bold when a weight-specific file is already set.
-    fontWeight: Platform.OS === 'ios' ? weightToNumeric(weight) : 'normal',
+    ...monoWeight(weight),
     ...metrics,
   };
 }

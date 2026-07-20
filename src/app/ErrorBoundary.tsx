@@ -1,6 +1,7 @@
 import React, { Component, type ReactNode } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { DEFAULT_LIGHT } from '../shared/config/theme';
+import { fonts, monoWeight } from '../shared/config/tokens';
 
 interface Props {
   children: ReactNode;
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
+    ...monoWeight('semiBold'),
     textAlign: 'center',
   },
   scroll: {
@@ -109,11 +110,12 @@ const styles = StyleSheet.create({
   message: {
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: fonts.regular,
     textAlign: 'center',
   },
   stack: {
     fontSize: 11,
     lineHeight: 16,
-    fontFamily: 'monospace',
+    fontFamily: fonts.regular,
   },
 });

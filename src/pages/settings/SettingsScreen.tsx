@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
-import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii } from '../../shared/config';
+import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii, monoWeight } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
@@ -379,6 +379,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   localeLabel: {
-    fontWeight: '600',
+    ...monoWeight('semiBold'),
   },
 });

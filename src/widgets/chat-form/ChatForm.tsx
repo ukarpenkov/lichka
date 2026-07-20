@@ -12,7 +12,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
 import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
 
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    ...monoWeight('semiBold'),
     textAlign: 'center',
   },
   avatarButton: {

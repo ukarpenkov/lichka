@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from '../../shared/ui/pixel';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, spacing, radii, listRow } from '../../shared/config';
+import { useTheme, useLocale, spacing, radii, listRow, fonts } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 
 type Props = {
@@ -69,6 +69,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
             {
               color: colors.ink,
               backgroundColor: colors.surfaceSoft,
+              fontFamily: fonts.regular,
             },
           ]}
           returnKeyType="search"

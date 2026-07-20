@@ -7,6 +7,7 @@ import {
   pageHeader,
   fixedColors,
   fonts,
+  monoWeight,
 } from '../tokens';
 import { DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
 
@@ -75,6 +76,12 @@ describe('tokens', () => {
       expect(typography.body.fontFamily).toBe(fonts.regular);
       expect(typography['mono-meta'].fontFamily).toBe(fonts.regular);
       expect(typography['mono-meta'].fontSize).toBe(12);
+    });
+
+    it('should expose monoWeight without Android faux-bold fallback risk', () => {
+      const bold = monoWeight('bold');
+      expect(bold.fontFamily).toBe(fonts.bold);
+      expect(bold.fontWeight === '700' || bold.fontWeight === 'normal').toBe(true);
     });
   });
 });

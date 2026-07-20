@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, StatusBar } from 'react-native';
+import { BackHandler, Platform, StatusBar } from 'react-native';
 import {
   NavigationContainer,
   BaseNavigationContainer,
@@ -154,7 +154,7 @@ function SettingsStackScreen() {
               headerTitleStyle: {
                 fontFamily: fonts.display,
                 fontSize: typography.display.fontSize,
-                fontWeight: '400',
+                fontWeight: Platform.OS === 'ios' ? ('400' as const) : ('normal' as const),
               },
             }}
           />
@@ -185,10 +185,10 @@ function buildNavTheme(text: string, background: string) {
       notification: text,
     },
     fonts: {
-      regular: { fontFamily: fonts.regular, fontWeight: '400' as const },
-      medium: { fontFamily: fonts.medium, fontWeight: '500' as const },
-      bold: { fontFamily: fonts.semiBold, fontWeight: '600' as const },
-      heavy: { fontFamily: fonts.bold, fontWeight: '700' as const },
+      regular: { fontFamily: fonts.regular, fontWeight: Platform.OS === 'ios' ? ('400' as const) : ('normal' as const) },
+      medium: { fontFamily: fonts.medium, fontWeight: Platform.OS === 'ios' ? ('500' as const) : ('normal' as const) },
+      bold: { fontFamily: fonts.semiBold, fontWeight: Platform.OS === 'ios' ? ('600' as const) : ('normal' as const) },
+      heavy: { fontFamily: fonts.bold, fontWeight: Platform.OS === 'ios' ? ('700' as const) : ('normal' as const) },
     },
   };
 }

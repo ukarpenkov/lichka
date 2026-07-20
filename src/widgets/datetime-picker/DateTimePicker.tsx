@@ -24,7 +24,7 @@ import {
   useLocale,
   getMonthLabels,
   getFullMonthNames,
-  fonts,
+  monoWeight,
 } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { hapticTap } from '../../shared/lib';
@@ -513,7 +513,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                     variant="body"
                     style={{
                       fontSize: 16,
-                      fontFamily: fonts.medium,
+                      ...monoWeight('medium'),
                       color: `${text}66`,
                       marginTop: 4,
                       textAlign: 'center',
@@ -529,8 +529,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                     style={[
                       {
                         fontSize: 44,
-                        fontFamily: fonts.bold,
-                        fontWeight: '700',
+                        ...monoWeight('bold'),
                         color: dayActive ? ACCENT : text,
                         lineHeight: 48,
                         textAlign: 'center',

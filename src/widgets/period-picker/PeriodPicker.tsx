@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, fonts, monoWeight } from '../../shared/config';
 import { Text } from '../../shared/ui';
 
 const ACCENT = '#4A9EFF';
@@ -102,7 +102,10 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
                   >
                     <Text
                       variant="body"
-                      style={{ color: isActive ? ACCENT : text, fontWeight: isActive ? '700' : '400' }}
+                      style={{
+                        color: isActive ? ACCENT : text,
+                        ...monoWeight(isActive ? 'bold' : 'regular'),
+                      }}
                     >
                       {preset.label}
                     </Text>
@@ -141,7 +144,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
                 style={[styles.btn, { opacity: canConfirm ? 1 : 0.4 }]}
                 disabled={!canConfirm}
               >
-                <Text variant="body" style={{ color: ACCENT, fontWeight: '700' }}>{t.done}</Text>
+                <Text variant="body" style={{ color: ACCENT, ...monoWeight('bold') }}>{t.done}</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontWeight: '700',
+    ...monoWeight('bold'),
     fontSize: 18,
     marginBottom: 16,
   },
@@ -198,6 +201,7 @@ const styles = StyleSheet.create({
     width: 70,
     textAlign: 'center',
     fontSize: 16,
+    fontFamily: fonts.regular,
   },
   buttons: {
     flexDirection: 'row',

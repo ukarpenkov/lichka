@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../../shared/ui';
 import { ChevronLeft, ChevronRight } from '../../shared/ui/pixel';
+import { monoWeight } from '../../shared/config';
 
 export const MIN_YEAR = 2020;
 export const MAX_YEAR = 2035;
@@ -54,7 +55,7 @@ export function YearPicker({
           variant="body"
           style={{
             color: accentColor,
-            fontWeight: '700',
+            ...monoWeight('bold'),
             fontSize: 16,
             minWidth: 56,
             textAlign: 'center',

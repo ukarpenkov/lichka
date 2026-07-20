@@ -7,6 +7,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Text } from '../../shared/ui';
+import { monoWeight } from '../../shared/config';
 
 const YEAR_START = 2020;
 const YEAR_END = 2035;
@@ -55,7 +56,7 @@ export function YearGridModal({
             style={{
               color: active ? '#FFFFFF' : textColor,
               fontSize: 16,
-              fontWeight: active ? '700' : '500',
+              ...monoWeight(active ? 'bold' : 'medium'),
               textAlign: 'center',
             }}
           >
@@ -72,7 +73,13 @@ export function YearGridModal({
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={[styles.card, { backgroundColor: background }]}>
           <Text
-            style={{ fontSize: 18, fontWeight: '700', color: textColor, textAlign: 'center', marginBottom: 16 }}
+            style={{
+              fontSize: 18,
+              ...monoWeight('bold'),
+              color: textColor,
+              textAlign: 'center',
+              marginBottom: 16,
+            }}
           >
             Select Year
           </Text>
