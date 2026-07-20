@@ -7,6 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SPRING_PRESS } from '../lib/animations';
 
+const AnimatedReanimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 type AnimatedPressableProps = PressableProps & {
   scaleTo?: number;
   pressStyle?: ViewStyle;
@@ -46,15 +48,15 @@ export function AnimatedPressable({
     [onPressOut, scale],
   );
 
+  // Один Pressable: layout-стили (flex, width, height) задают hit area,
+  // scale применяется к тому же узлу — зона нажатия не сжимается до children.
   return (
-    <Animated.View style={[animatedStyle, pressed ? pressStyle : undefined]}>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={style}
-        {...rest}>
-        {children}
-      </Pressable>
-    </Animated.View>
+    <AnimatedReanimatedPressable
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[style, animatedStyle, pressed ? pressStyle : undefined]}
+      {...rest}>
+      {children}
+    </AnimatedReanimatedPressable>
   );
 }

@@ -216,14 +216,13 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    alignItems: 'stretch',
     height: PAGER_TAB_BAR_HEIGHT,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  // Три равные зоны: каждая занимает 1/3 ширины и всю высоту панели.
   tabButton: {
     flex: 1,
-    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
