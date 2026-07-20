@@ -132,7 +132,7 @@ export function SettingsScreen() {
 
         {/* Theme */}
         <Text variant="caption" style={[styles.sectionLabel, styles.firstSectionLabel]}>
-          {t.sectionTheme}
+          {t.sectionTheme.toUpperCase()}
         </Text>
         <View>
           <SettingsRow
@@ -145,7 +145,7 @@ export function SettingsScreen() {
 
         {/* Sound & Haptics */}
         <Text variant="caption" style={styles.sectionLabel}>
-          {t.sectionSound}
+          {t.sectionSound.toUpperCase()}
         </Text>
         <View>
           <SettingsRow label={t.sound} icon={Volume2}>
@@ -170,7 +170,7 @@ export function SettingsScreen() {
 
         {/* Language */}
         <Text variant="caption" style={styles.sectionLabel}>
-          {t.sectionLanguage}
+          {t.sectionLanguage.toUpperCase()}
         </Text>
         <View>
           <SettingsRow label={t.interfaceLanguage} icon={Languages}>
@@ -200,7 +200,7 @@ export function SettingsScreen() {
 
         {/* Backup */}
         <Text variant="caption" style={styles.sectionLabel}>
-          {t.sectionBackup}
+          {t.sectionBackup.toUpperCase()}
         </Text>
         <View>
           <SettingsRow
@@ -340,7 +340,7 @@ export function SettingsScreen() {
 
         {/* About */}
         <Text variant="caption" style={styles.sectionLabel}>
-          {t.sectionAbout}
+          {t.sectionAbout.toUpperCase()}
         </Text>
         <View>
           <SettingsRow label={t.version} icon={Info}>

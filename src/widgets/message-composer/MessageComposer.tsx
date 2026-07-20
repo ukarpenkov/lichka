@@ -10,7 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, fonts, radii } from '../../shared/config';
 import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
 import { createMessage, type MessageType } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
@@ -27,7 +27,6 @@ import {
   hapticSuccess,
   playSendSound,
   useKeyboardHeight,
-  KEYBOARD_COMPOSER_GAP,
   generateId,
   pickAndCompressImage,
   saveImage,
@@ -92,14 +91,10 @@ export function MessageComposer({ chatId, onSent }: Props) {
     opacity: recOpacity.value,
   }));
 
+  // Зазор над клавиатурой задаётся paddingBottom chatArea в ChatRoomScreen —
+  // без translateY, чтобы композер не наезжал на список сообщений.
   const containerAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom: keyboardHeight.value > 0 ? 0 : 12,
-    transform: [
-      {
-        translateY:
-          keyboardHeight.value > 0 ? -KEYBOARD_COMPOSER_GAP : 0,
-      },
-    ],
   }));
 
   const triggerHapticTap = useCallback(() => {
@@ -368,9 +363,12 @@ export function MessageComposer({ chatId, onSent }: Props) {
           </Pressable>
         </View>
       ) : null}
-      <View testID="composer-input-wrapper" style={[styles.inputWrapper, { backgroundColor: colors.surfaceSoft }]}>
+      <View testID="composer-input-wrapper" style={styles.inputWrapper}>
+          <Text variant="body" tone="ink" style={styles.prompt} accessible={false}>
+            {'>'}
+          </Text>
           <TextInput
-            style={[styles.input, { color: colors.ink }]}
+            style={[styles.input, { color: colors.ink, fontFamily: fonts.regular }]}
             placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
             placeholderTextColor={colors.mutedSoft}
             multiline
@@ -459,15 +457,20 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
-    paddingLeft: 16,
-    paddingRight: 8,
-    paddingVertical: 4,
+    alignItems: 'flex-end',
+    paddingLeft: 4,
+    paddingRight: 4,
+    paddingVertical: 2,
+    gap: 8,
+  },
+  prompt: {
+    paddingBottom: 8,
+    lineHeight: 24,
   },
   input: {
     flex: 1,
     fontSize: 16,
+    lineHeight: 24,
     maxHeight: 120,
     paddingVertical: 6,
   },
@@ -517,7 +520,7 @@ const styles = StyleSheet.create({
   imagePreview: {
     width: '100%',
     height: 120,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     resizeMode: 'cover',
   },
   removeImageBtn: {

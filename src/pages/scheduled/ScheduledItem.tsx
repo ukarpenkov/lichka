@@ -7,12 +7,15 @@ import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, listRow, radii } from '../../shared/config';
+import { hapticLongPress } from '../../shared/lib';
+import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
 
 export type ScheduledItemProps = {
   message: Message;
   chatTitle: string;
   onPress: () => void;
+  onLongPress: () => void;
 };
 
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, LucideIcon | typeof AlarmClockIcon> = {
@@ -22,7 +25,7 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, LucideIcon | typeof Alar
   image: ImageIcon,
 };
 
-export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProps) {
+export function ScheduledItem({ message, chatTitle, onPress, onLongPress }: ScheduledItemProps) {
   const { colors } = useTheme();
   const { t, locale } = useLocale();
   const Icon =
@@ -58,12 +61,21 @@ export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProp
           })()
         : '';
 
+  const handleLongPress = () => {
+    if (getSettings().hapticEnabled) {
+      hapticLongPress();
+    }
+    onLongPress();
+  };
+
   return (
     <Animated.View
       entering={FadeInUp.springify().damping(20).stiffness(200)}
       layout={Layout.springify().damping(22).stiffness(180)}>
       <AnimatedPressable
         onPress={onPress}
+        onLongPress={handleLongPress}
+        delayLongPress={300}
         scaleTo={1}
         pressStyle={{ backgroundColor: colors.surfaceSoft }}
         style={styles.row}

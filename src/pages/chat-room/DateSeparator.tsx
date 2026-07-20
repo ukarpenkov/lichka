@@ -8,14 +8,15 @@ type DateSeparatorProps = {
   date: string;
 };
 
-/** Quiet day marker — caption only, no hairline rails. */
+/** Textual day marker for terminal log — no hairline wings. */
 export function DateSeparator({ date }: DateSeparatorProps) {
   const { locale, t } = useLocale();
+  const label = formatDateLabel(date, locale, t);
 
   return (
     <Animated.View entering={FadeIn.duration(200)} style={styles.container}>
-      <Text variant="caption" tone="muted">
-        {formatDateLabel(date, locale, t)}
+      <Text variant="mono-meta" tone="muted">
+        {`── ${label} ──`}
       </Text>
     </Animated.View>
   );
@@ -23,9 +24,9 @@ export function DateSeparator({ date }: DateSeparatorProps) {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.gutter,
   },
 });

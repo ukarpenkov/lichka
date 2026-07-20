@@ -7,6 +7,7 @@ export {
 } from './theme';
 export { ThemeProvider, useTheme } from './ThemeProvider';
 export {
+  fonts,
   spacing,
   radii,
   typography,
@@ -15,6 +16,7 @@ export {
   fabShadow,
   listRow,
   pageHeader,
+  type FontWeightKey,
   type Spacing,
   type Radii,
   type TextVariant,

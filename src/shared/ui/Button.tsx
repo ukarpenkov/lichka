@@ -33,7 +33,7 @@ export function Button({ title, disabled, style, ...rest }: ButtonProps) {
       ]}
       {...rest}
     >
-      <Text style={{ color: labelColor, fontSize: 16, fontWeight: '600' }}>{title}</Text>
+      <Text variant="button" style={{ color: labelColor }}>{title}</Text>
     </Pressable>
   );
 }

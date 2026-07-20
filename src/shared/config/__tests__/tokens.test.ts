@@ -6,6 +6,7 @@ import {
   listRow,
   pageHeader,
   fixedColors,
+  fonts,
 } from '../tokens';
 import { DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
 
@@ -52,22 +53,27 @@ describe('tokens', () => {
       expect(pageHeader.paddingHorizontal).toBe(20);
     });
 
-    it('should use measured list row densities', () => {
-      expect(listRow.chat.paddingVertical).toBe(12);
-      expect(listRow.scheduled.paddingVertical).toBe(14);
-      expect(listRow.settings.minHeight).toBe(56);
+    it('should use CLI-dense list row metrics', () => {
+      expect(listRow.chat.paddingVertical).toBe(10);
+      expect(listRow.scheduled.paddingVertical).toBe(10);
+      expect(listRow.settings.minHeight).toBe(52);
     });
 
-    it('should keep a tight radii set', () => {
+    it('should keep a tight terminal radii set', () => {
+      expect(radii.none).toBe(0);
+      expect(radii.sm).toBe(8);
       expect(radii.md).toBe(12);
       expect(radii.lg).toBe(16);
       expect(radii.full).toBe(9999);
     });
 
-    it('should define display as modest 26/600', () => {
+    it('should use JetBrains Mono for the whole typography scale', () => {
+      expect(fonts.regular).toBe('JetBrainsMono-Regular');
+      expect(typography.display.fontFamily).toBe(fonts.semiBold);
+      expect(typography.body.fontFamily).toBe(fonts.regular);
+      expect(typography['mono-meta'].fontFamily).toBe(fonts.regular);
       expect(typography.display.fontSize).toBe(26);
-      expect(typography.display.fontWeight).toBe('600');
-      expect(typography.display.lineHeight).toBe(32);
+      expect(typography['mono-meta'].fontSize).toBe(12);
     });
   });
 });

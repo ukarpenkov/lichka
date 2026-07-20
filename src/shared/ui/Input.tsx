@@ -4,26 +4,27 @@ import {
   type TextInputProps,
   StyleSheet,
 } from 'react-native';
-import { useTheme } from '../config';
+import { useTheme } from '../config/ThemeProvider';
+import { fonts, radii, typography } from '../config/tokens';
 
 export type InputProps = Omit<TextInputProps, 'style'> & {
   style?: TextInputProps['style'];
 };
 
 export function Input({ placeholder, multiline, style, ...rest }: InputProps) {
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <TextInput
       placeholder={placeholder}
-      placeholderTextColor={`${text}66`}
+      placeholderTextColor={colors.mutedSoft}
       multiline={multiline}
       style={[
         styles.base,
         {
-          color: text,
-          backgroundColor: background,
-          borderColor: `${text}33`,
+          color: colors.ink,
+          backgroundColor: colors.canvas,
+          borderColor: colors.surfaceStrong,
           height: multiline ? 100 : 44,
           textAlignVertical: multiline ? 'top' : 'center',
         },
@@ -37,9 +38,10 @@ export function Input({ placeholder, multiline, style, ...rest }: InputProps) {
 const styles = StyleSheet.create({
   base: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: radii.sm,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
+    fontFamily: fonts.regular,
   },
 });

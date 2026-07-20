@@ -43,7 +43,26 @@ jest.mock('../../../features/voice-record', () => ({
 }));
 
 jest.mock('../../../shared/config/ThemeProvider', () => ({
-  useTheme: () => ({ text: '#000', background: '#FFF' }),
+  useTheme: () => ({
+    text: '#000',
+    background: '#FFF',
+    colors: {
+      canvas: '#FFF',
+      ink: '#000',
+      body: 'rgba(0,0,0,0.9)',
+      muted: 'rgba(0,0,0,0.6)',
+      mutedSoft: 'rgba(0,0,0,0.38)',
+      surfaceSoft: 'rgba(0,0,0,0.06)',
+      surfaceStrong: 'rgba(0,0,0,0.12)',
+      onInk: '#FFF',
+      badge: '#E53935',
+      onBadge: '#FFF',
+      destructive: '#E53935',
+      scrim: 'rgba(0,0,0,0.45)',
+      switchTrackOff: 'rgba(0,0,0,0.2)',
+      switchTrackOn: 'rgba(0,0,0,0.85)',
+    },
+  }),
 }));
 
 jest.mock('../../../shared/config/LocaleProvider', () => ({
@@ -144,13 +163,16 @@ describe('MessageComposer', () => {
     expect(queryByTestId('icon-Bell')).toBeTruthy();
   });
 
-  it('vertically centers text inside the input field', () => {
-    const { getByPlaceholderText, getByTestId } = render(<MessageComposer chatId="chat-1" />);
+  it('should keep prompt row with input and paperclip', () => {
+    const { getByPlaceholderText, getByTestId, getByText } = render(
+      <MessageComposer chatId="chat-1" />,
+    );
     const input = getByPlaceholderText('Message...');
     expect(input.props.textAlignVertical).toBe('center');
 
     const wrapper = getByTestId('composer-input-wrapper');
     const wrapperStyle = StyleSheet.flatten(wrapper.props.style);
-    expect(wrapperStyle.alignItems).toBe('center');
+    expect(wrapperStyle.flexDirection).toBe('row');
+    expect(getByText('>')).toBeTruthy();
   });
 });

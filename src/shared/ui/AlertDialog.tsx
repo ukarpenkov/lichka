@@ -25,7 +25,7 @@ export function AlertDialog({
   buttons = [],
   onClose,
 }: AlertDialogProps) {
-  const { text, background } = useTheme();
+  const { text, background, colors } = useTheme();
 
   const handlePress = (btn: AlertButton) => {
     btn.onPress?.();
@@ -50,19 +50,13 @@ export function AlertDialog({
           style={[styles.card, { backgroundColor: background }]}
         >
           {title ? (
-            <Text
-              variant="body"
-              style={[styles.title, { color: text }]}
-            >
+            <Text variant="title" tone="ink" style={styles.title}>
               {title}
             </Text>
           ) : null}
 
           {message ? (
-            <Text
-              variant="body"
-              style={[styles.message, { color: text + 'CC' }]}
-            >
+            <Text variant="body-sm" tone="muted" style={styles.message}>
               {message}
             </Text>
           ) : null}
@@ -90,20 +84,16 @@ export function AlertDialog({
                     onPress={() => handlePress(btn)}
                   >
                     <Text
-                      variant="body"
-                      style={[
-                        styles.buttonText,
-                        {
-                          color:
-                            btn.style === 'destructive'
-                              ? '#FF453A'
-                              : btn.style === 'cancel'
-                                ? text + '99'
-                                : text,
-                          fontWeight:
-                            btn.style === 'cancel' ? '400' : '600',
-                        },
-                      ]}
+                      variant={btn.style === 'cancel' ? 'body' : 'button'}
+                      style={{
+                        color:
+                          btn.style === 'destructive'
+                            ? colors.destructive
+                            : btn.style === 'cancel'
+                              ? colors.muted
+                              : colors.ink,
+                        textAlign: 'center',
+                      }}
                     >
                       {btn.text}
                     </Text>
@@ -143,14 +133,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
     textAlign: 'center',
     marginBottom: 8,
   },
   message: {
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -167,8 +153,5 @@ const styles = StyleSheet.create({
   },
   buttonTall: {
     paddingVertical: 12,
-  },
-  buttonText: {
-    fontSize: 15,
   },
 });

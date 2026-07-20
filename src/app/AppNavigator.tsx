@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StatusBar } from 'react-native';
+import { BackHandler, StatusBar } from 'react-native';
 import {
   NavigationContainer,
   BaseNavigationContainer,
   NavigationIndependentTree,
+  useNavigationContainerRef,
 } from '@react-navigation/native';
+import type { NavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
 import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
+import { fonts } from '../shared/config/tokens';
 import { withAlpha } from '../shared/lib/color';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
@@ -21,7 +24,7 @@ import { useNotificationNavigation } from '../features/notifications';
 import { SPRING_SNAP } from '../shared/lib/animations';
 
 import { SwipeablePager, PagerTabBar } from './SwipeablePager';
-import { MainTabsProvider } from './MainTabsContext';
+import { MainTabsProvider, useMainTabs } from './MainTabsContext';
 import { setMainTabsApi, setNavigationReady } from './mainTabsApi';
 
 import type {
@@ -36,13 +39,47 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Stack = createNativeStackNavigator<ChatStackParamList>();
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 
+const CHAT_TAB_INDEX = 0;
+const SETTINGS_TAB_INDEX = 2;
+
 function NotificationHandler() {
   useNotificationNavigation();
   return null;
 }
 
+/** Синхронизация вложенного стека с pager + Android back → goBack вместо выхода. */
+function useIndependentStackBridge(
+  tabIndex: number,
+  navRef: React.RefObject<{ canGoBack(): boolean; goBack(): void } | null>,
+) {
+  const { activeIndex, setNestedStackOpen } = useMainTabs();
+
+  const syncNestedOpen = useCallback(
+    (state: NavigationState | undefined) => {
+      setNestedStackOpen(tabIndex, (state?.index ?? 0) > 0);
+    },
+    [tabIndex, setNestedStackOpen],
+  );
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (activeIndex !== tabIndex) return false;
+      if (navRef.current?.canGoBack()) {
+        navRef.current.goBack();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [activeIndex, tabIndex, navRef]);
+
+  return syncNestedOpen;
+}
+
 function ChatStackScreen() {
   const { text, background } = useTheme();
+  const navRef = useNavigationContainerRef<ChatStackParamList>();
+  const syncNestedOpen = useIndependentStackBridge(CHAT_TAB_INDEX, navRef);
   const navTheme = React.useMemo(
     () => buildNavTheme(text, background),
     [text, background],
@@ -50,13 +87,18 @@ function ChatStackScreen() {
 
   return (
     <NavigationIndependentTree>
-      <BaseNavigationContainer theme={navTheme}>
+      <BaseNavigationContainer
+        ref={navRef}
+        theme={navTheme}
+        onStateChange={syncNestedOpen}>
         <Stack.Navigator
           screenOptions={{
             headerStyle: { backgroundColor: background },
             headerTintColor: text,
             headerTitleStyle: { color: text },
             contentStyle: { backgroundColor: background },
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
           }}>
           <Stack.Screen
             name="ChatList"
@@ -77,6 +119,8 @@ function ChatStackScreen() {
 function SettingsStackScreen() {
   const { text, background } = useTheme();
   const { t } = useLocale();
+  const navRef = useNavigationContainerRef<SettingsStackParamList>();
+  const syncNestedOpen = useIndependentStackBridge(SETTINGS_TAB_INDEX, navRef);
   const navTheme = React.useMemo(
     () => buildNavTheme(text, background),
     [text, background],
@@ -84,13 +128,18 @@ function SettingsStackScreen() {
 
   return (
     <NavigationIndependentTree>
-      <BaseNavigationContainer theme={navTheme}>
+      <BaseNavigationContainer
+        ref={navRef}
+        theme={navTheme}
+        onStateChange={syncNestedOpen}>
         <SettingsStack.Navigator
           screenOptions={{
             headerStyle: { backgroundColor: background },
             headerTintColor: text,
             headerTitleStyle: { color: text },
             contentStyle: { backgroundColor: background },
+            gestureEnabled: true,
+            fullScreenGestureEnabled: true,
           }}>
           <SettingsStack.Screen
             name="Settings"
@@ -129,18 +178,49 @@ function buildNavTheme(text: string, background: string) {
       notification: text,
     },
     fonts: {
-      regular: { fontFamily: 'System', fontWeight: '400' as const },
-      medium: { fontFamily: 'System', fontWeight: '500' as const },
-      bold: { fontFamily: 'System', fontWeight: '700' as const },
-      heavy: { fontFamily: 'System', fontWeight: '900' as const },
+      regular: { fontFamily: fonts.regular, fontWeight: '400' as const },
+      medium: { fontFamily: fonts.medium, fontWeight: '500' as const },
+      bold: { fontFamily: fonts.semiBold, fontWeight: '600' as const },
+      heavy: { fontFamily: fonts.bold, fontWeight: '700' as const },
     },
   };
 }
 
 const TAB_ICONS = [MessageCircle, CalendarDays, Settings];
 
-function MainTabs() {
+function MainTabsPager({
+  activeIndex,
+  onIndexChange,
+}: {
+  activeIndex: number;
+  onIndexChange: (index: number, fromGesture: boolean) => void;
+}) {
   const { colors } = useTheme();
+  const { tabSwipeEnabled } = useMainTabs();
+
+  return (
+    <>
+      <SwipeablePager
+        index={activeIndex}
+        onIndexChange={onIndexChange}
+        enabled={tabSwipeEnabled}>
+        <ChatStackScreen />
+        <ScheduledScreen />
+        <SettingsStackScreen />
+      </SwipeablePager>
+      <PagerTabBar
+        activeIndex={activeIndex}
+        onIndexChange={onIndexChange}
+        icons={TAB_ICONS}
+        activeColor={colors.ink}
+        inactiveColor={colors.muted}
+        backgroundColor={colors.canvas}
+      />
+    </>
+  );
+}
+
+function MainTabs() {
   const indexSV = useSharedValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const fromGestureRef = useRef(false);
@@ -176,21 +256,9 @@ function MainTabs() {
 
   return (
     <MainTabsProvider activeIndex={activeIndex}>
-      <SwipeablePager
-        index={activeIndex}
-        onIndexChange={handleIndexChange}
-        enabled={true}>
-        <ChatStackScreen />
-        <ScheduledScreen />
-        <SettingsStackScreen />
-      </SwipeablePager>
-      <PagerTabBar
+      <MainTabsPager
         activeIndex={activeIndex}
         onIndexChange={handleIndexChange}
-        icons={TAB_ICONS}
-        activeColor={colors.ink}
-        inactiveColor={colors.muted}
-        backgroundColor={colors.canvas}
       />
     </MainTabsProvider>
   );

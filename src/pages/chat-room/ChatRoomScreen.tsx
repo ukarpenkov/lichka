@@ -16,7 +16,8 @@ import { useTheme, useLocale } from '../../shared/config';
 import {
   useKeyboardHeight,
   KEYBOARD_ANDROID_LIFT_FUDGE,
-  CHAT_LIST_KEYBOARD_BOTTOM_INSET,
+  KEYBOARD_COMPOSER_GAP,
+  MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
 } from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
@@ -39,7 +40,7 @@ import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
 
 import { ChatHeader } from './ChatHeader';
-import { MessageBubble } from './MessageBubble';
+import { MessageLine } from './MessageLine';
 import { MessageContextMenu } from './MessageContextMenu';
 import { MessageEditor } from './MessageEditor';
 import { DateSeparator } from './DateSeparator';
@@ -100,12 +101,14 @@ export function ChatRoomScreen() {
   } | null>(null);
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const { open, close, visible: viewerVisible, data: viewerData } = useImageViewer();
 
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollToMessageId = useRef(false);
+  const scrolledToMessageRef = useRef<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keyboardHeight = useKeyboardHeight();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -118,30 +121,52 @@ export function ChatRoomScreen() {
   // Экран чата вложен в кастомный pager (SwipeablePager + PagerTabBar),
   // поэтому нижний tab bar уже занимает `tabBarHeight` над краем экрана —
   // вычитаем его из высоты клавиатуры.
+  // KEYBOARD_COMPOSER_GAP — реальный зазор над клавиатурой (не translateY на
+  // композере: transform наезжает на FlatList и ломает отступ до последнего сообщения).
   // На iOS клавиатуру поднимает система, ручная компенсация не нужна.
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
       Platform.OS === 'android'
         ? Math.max(
-            keyboardHeight.value - tabBarHeight + KEYBOARD_ANDROID_LIFT_FUDGE,
+            keyboardHeight.value -
+              tabBarHeight +
+              KEYBOARD_ANDROID_LIFT_FUDGE +
+              KEYBOARD_COMPOSER_GAP,
             0,
           )
         : 0,
   }));
 
-  const listContentPaddingBottom = keyboardOpen
-    ? CHAT_LIST_KEYBOARD_BOTTOM_INSET
-    : 4;
-
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
     const regularMessages = getVisibleMessagesByChatId(chatId);
     const periodicMessages = getPeriodicDisplayMessages(chatId);
-    const allMessages = [...regularMessages, ...periodicMessages].sort(
-      (a, b) => a.createdAt.localeCompare(b.createdAt),
-    );
+    let allMessages = [...regularMessages, ...periodicMessages];
+
+    // Будущие reminder/alarm и ещё не сработавшие periodic скрыты из ленты —
+    // при переходе из «Запланировано» временно показываем целевое сообщение.
+    if (messageId) {
+      const alreadyVisible = allMessages.some(
+        (m) => m.id === messageId || m.id === `periodic:${messageId}`,
+      );
+      if (!alreadyVisible) {
+        const target = getMessageById(messageId);
+        if (target && target.chatId === chatId) {
+          if (target.type === 'periodic') {
+            allMessages.push({
+              ...target,
+              id: `periodic:${target.id}`,
+            });
+          } else {
+            allMessages.push(target);
+          }
+        }
+      }
+    }
+
+    allMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     setMessages(allMessages);
-  }, [chatId]);
+  }, [chatId, messageId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,38 +193,45 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  const listItems = useMemo(() => buildListItems(messages), [messages]);
+
+  const scrollToBottom = useCallback((animated = false) => {
+    if (scrollToMessageId.current) return;
+    flatListRef.current?.scrollToEnd({ animated });
+  }, []);
+
+  // После появления новых сообщений — доскролл к концу (viewport уже учитывает композер).
+  useEffect(() => {
+    if (listItems.length === 0) return;
+    const timer = setTimeout(() => scrollToBottom(false), 50);
+    return () => clearTimeout(timer);
+  }, [listItems, scrollToBottom]);
+
+  // При открытии клавиатуры chatArea сжимается снизу — доскролливаем после layout.
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardOpen(true);
+      setTimeout(() => scrollToBottom(true), 100);
     });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardOpen(false);
-    });
+    return () => showSub.remove();
+  }, [scrollToBottom]);
+
+  useEffect(() => {
+    scrolledToMessageRef.current = null;
+  }, [messageId]);
+
+  useEffect(() => {
     return () => {
-      showSub.remove();
-      hideSub.remove();
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
     };
   }, []);
 
-  const handleContentSizeChange = useCallback(() => {
-    if (keyboardOpen && !scrollToMessageId.current) {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }
-  }, [keyboardOpen]);
-
-  const listItems = useMemo(() => buildListItems(messages), [messages]);
-
-  useEffect(() => {
-    if (listItems.length > 0 && !scrollToMessageId.current) {
-      const timer = setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [listItems]);
-
   useEffect(() => {
     if (!messageId || listItems.length === 0) return;
+    if (scrolledToMessageRef.current === messageId) return;
+
     let index = listItems.findIndex(
       (item) => item.kind === 'message' && item.message.id === messageId,
     );
@@ -209,7 +241,20 @@ export function ChatRoomScreen() {
       );
     }
     if (index === -1) return;
+
+    const targetListId = (listItems[index] as { message: Message }).message.id;
+    scrolledToMessageRef.current = messageId;
     scrollToMessageId.current = true;
+
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+    }
+    setHighlightedMessageId(targetListId);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightTimerRef.current = null;
+    }, 1000);
+
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToIndex({
         index,
@@ -249,6 +294,16 @@ export function ChatRoomScreen() {
       );
       if (index === -1) return;
       scrollToMessageId.current = true;
+
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+      setHighlightedMessageId(targetId);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedMessageId(null);
+        highlightTimerRef.current = null;
+      }, 1000);
+
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
           index,
@@ -315,14 +370,15 @@ export function ChatRoomScreen() {
         return <DateSeparator date={item.date} />;
       }
       return (
-        <MessageBubble
+        <MessageLine
           message={item.message}
+          highlighted={item.message.id === highlightedMessageId}
           onLongPress={setMenuMessage}
           onImagePress={open}
         />
       );
     },
-    [open],
+    [open, highlightedMessageId],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -392,15 +448,11 @@ export function ChatRoomScreen() {
           renderItem={renderListItem}
           keyExtractor={keyExtractor}
           style={styles.list}
-          contentContainerStyle={[styles.listContent, { paddingBottom: listContentPaddingBottom }]}
-          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-          onContentSizeChange={handleContentSizeChange}
+          contentContainerStyle={styles.listContent}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          bounces={!keyboardOpen}
-          overScrollMode={keyboardOpen ? 'never' : 'auto'}
           onScrollToIndexFailed={(info: any) => {
             setTimeout(() => {
               flatListRef.current?.scrollToIndex({
@@ -475,5 +527,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 4,
+    paddingBottom: MESSAGE_LIST_BOTTOM_GAP,
   },
 });

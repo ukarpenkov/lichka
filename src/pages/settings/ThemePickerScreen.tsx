@@ -42,7 +42,7 @@ export function ThemePickerScreen() {
               borderWidth: isActive ? 2 : 1,
             },
           ]}>
-          <Text style={{ color: item.text, fontSize: 16, fontWeight: '600' }}>
+          <Text variant="title-sm" style={{ color: item.text }}>
             {item.name}
           </Text>
           {isActive && (

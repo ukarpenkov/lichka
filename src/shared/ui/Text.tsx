@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
-import { useTheme } from '../config';
+import { useTheme } from '../config/ThemeProvider';
 import { typography, type TextVariant } from '../config/tokens';
 
 export type AppTextProps = TextProps & {
@@ -15,6 +15,7 @@ const DEFAULT_TONE: Partial<Record<TextVariant, AppTextProps['tone']>> = {
   'title-sm': 'ink',
   body: 'ink',
   'body-sm': 'muted',
+  'mono-meta': 'muted',
   caption: 'muted',
   micro: 'ink',
   button: 'ink',

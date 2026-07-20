@@ -1,10 +1,16 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 
-import { Screen, Text, PageHeader } from '../../shared/ui';
+import { Screen, Text, PageHeader, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
-import { getScheduledMessages, disableFiredMessages, type Message } from '../../entities/message';
+import {
+  getScheduledMessages,
+  disableFiredMessages,
+  deleteMessage,
+  type Message,
+} from '../../entities/message';
 import { getChatById } from '../../entities/chat';
+import { cancelNotification } from '../../features/notifications';
 import { useTabVisible } from '../../app/MainTabsContext';
 import { navigateToChat } from '../../app/mainTabsApi';
 
@@ -21,6 +27,11 @@ export function ScheduledScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
+  const [dialog, setDialog] = useState<{
+    title?: string;
+    message?: string;
+    buttons?: AlertButton[];
+  } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadEntries = useCallback(() => {
@@ -56,6 +67,28 @@ export function ScheduledScreen() {
     [],
   );
 
+  const handleLongPress = useCallback(
+    (entry: ScheduledEntry) => {
+      setDialog({
+        title: t.deleteMessage,
+        message: t.deleteMessageConfirm,
+        buttons: [
+          { text: t.cancel, style: 'cancel' },
+          {
+            text: t.delete,
+            style: 'destructive',
+            onPress: () => {
+              deleteMessage(entry.message.id);
+              cancelNotification(entry.message.id);
+              loadEntries();
+            },
+          },
+        ],
+      });
+    },
+    [t, loadEntries],
+  );
+
   return (
     <Screen>
       <PageHeader title={t.scheduled} />
@@ -76,10 +109,19 @@ export function ScheduledScreen() {
               message={item.message}
               chatTitle={item.chatTitle}
               onPress={() => handlePress(item)}
+              onLongPress={() => handleLongPress(item)}
             />
           )}
         />
       )}
+
+      <AlertDialog
+        visible={dialog !== null}
+        title={dialog?.title}
+        message={dialog?.message}
+        buttons={dialog?.buttons}
+        onClose={() => setDialog(null)}
+      />
     </Screen>
   );
 }

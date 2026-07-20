@@ -1,10 +1,28 @@
-import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 
 type MainTabsContextValue = {
   activeIndex: number;
+  /** Можно ли листать корневые табы горизонтальным свайпом. */
+  tabSwipeEnabled: boolean;
+  /**
+   * Заблокировать/разблокировать свайп табов для конкретного вложенного стека.
+   * Ключ — индекс таба (0 = чаты, 2 = настройки).
+   */
+  setNestedStackOpen: (tabIndex: number, open: boolean) => void;
 };
 
-const MainTabsContext = createContext<MainTabsContextValue>({ activeIndex: 0 });
+const MainTabsContext = createContext<MainTabsContextValue>({
+  activeIndex: 0,
+  tabSwipeEnabled: true,
+  setNestedStackOpen: () => {},
+});
 
 export function MainTabsProvider({
   activeIndex,
@@ -13,11 +31,31 @@ export function MainTabsProvider({
   activeIndex: number;
   children: React.ReactNode;
 }) {
+  const [nestedOpen, setNestedOpen] = useState<Record<number, boolean>>({});
+
+  const setNestedStackOpen = useCallback((tabIndex: number, open: boolean) => {
+    setNestedOpen((prev) => {
+      if (Boolean(prev[tabIndex]) === open) return prev;
+      return { ...prev, [tabIndex]: open };
+    });
+  }, []);
+
+  const tabSwipeEnabled = !nestedOpen[activeIndex];
+
+  const value = useMemo(
+    () => ({ activeIndex, tabSwipeEnabled, setNestedStackOpen }),
+    [activeIndex, tabSwipeEnabled, setNestedStackOpen],
+  );
+
   return (
-    <MainTabsContext.Provider value={{ activeIndex }}>
+    <MainTabsContext.Provider value={value}>
       {children}
     </MainTabsContext.Provider>
   );
+}
+
+export function useMainTabs() {
+  return useContext(MainTabsContext);
 }
 
 /** Подписка на то, что конкретный корневой таб стал видимым.

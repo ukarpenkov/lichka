@@ -41,6 +41,11 @@ export interface LocaleDictionary {
   editMessage: string;
   messagePlaceholder: string;
   searchInChat: string;
+  messageTypeReminder: string;
+  messageTypeAlarm: string;
+  messageTypePeriodic: string;
+  messageTypeImage: string;
+  messageTypeVoice: string;
 
   // Scheduled
   scheduled: string;
@@ -174,10 +179,15 @@ export const ru: LocaleDictionary = {
   chatNotFound: 'Чат не найден',
   deleteMessage: 'Удалить сообщение',
   deleteMessageConfirm: 'Удалить без возможности восстановления?',
-  edited: 'изменено',
+  edited: 'изм.',
   editMessage: 'Редактировать',
   messagePlaceholder: 'Текст сообщения...',
   searchInChat: 'Поиск по чату...',
+  messageTypeReminder: 'напоминание',
+  messageTypeAlarm: 'будильник',
+  messageTypePeriodic: 'периодическое',
+  messageTypeImage: 'изображение',
+  messageTypeVoice: 'голосовое',
 
   // Scheduled
   scheduled: 'Запланировано',
@@ -315,6 +325,11 @@ export const en: LocaleDictionary = {
   editMessage: 'Edit',
   messagePlaceholder: 'Message text...',
   searchInChat: 'Search in chat...',
+  messageTypeReminder: 'reminder',
+  messageTypeAlarm: 'alarm',
+  messageTypePeriodic: 'periodic',
+  messageTypeImage: 'image',
+  messageTypeVoice: 'voice',
 
   // Scheduled
   scheduled: 'Scheduled',

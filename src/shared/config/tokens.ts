@@ -2,6 +2,20 @@ import type { TextStyle, ViewStyle } from 'react-native';
 import { Platform } from 'react-native';
 import { withAlpha } from '../lib/color';
 
+/**
+ * JetBrains Mono — единый UI font (terminal / CLI).
+ * На Android family = имя файла без расширения (assets/fonts).
+ * Weight берём файлом, не синтезом fontWeight.
+ */
+export const fonts = {
+  regular: 'JetBrainsMono-Regular',
+  medium: 'JetBrainsMono-Medium',
+  semiBold: 'JetBrainsMono-SemiBold',
+  bold: 'JetBrainsMono-Bold',
+} as const;
+
+export type FontWeightKey = keyof typeof fonts;
+
 /** Spacing scale — base 4. */
 export const spacing = {
   xxs: 2,
@@ -20,8 +34,13 @@ export const spacing = {
 
 export type Spacing = typeof spacing;
 
-/** Soft radii only — fewer tiers, more intentional. */
+/**
+ * Radii — terminal: minimal.
+ * Messages = 0; chips/fields = sm–md; avatar/FAB = full.
+ */
 export const radii = {
+  none: 0,
+  sm: 8,
   md: 12,
   lg: 16,
   full: 9999,
@@ -29,49 +48,73 @@ export const radii = {
 
 export type Radii = typeof radii;
 
-/** Typography metrics for Text variants. */
+function monoFace(
+  weight: FontWeightKey,
+  metrics: Omit<TextStyle, 'fontFamily' | 'fontWeight'>,
+): TextStyle {
+  return {
+    fontFamily: fonts[weight],
+    // Avoid Android faux-bold when a weight-specific file is already set.
+    fontWeight: Platform.OS === 'ios' ? weightToNumeric(weight) : 'normal',
+    ...metrics,
+  };
+}
+
+function weightToNumeric(weight: FontWeightKey): TextStyle['fontWeight'] {
+  switch (weight) {
+    case 'regular':
+      return '400';
+    case 'medium':
+      return '500';
+    case 'semiBold':
+      return '600';
+    case 'bold':
+      return '700';
+  }
+}
+
+/** Typography — all JetBrains Mono; hierarchy via size/weight only. */
 export const typography = {
-  display: {
+  display: monoFace('semiBold', {
     fontSize: 26,
-    fontWeight: '600',
     lineHeight: 32,
     letterSpacing: -0.2,
-  },
-  title: {
+  }),
+  title: monoFace('semiBold', {
     fontSize: 17,
-    fontWeight: '600',
     lineHeight: 22,
-  },
-  'title-sm': {
-    fontSize: 16,
-    fontWeight: '500',
+  }),
+  'title-sm': monoFace('medium', {
+    fontSize: 15,
     lineHeight: 21,
-  },
-  body: {
+  }),
+  body: monoFace('regular', {
     fontSize: 16,
-    fontWeight: '400',
     lineHeight: 24,
-  },
-  'body-sm': {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 20,
-  },
-  caption: {
+  }),
+  'body-sm': monoFace('regular', {
     fontSize: 13,
-    fontWeight: '600',
+    lineHeight: 18,
+  }),
+  /** Timestamp / log meta — tabular feel via mono. */
+  'mono-meta': monoFace('regular', {
+    fontSize: 12,
     lineHeight: 16,
-  },
-  micro: {
+    fontVariant: ['tabular-nums'],
+  }),
+  caption: monoFace('semiBold', {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.6,
+  }),
+  micro: monoFace('semiBold', {
     fontSize: 11,
-    fontWeight: '600',
     lineHeight: 13,
-  },
-  button: {
-    fontSize: 16,
-    fontWeight: '500',
+  }),
+  button: monoFace('medium', {
+    fontSize: 15,
     lineHeight: 20,
-  },
+  }),
 } as const satisfies Record<string, TextStyle>;
 
 export type TextVariant = keyof typeof typography;
@@ -137,14 +180,14 @@ export const fabShadow: ViewStyle = Platform.select({
   default: {},
 })!;
 
-/** List row density (lead designer — not blanket 16). */
+/** List row density — CLI denser than journal. */
 export const listRow = {
-  chat: { paddingVertical: 12, paddingHorizontal: spacing.gutter },
-  scheduled: { paddingVertical: 14, paddingHorizontal: spacing.gutter },
+  chat: { paddingVertical: 10, paddingHorizontal: spacing.gutter },
+  scheduled: { paddingVertical: 10, paddingHorizontal: spacing.gutter },
   settings: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: spacing.gutter,
-    minHeight: 56,
+    minHeight: 52,
   },
 } as const;
 

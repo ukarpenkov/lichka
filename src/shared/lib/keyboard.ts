@@ -14,14 +14,18 @@ export const KEYBOARD_ANDROID_LIFT_FUDGE = 5;
  * поэтому вычитается из keyboardHeight на Android. */
 export const PAGER_TAB_BAR_HEIGHT = 56;
 
-/** Зазор между блоком ввода и верхней границей клавиатуры. */
+/**
+ * Зазор между нижней кромкой MessageComposer и верхней границей клавиатуры.
+ * Входит в `paddingBottom` chatArea (реальный layout), а не в translateY композера —
+ * иначе композер визуально наезжает на FlatList.
+ */
 export const KEYBOARD_COMPOSER_GAP = 16;
 
-/** Отступ списка сообщений снизу при открытой клавиатуре.
- *  Должен перекрывать визуальную высоту MessageComposer (~80px) +
- *  KEYBOARD_COMPOSER_GAP (translateY: -16 на composer), чтобы
- *  последнее сообщение не перекрывалось блоком ввода. */
-export const CHAT_LIST_KEYBOARD_BOTTOM_INSET = 80 + KEYBOARD_COMPOSER_GAP;
+/**
+ * Фиксированный отступ между последним сообщением и верхней кромкой MessageComposer.
+ * Не зависит от клавиатуры: композер — flex-sibling под списком, а не оверлей.
+ */
+export const MESSAGE_LIST_BOTTOM_GAP = 8;
 
 /**
  * Единый источник правды по высоте клавиатуры для всего приложения.

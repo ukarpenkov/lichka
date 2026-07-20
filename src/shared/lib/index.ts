@@ -22,7 +22,7 @@ export {
   useKeyboardHeight,
   KEYBOARD_ANDROID_LIFT_FUDGE,
   KEYBOARD_COMPOSER_GAP,
-  CHAT_LIST_KEYBOARD_BOTTOM_INSET,
+  MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
 } from './keyboard';
 export { pickAndCompressImage, type CompressedImage } from './imageCompress';
