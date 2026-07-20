@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FlatList, View, StyleSheet, Platform } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus, Search } from '../../shared/ui/pixel';
+import { MagicWand, Search } from '../../shared/ui/pixel';
 
 import {
   Screen,
@@ -161,7 +161,7 @@ export function ChatListScreen() {
           {...(Platform.OS === 'android'
             ? { android_ripple: { color: colors.surfaceStrong, borderless: true, radius: 28 } }
             : {})}>
-          <Plus size={24} color={colors.onInk} />
+          <MagicWand size={24} color={colors.onInk} />
         </AnimatedPressable>
       </View>
 

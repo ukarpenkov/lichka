@@ -16,6 +16,7 @@ export const ChevronRight = createPixelIcon('interface-essential-navigation-righ
 
 // Actions
 export const Plus = createPixelIcon('plus');
+export const MagicWand = createPixelIcon('design-magic-wand');
 export const Search = createPixelIcon('interface-essential-search-1');
 export const Send = createPixelIcon('interface-essential-send-mail');
 export const X = createPixelIcon('close');
