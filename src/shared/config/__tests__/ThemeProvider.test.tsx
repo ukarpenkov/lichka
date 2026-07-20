@@ -29,6 +29,26 @@ describe('ThemeProvider', () => {
     expect(result.current.text).toBe(DEFAULT_LIGHT.text);
   });
 
+  it('should provide semantic colors derived from the pair', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    expect(result.current.colors.canvas).toBe(DEFAULT_LIGHT.background);
+    expect(result.current.colors.ink).toBe(DEFAULT_LIGHT.text);
+    expect(result.current.colors.surfaceSoft).toBe('rgba(0, 0, 0, 0.06)');
+  });
+
+  it('should update semantic colors when theme switches', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      result.current.setTheme('dark');
+    });
+
+    expect(result.current.colors.canvas).toBe(DEFAULT_DARK.background);
+    expect(result.current.colors.ink).toBe(DEFAULT_DARK.text);
+    expect(result.current.colors.muted).toBe('rgba(255, 255, 255, 0.6)');
+  });
+
   it('should load saved theme from settings on mount', () => {
     mockExecuteSync.mockReturnValue({ rows: [{ value: 'dark' }] });
 

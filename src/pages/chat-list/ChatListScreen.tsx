@@ -1,11 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { FlatList, View, StyleSheet } from 'react-native';
+import { FlatList, View, StyleSheet, Platform } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Plus, Search } from 'lucide-react-native';
 
-import { Screen, Text, IconButton, AnimatedPressable, AlertDialog, type AlertButton } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import {
+  Screen,
+  Text,
+  IconButton,
+  AnimatedPressable,
+  AlertDialog,
+  PageHeader,
+  type AlertButton,
+} from '../../shared/ui';
+import { useTheme, useLocale, fabShadow } from '../../shared/config';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import { getUnreadCounts } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
@@ -21,7 +29,7 @@ type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
 
 export function ChatListScreen() {
   const navigation = useNavigation<Nav>();
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const [chats, setChats] = useState<Chat[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
@@ -91,21 +99,20 @@ export function ChatListScreen() {
 
   return (
     <Screen>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: text + '20' }]}>
-        <Text variant="body" style={{ fontWeight: '600', color: text }}>
-          {t.chats}
-        </Text>
-        <IconButton
-          icon={Search}
-          size={22}
-          onPress={() => setSearchVisible(true)}
-        />
-      </View>
+      <PageHeader
+        title={t.chats}
+        right={
+          <IconButton
+            icon={Search}
+            size={24}
+            onPress={() => setSearchVisible(true)}
+          />
+        }
+      />
 
       {chats.length === 0 ? (
-        <View style={[styles.empty, { backgroundColor: background }]}>
-          <Text variant="body" style={{ color: text + '80' }}>
+        <View style={[styles.empty, { backgroundColor: colors.canvas }]}>
+          <Text variant="body-sm" tone="muted">
             {t.createFirstChat}
           </Text>
         </View>
@@ -122,17 +129,21 @@ export function ChatListScreen() {
             />
           )}
           showsVerticalScrollIndicator={false}
-          style={{ backgroundColor: background }}
+          style={{ backgroundColor: colors.canvas }}
         />
       )}
 
-      {/* FAB */}
-      <AnimatedPressable
-        style={[styles.fab, { backgroundColor: text }]}
-        onPress={handleCreate}
-        scaleTo={0.9}>
-        <Plus size={24} color={background} />
-      </AnimatedPressable>
+      <View style={[styles.fabShadow, fabShadow]}>
+        <AnimatedPressable
+          style={[styles.fab, { backgroundColor: colors.ink }]}
+          onPress={handleCreate}
+          scaleTo={0.9}
+          {...(Platform.OS === 'android'
+            ? { android_ripple: { color: colors.surfaceStrong, borderless: true, radius: 28 } }
+            : {})}>
+          <Plus size={24} color={colors.onInk} />
+        </AnimatedPressable>
+      </View>
 
       <ChatContextMenu
         visible={menuChat !== null}
@@ -166,32 +177,25 @@ export function ChatListScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fab: {
+  fabShadow: {
     position: 'absolute',
     right: 20,
     bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    overflow: 'hidden',
   },
 });

@@ -4,8 +4,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from 'lucide-react-native';
 
-import { Screen, Text, AlertDialog, type AlertButton } from '../../shared/ui';
-import { useTheme, getTheme, useLocale, type LocaleDictionary } from '../../shared/config';
+import { Screen, Text, AlertDialog, PageHeader, type AlertButton } from '../../shared/ui';
+import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
@@ -41,7 +41,7 @@ function formatImportResult(t: LocaleDictionary, r: ImportSummary): string {
 
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t, setLocale: setAppLocale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [dialog, setDialog] = useState<{
@@ -128,53 +128,51 @@ export function SettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text
-          variant="body"
-          style={[styles.title, { color: text }]}>
-          {t.settings}
-        </Text>
+        <PageHeader title={t.settings} />
 
         {/* Theme */}
-        <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
+        <Text variant="caption" style={[styles.sectionLabel, styles.firstSectionLabel]}>
           {t.sectionTheme}
         </Text>
-        <View style={[styles.section, { borderColor: text + '20' }]}>
+        <View>
           <SettingsRow
             label={currentTheme.name}
             icon={Palette}
             onPress={() => navigation.navigate('ThemePicker')}>
-            <ChevronRight size={18} color={text + '60'} />
+            <ChevronRight size={18} color={colors.muted} />
           </SettingsRow>
         </View>
 
         {/* Sound & Haptics */}
-        <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
+        <Text variant="caption" style={styles.sectionLabel}>
           {t.sectionSound}
         </Text>
-        <View style={[styles.section, { borderColor: text + '20' }]}>
+        <View>
           <SettingsRow label={t.sound} icon={Volume2}>
             <Switch
               value={settings.soundEnabled}
               onValueChange={(v) => handleToggle('soundEnabled', v)}
-              trackColor={{ false: text + '20', true: text + '80' }}
-              thumbColor={settings.soundEnabled ? text : text + '60'}
+              trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
+              thumbColor={settings.soundEnabled ? colors.onInk : colors.muted}
+              ios_backgroundColor={colors.switchTrackOff}
             />
           </SettingsRow>
           <SettingsRow label={t.hapticFeedback} icon={Vibrate}>
             <Switch
               value={settings.hapticEnabled}
               onValueChange={(v) => handleToggle('hapticEnabled', v)}
-              trackColor={{ false: text + '20', true: text + '80' }}
-              thumbColor={settings.hapticEnabled ? text : text + '60'}
+              trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
+              thumbColor={settings.hapticEnabled ? colors.onInk : colors.muted}
+              ios_backgroundColor={colors.switchTrackOff}
             />
           </SettingsRow>
         </View>
 
         {/* Language */}
-        <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
+        <Text variant="caption" style={styles.sectionLabel}>
           {t.sectionLanguage}
         </Text>
-        <View style={[styles.section, { borderColor: text + '20' }]}>
+        <View>
           <SettingsRow label={t.interfaceLanguage} icon={Languages}>
             <View style={styles.localeToggle}>
               {['ru', 'en'].map((loc) => (
@@ -184,16 +182,14 @@ export function SettingsScreen() {
                   style={[
                     styles.localePill,
                     {
-                      backgroundColor: settings.locale === loc ? text : 'transparent',
-                      borderColor: text,
+                      backgroundColor: settings.locale === loc ? colors.ink : 'transparent',
+                      borderColor: colors.ink,
                     },
                   ]}>
                   <Text
-                    style={{
-                      color: settings.locale === loc ? background : text,
-                      fontSize: 13,
-                      fontWeight: '600',
-                    }}>
+                    variant="caption"
+                    tone={settings.locale === loc ? 'onInk' : 'ink'}
+                    style={styles.localeLabel}>
                     {loc.toUpperCase()}
                   </Text>
                 </Pressable>
@@ -203,10 +199,10 @@ export function SettingsScreen() {
         </View>
 
         {/* Backup */}
-        <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
+        <Text variant="caption" style={styles.sectionLabel}>
           {t.sectionBackup}
         </Text>
-        <View style={[styles.section, { borderColor: text + '20' }]}>
+        <View>
           <SettingsRow
             label={t.backupToGoogleDrive}
             icon={Cloud}
@@ -343,12 +339,12 @@ export function SettingsScreen() {
         </View>
 
         {/* About */}
-        <Text variant="caption" style={[styles.sectionLabel, { color: text + '60' }]}>
+        <Text variant="caption" style={styles.sectionLabel}>
           {t.sectionAbout}
         </Text>
-        <View style={[styles.section, { borderColor: text + '20' }]}>
+        <View>
           <SettingsRow label={t.version} icon={Info}>
-            <Text variant="body" style={{ color: text + '60' }}>
+            <Text variant="body" tone="muted">
               {APP_VERSION}
             </Text>
           </SettingsRow>
@@ -370,24 +366,13 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: 40,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
-  },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.gutter,
+    paddingTop: spacing.sectionGap,
+    paddingBottom: spacing.sm,
   },
-  section: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  firstSectionLabel: {
+    paddingTop: spacing.sm,
   },
   localeToggle: {
     flexDirection: 'row',
@@ -396,7 +381,10 @@ const styles = StyleSheet.create({
   localePill: {
     paddingVertical: 4,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: radii.md,
     borderWidth: 1,
+  },
+  localeLabel: {
+    fontWeight: '600',
   },
 });

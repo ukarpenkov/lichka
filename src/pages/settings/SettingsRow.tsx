@@ -1,9 +1,9 @@
 import React from 'react';
-import { Pressable, View, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 
 import { Text } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, listRow } from '../../shared/config';
 
 export type SettingsRowProps = {
   label: string;
@@ -13,18 +13,23 @@ export type SettingsRowProps = {
 };
 
 export function SettingsRow({ label, icon: Icon, onPress, children }: SettingsRowProps) {
-  const { text } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      android_ripple={
+        Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+      }
       style={({ pressed }) => [
         styles.row,
-        { opacity: pressed ? 0.6 : 1 },
+        pressed && Platform.OS !== 'android'
+          ? { backgroundColor: colors.surfaceSoft }
+          : null,
       ]}>
       <View style={styles.left}>
-        {Icon && <Icon size={20} color={text} style={styles.icon} />}
+        {Icon && <Icon size={20} color={colors.ink} style={styles.icon} />}
         <Text variant="body">{label}</Text>
       </View>
       {children && <View style={styles.right}>{children}</View>}
@@ -37,8 +42,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: listRow.settings.paddingVertical,
+    paddingHorizontal: listRow.settings.paddingHorizontal,
+    minHeight: listRow.settings.minHeight,
   } satisfies ViewStyle,
   left: {
     flexDirection: 'row',

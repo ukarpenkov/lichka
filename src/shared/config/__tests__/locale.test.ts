@@ -32,6 +32,7 @@ describe('locale', () => {
         'cancel', 'save', 'done', 'error', 'loading', 'delete', 'edit',
         'today', 'yesterday', 'tomorrow',
         'chats', 'deleteChat', 'createFirstChat',
+        'scheduled', 'noScheduled',
         'settings', 'sectionTheme', 'sectionSound', 'sectionLanguage',
         'sectionBackup', 'sectionAbout',
         'sound', 'hapticFeedback', 'interfaceLanguage',

@@ -43,6 +43,7 @@ export interface LocaleDictionary {
   searchInChat: string;
 
   // Scheduled
+  scheduled: string;
   noScheduled: string;
   everyNMin: (n: number) => string;
 
@@ -179,16 +180,17 @@ export const ru: LocaleDictionary = {
   searchInChat: 'Поиск по чату...',
 
   // Scheduled
+  scheduled: 'Запланировано',
   noScheduled: 'Нет запланированных',
   everyNMin: (n) => `каждые ${n} мин`,
 
   // Settings
   settings: 'Настройки',
-  sectionTheme: 'ТЕМА',
-  sectionSound: 'ЗВУК И ТАКТИЛЬНОСТЬ',
-  sectionLanguage: 'ЯЗЫК',
-  sectionBackup: 'РЕЗЕРВНАЯ КОПИЯ',
-  sectionAbout: 'О ПРИЛОЖЕНИИ',
+  sectionTheme: 'Тема',
+  sectionSound: 'Звук и тактильность',
+  sectionLanguage: 'Язык',
+  sectionBackup: 'Резервная копия',
+  sectionAbout: 'О приложении',
   sound: 'Звук',
   hapticFeedback: 'Тактильная отдача',
   interfaceLanguage: 'Язык интерфейса',
@@ -315,16 +317,17 @@ export const en: LocaleDictionary = {
   searchInChat: 'Search in chat...',
 
   // Scheduled
+  scheduled: 'Scheduled',
   noScheduled: 'No scheduled messages',
   everyNMin: (n) => `every ${n} min`,
 
   // Settings
   settings: 'Settings',
-  sectionTheme: 'THEME',
-  sectionSound: 'SOUND & HAPTICS',
-  sectionLanguage: 'LANGUAGE',
-  sectionBackup: 'BACKUP',
-  sectionAbout: 'ABOUT',
+  sectionTheme: 'Theme',
+  sectionSound: 'Sound & haptics',
+  sectionLanguage: 'Language',
+  sectionBackup: 'Backup',
+  sectionAbout: 'About',
   sound: 'Sound',
   hapticFeedback: 'Haptic feedback',
   interfaceLanguage: 'Interface language',

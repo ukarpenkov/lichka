@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 import { Text, SharedElementAvatar, AnimatedPressable, Badge } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, listRow } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
 export type ChatListItemProps = {
@@ -13,7 +13,7 @@ export type ChatListItemProps = {
 };
 
 export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: ChatListItemProps) {
-  const { text } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Animated.View
@@ -22,12 +22,16 @@ export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: Ch
       <AnimatedPressable
         onPress={onPress}
         onLongPress={onLongPress}
-        pressStyle={{ opacity: 0.7 }}
-        style={[styles.row, { borderBottomColor: text + '15' }]}>
+        scaleTo={1}
+        pressStyle={{ backgroundColor: colors.surfaceSoft }}
+        style={styles.row}
+        {...(Platform.OS === 'android'
+          ? { android_ripple: { color: colors.surfaceSoft } }
+          : {})}>
         <View style={styles.avatarContainer}>
           <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
         </View>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text variant="title-sm" numberOfLines={1} style={styles.title}>
           {chat.title}
         </Text>
         {unreadCount > 0 && (
@@ -44,9 +48,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: listRow.chat.paddingHorizontal,
+    paddingVertical: listRow.chat.paddingVertical,
   },
   avatarContainer: {
     position: 'relative',
@@ -54,7 +57,6 @@ const styles = StyleSheet.create({
   title: {
     marginLeft: 12,
     flex: 1,
-    fontSize: 16,
   },
   badge: {
     marginLeft: 8,

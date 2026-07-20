@@ -11,6 +11,7 @@ import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
+import { withAlpha } from '../shared/lib/color';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
@@ -124,7 +125,7 @@ function buildNavTheme(text: string, background: string) {
       background: background,
       card: background,
       text: text,
-      border: text + '20',
+      border: withAlpha(text, 0.12),
       notification: text,
     },
     fonts: {
@@ -139,7 +140,7 @@ function buildNavTheme(text: string, background: string) {
 const TAB_ICONS = [MessageCircle, CalendarDays, Settings];
 
 function MainTabs() {
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const indexSV = useSharedValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const fromGestureRef = useRef(false);
@@ -187,10 +188,9 @@ function MainTabs() {
         activeIndex={activeIndex}
         onIndexChange={handleIndexChange}
         icons={TAB_ICONS}
-        activeColor={text}
-        inactiveColor={text + '60'}
-        backgroundColor={background}
-        borderColor={text + '20'}
+        activeColor={colors.ink}
+        inactiveColor={colors.muted}
+        backgroundColor={colors.canvas}
       />
     </MainTabsProvider>
   );

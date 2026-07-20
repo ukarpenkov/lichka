@@ -1,6 +1,7 @@
 export { Text, type AppTextProps } from './Text';
 export { Button, type ButtonProps } from './Button';
 export { IconButton, type IconButtonProps } from './IconButton';
+export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { Screen, type ScreenProps } from './Screen';
 export { Input, type InputProps } from './Input';
 export { Avatar, type AvatarProps } from './Avatar';

@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { NativeModules, Platform } from 'react-native';
 import { getDatabase } from '../db';
 import { getTheme, DEFAULT_LIGHT, type ThemePreset } from './theme';
+import { resolveSemanticColors, type SemanticColors } from './tokens';
 
 const SETTINGS_KEY = 'theme_preset_id';
 
@@ -9,13 +10,20 @@ interface ThemeContextValue {
   preset: ThemePreset;
   background: string;
   text: string;
+  colors: SemanticColors;
   setTheme: (id: string) => void;
 }
+
+const defaultColors = resolveSemanticColors(
+  DEFAULT_LIGHT.background,
+  DEFAULT_LIGHT.text,
+);
 
 const ThemeContext = createContext<ThemeContextValue>({
   preset: DEFAULT_LIGHT,
   background: DEFAULT_LIGHT.background,
   text: DEFAULT_LIGHT.text,
+  colors: defaultColors,
   setTheme: () => {},
 });
 
@@ -50,10 +58,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const colors = useMemo(
+    () => resolveSemanticColors(preset.background, preset.text),
+    [preset.background, preset.text],
+  );
+
   const value: ThemeContextValue = {
     preset,
     background: preset.background,
     text: preset.text,
+    colors,
     setTheme,
   };
 

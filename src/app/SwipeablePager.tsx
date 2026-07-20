@@ -158,7 +158,6 @@ export type PagerTabBarProps = {
   activeColor: string;
   inactiveColor: string;
   backgroundColor: string;
-  borderColor: string;
 };
 
 export function PagerTabBar({
@@ -168,7 +167,6 @@ export function PagerTabBar({
   activeColor,
   inactiveColor,
   backgroundColor,
-  borderColor,
 }: PagerTabBarProps) {
   const handlePress = useCallback(
     (i: number) => {
@@ -183,7 +181,6 @@ export function PagerTabBar({
         styles.tabBar,
         {
           backgroundColor,
-          borderTopColor: borderColor,
         },
       ]}>
       {icons.map((Icon, i) => {
@@ -218,7 +215,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     height: PAGER_TAB_BAR_HEIGHT,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
   // Три равные зоны: каждая занимает 1/3 ширины и всю высоту панели.
   tabButton: {

@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Bell, Repeat } from 'lucide-react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Bell, Repeat, Image as ImageIcon } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { AlarmClockIcon } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, listRow, radii } from '../../shared/config';
 import type { Message, MessageType } from '../../entities/message';
 
 export type ScheduledItemProps = {
@@ -14,16 +15,18 @@ export type ScheduledItemProps = {
   onPress: () => void;
 };
 
-const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, LucideIcon | typeof AlarmClockIcon> = {
   reminder: Bell,
-  alarm: undefined as any,
+  alarm: AlarmClockIcon,
   periodic: Repeat,
+  image: ImageIcon,
 };
 
 export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProps) {
-  const { text } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
-  const Icon = message.type === 'alarm' ? AlarmClockIcon : TYPE_ICON[message.type as keyof typeof TYPE_ICON];
+  const Icon =
+    message.type === 'simple' ? null : TYPE_ICON[message.type as Exclude<MessageType, 'simple'>];
   const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
   const timeText =
     message.type === 'periodic'
@@ -61,20 +64,24 @@ export function ScheduledItem({ message, chatTitle, onPress }: ScheduledItemProp
       layout={Layout.springify().damping(22).stiffness(180)}>
       <AnimatedPressable
         onPress={onPress}
-        pressStyle={{ opacity: 0.7 }}
-        style={[styles.row, { borderBottomColor: text + '15' }]}>
-        <View style={styles.iconWrap}>
-          {Icon && <Icon size={20} color={text} />}
+        scaleTo={1}
+        pressStyle={{ backgroundColor: colors.surfaceSoft }}
+        style={styles.row}
+        {...(Platform.OS === 'android'
+          ? { android_ripple: { color: colors.surfaceSoft } }
+          : {})}>
+        <View style={[styles.iconWrap, { backgroundColor: colors.surfaceStrong }]}>
+          {Icon ? <Icon size={20} color={colors.ink} /> : null}
         </View>
         <View style={styles.content}>
-          <Text numberOfLines={1} style={styles.body}>
+          <Text variant="title-sm" numberOfLines={1}>
             {message.body}
           </Text>
           <View style={styles.meta}>
-            <Text variant="caption" style={{ color: text + '99' }}>
+            <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
               {chatTitle}
             </Text>
-            <Text variant="caption" style={{ color: text + '60' }}>
+            <Text variant="body-sm" tone="mutedSoft">
               {timeText}
             </Text>
           </View>
@@ -88,14 +95,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: listRow.scheduled.paddingHorizontal,
+    paddingVertical: listRow.scheduled.paddingVertical,
   },
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -103,12 +109,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  body: {
-    fontSize: 15,
-  },
   meta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 2,
+    gap: 8,
+  },
+  metaChat: {
+    flex: 1,
   },
 });

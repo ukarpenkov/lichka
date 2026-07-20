@@ -1,18 +1,45 @@
 import React from 'react';
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
 import { useTheme } from '../config';
+import { typography, type TextVariant } from '../config/tokens';
 
 export type AppTextProps = TextProps & {
-  variant?: 'body' | 'caption';
+  variant?: TextVariant;
+  /** Override default ink color with a semantic tone. */
+  tone?: 'ink' | 'body' | 'muted' | 'mutedSoft' | 'onInk';
 };
 
-export function Text({ variant = 'body', style, ...rest }: AppTextProps) {
-  const { text } = useTheme();
+const DEFAULT_TONE: Partial<Record<TextVariant, AppTextProps['tone']>> = {
+  display: 'ink',
+  title: 'ink',
+  'title-sm': 'ink',
+  body: 'ink',
+  'body-sm': 'muted',
+  caption: 'muted',
+  micro: 'ink',
+  button: 'ink',
+};
 
-  const base: TextStyle =
-    variant === 'caption'
-      ? { fontSize: 12, lineHeight: 16 }
-      : { fontSize: 16, lineHeight: 24 };
+export function Text({
+  variant = 'body',
+  tone,
+  style,
+  ...rest
+}: AppTextProps) {
+  const { colors } = useTheme();
+  const resolvedTone = tone ?? DEFAULT_TONE[variant] ?? 'ink';
 
-  return <RNText style={[base, { color: text }, style]} {...rest} />;
+  const colorMap = {
+    ink: colors.ink,
+    body: colors.body,
+    muted: colors.muted,
+    mutedSoft: colors.mutedSoft,
+    onInk: colors.onInk,
+  } as const;
+
+  const base: TextStyle = typography[variant];
+
+  return (
+    <RNText style={[base, { color: colorMap[resolvedTone] }, style]} {...rest} />
+  );
 }

@@ -62,6 +62,9 @@ const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
+    // Android Material minimum 48dp; covers iOS 44pt comfortably.
+    minWidth: 48,
+    minHeight: 48,
     padding: 8,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 
-import { Screen, Text } from '../../shared/ui';
+import { Screen, Text, PageHeader } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { getScheduledMessages, disableFiredMessages, type Message } from '../../entities/message';
 import { getChatById } from '../../entities/chat';
@@ -18,7 +18,7 @@ type ScheduledEntry = {
 const REFRESH_INTERVAL = 15_000;
 
 export function ScheduledScreen() {
-  const { text } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -58,9 +58,11 @@ export function ScheduledScreen() {
 
   return (
     <Screen>
+      <PageHeader title={t.scheduled} />
+
       {entries.length === 0 ? (
         <View style={styles.empty}>
-          <Text variant="body" style={{ color: text + '80' }}>
+          <Text variant="body-sm" tone="muted">
             {t.noScheduled}
           </Text>
         </View>
@@ -68,6 +70,7 @@ export function ScheduledScreen() {
         <FlatList
           data={entries}
           keyExtractor={(item) => item.message.id}
+          style={{ backgroundColor: colors.canvas }}
           renderItem={({ item }) => (
             <ScheduledItem
               message={item.message}
