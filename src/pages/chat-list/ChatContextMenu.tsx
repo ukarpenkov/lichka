@@ -1,8 +1,8 @@
 import React from 'react';
-import { Modal, Pressable, View, StyleSheet } from 'react-native';
+import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
 import { Pencil, Trash2 } from 'lucide-react-native';
 import { Text } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, radii } from '../../shared/config';
 
 export type ChatContextMenuProps = {
   visible: boolean;
@@ -13,30 +13,51 @@ export type ChatContextMenuProps = {
 };
 
 export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose }: ChatContextMenuProps) {
-  const { background, text } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <View style={[styles.menu, { backgroundColor: background, borderColor: text + '30' }]}>
+      <Pressable style={[styles.backdrop, { backgroundColor: colors.scrim }]} onPress={onClose}>
+        <View style={[styles.menu, { backgroundColor: colors.canvas }]}>
           <Pressable
-            onPress={() => { onClose(); onEdit(); }}
-            style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
-            <Pencil size={18} color={text} />
-            <Text>{t.edit}</Text>
+            onPress={() => {
+              onClose();
+              onEdit();
+            }}
+            android_ripple={
+              Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+            }
+            style={({ pressed }) => [
+              styles.item,
+              pressed && Platform.OS !== 'android'
+                ? { backgroundColor: colors.surfaceSoft }
+                : null,
+            ]}>
+            <Pencil size={18} color={colors.ink} />
+            <Text variant="body">{t.edit}</Text>
           </Pressable>
-          {canDelete && (
-            <>
-              <View style={[styles.divider, { backgroundColor: text + '20' }]} />
-              <Pressable
-                onPress={() => { onClose(); onDelete(); }}
-                style={({ pressed }) => [styles.item, { opacity: pressed ? 0.7 : 1 }]}>
-                <Trash2 size={18} color="#FF3B30" />
-                <Text style={{ color: '#FF3B30' }}>{t.delete}</Text>
-              </Pressable>
-            </>
-          )}
+          {canDelete ? (
+            <Pressable
+              onPress={() => {
+                onClose();
+                onDelete();
+              }}
+              android_ripple={
+                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+              }
+              style={({ pressed }) => [
+                styles.item,
+                pressed && Platform.OS !== 'android'
+                  ? { backgroundColor: colors.surfaceSoft }
+                  : null,
+              ]}>
+              <Trash2 size={18} color={colors.destructive} />
+              <Text variant="body" style={{ color: colors.destructive }}>
+                {t.delete}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </Pressable>
     </Modal>
@@ -46,14 +67,12 @@ export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   menu: {
     width: 220,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.md,
     overflow: 'hidden',
   },
   item: {
@@ -62,8 +81,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     gap: 12,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
+    minHeight: 56,
   },
 });

@@ -82,7 +82,7 @@ export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
   const { chatId, messageId } = route.params;
-  const { background, text } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const tabBarHeight = PAGER_TAB_BAR_HEIGHT;
@@ -330,10 +330,10 @@ export function ChatRoomScreen() {
   // undefined = ещё грузим, null = чат не найден
   if (chat === undefined) {
     return (
-      <View style={[styles.empty, { backgroundColor: background }]}>
+      <View style={[styles.empty, { backgroundColor: colors.canvas }]}>
         <View style={{ height: insets.top }} />
         <View style={styles.loadingCenter}>
-          <ActivityIndicator size="large" color={text} />
+          <ActivityIndicator size="large" color={colors.ink} />
         </View>
       </View>
     );
@@ -341,10 +341,10 @@ export function ChatRoomScreen() {
 
   if (chat === null) {
     return (
-      <View style={[styles.empty, { backgroundColor: background }]}>
+      <View style={[styles.empty, { backgroundColor: colors.canvas }]}>
         <View style={{ height: insets.top }} />
         <View style={styles.loadingCenter}>
-          <Text variant="body" style={{ color: text + '80', textAlign: 'center' }}>
+          <Text variant="body-sm" tone="muted" style={{ textAlign: 'center' }}>
             {t.chatNotFound}
           </Text>
         </View>
@@ -353,9 +353,9 @@ export function ChatRoomScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: background }]}>
+    <View style={[styles.root, { backgroundColor: colors.canvas }]}>
       <View onLayout={handleHeaderLayout}>
-        <View style={{ height: insets.top, backgroundColor: background }} />
+        <View style={{ height: insets.top, backgroundColor: colors.canvas }} />
         <ChatHeader
           chat={chat}
           onBack={() => navigation.goBack()}
@@ -379,7 +379,7 @@ export function ChatRoomScreen() {
           exiting={FadeOut.duration(150)}
           style={[
             styles.stickyDate,
-            { top: headerAreaHeight, backgroundColor: background },
+            { top: headerAreaHeight, backgroundColor: colors.canvas },
           ]}>
           <DateSeparator date={stickyDate} />
         </Animated.View>

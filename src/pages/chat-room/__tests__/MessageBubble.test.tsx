@@ -23,7 +23,26 @@ jest.mock('../../../shared/lib/haptics', () => ({
 }));
 
 jest.mock('../../../shared/config/ThemeProvider', () => ({
-  useTheme: () => ({ text: '#000', background: '#FFF' }),
+  useTheme: () => ({
+    text: '#000000',
+    background: '#FFFFFF',
+    colors: {
+      canvas: '#FFFFFF',
+      ink: '#000000',
+      body: 'rgba(0, 0, 0, 0.9)',
+      muted: 'rgba(0, 0, 0, 0.6)',
+      mutedSoft: 'rgba(0, 0, 0, 0.38)',
+      surfaceSoft: 'rgba(0, 0, 0, 0.06)',
+      surfaceStrong: 'rgba(0, 0, 0, 0.12)',
+      onInk: '#FFFFFF',
+      badge: '#E53935',
+      onBadge: '#FFFFFF',
+      destructive: '#E53935',
+      scrim: 'rgba(0, 0, 0, 0.45)',
+      switchTrackOff: 'rgba(0, 0, 0, 0.2)',
+      switchTrackOn: 'rgba(0, 0, 0, 0.85)',
+    },
+  }),
 }));
 
 jest.mock('../../../shared/config/LocaleProvider', () => ({

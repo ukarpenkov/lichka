@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, View, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useTheme, useLocale, formatScheduledAt, formatInterval } from '../../shared/config';
+import { useTheme, useLocale, formatScheduledAt, formatInterval, radii } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function MessageEditor({ visible, message, onSave, onClose }: Props) {
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
 
   const [body, setBody] = useState('');
@@ -69,33 +69,43 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable style={styles.backdrop} onPress={onClose}>
-          <Pressable style={[styles.card, { backgroundColor: background }]} onPress={() => {}}>
-            <Text variant="body" style={[styles.title, { color: text }]}>
+        <Pressable style={[styles.backdrop, { backgroundColor: colors.scrim }]} onPress={onClose}>
+          <Pressable
+            style={[styles.card, { backgroundColor: colors.canvas }]}
+            onPress={() => {}}>
+            <Text variant="title" style={styles.title}>
               {t.editMessage}
             </Text>
 
             <TextInput
-              style={[styles.input, { color: text, borderColor: `${text}33` }]}
+              style={[
+                styles.input,
+                {
+                  color: colors.ink,
+                  backgroundColor: colors.surfaceSoft,
+                },
+              ]}
               value={body}
               onChangeText={setBody}
               multiline
               maxLength={4000}
               placeholder={t.messagePlaceholder}
-              placeholderTextColor={`${text}66`}
+              placeholderTextColor={colors.mutedSoft}
               autoFocus
             />
 
             {isScheduled && (
               <View style={styles.timeRow}>
                 <View style={styles.timeInfo}>
-                  <CalendarClock size={16} color={`${text}99`} />
-                  <Text variant="caption" style={{ color: `${text}99` }}>
+                  <CalendarClock size={16} color={colors.muted} />
+                  <Text variant="body-sm" tone="muted">
                     {scheduledAt ? formatScheduledAt(scheduledAt, locale) : t.notSet}
                   </Text>
                 </View>
                 <Pressable onPress={() => setDatePickerVisible(true)} style={styles.changeBtn}>
-                  <Text variant="caption" style={{ color: '#4A9EFF' }}>{t.change}</Text>
+                  <Text variant="button" tone="ink">
+                    {t.change}
+                  </Text>
                 </Pressable>
               </View>
             )}
@@ -103,23 +113,29 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
             {isPeriodic && (
               <View style={styles.timeRow}>
                 <View style={styles.timeInfo}>
-                  <Repeat size={16} color={`${text}99`} />
-                  <Text variant="caption" style={{ color: `${text}99` }}>
+                  <Repeat size={16} color={colors.muted} />
+                  <Text variant="body-sm" tone="muted">
                     {intervalMinutes ? formatInterval(intervalMinutes, t) : t.notSet}
                   </Text>
                 </View>
                 <Pressable onPress={() => setPeriodPickerVisible(true)} style={styles.changeBtn}>
-                  <Text variant="caption" style={{ color: '#4A9EFF' }}>{t.change}</Text>
+                  <Text variant="button" tone="ink">
+                    {t.change}
+                  </Text>
                 </Pressable>
               </View>
             )}
 
             <View style={styles.buttons}>
               <Pressable onPress={onClose} style={styles.btn}>
-                <Text variant="body" style={{ color: `${text}99` }}>{t.cancel}</Text>
+                <Text variant="button" tone="muted">
+                  {t.cancel}
+                </Text>
               </Pressable>
               <Pressable onPress={handleSave} style={styles.btn}>
-                <Text variant="body" style={{ color: '#4A9EFF', fontWeight: '700' }}>{t.save}</Text>
+                <Text variant="button" tone="ink">
+                  {t.save}
+                </Text>
               </Pressable>
             </View>
           </Pressable>
@@ -147,23 +163,19 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
     width: '85%',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     padding: 20,
   },
   title: {
-    fontWeight: '700',
-    fontSize: 18,
     marginBottom: 16,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 16,
@@ -183,6 +195,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   changeBtn: {
     paddingVertical: 4,

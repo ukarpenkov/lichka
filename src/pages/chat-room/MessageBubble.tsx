@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, View, AccessibilityInfo } from 'react-native';
+import { Pressable, StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
-import { Bell, Repeat } from 'lucide-react-native';
-import { useTheme, useLocale } from '../../shared/config';
+import { Bell, Repeat, Image as ImageIcon } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
+import { useTheme, useLocale, radii } from '../../shared/config';
+import { withAlpha } from '../../shared/lib/color';
 import { Text, AlarmClockIcon } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { ImageMessage } from '../../widgets/image-message';
@@ -45,15 +47,15 @@ function isImageMessage(message: Message): boolean {
   }
 }
 
-const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, typeof Bell> = {
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, LucideIcon | typeof AlarmClockIcon | null> = {
   reminder: Bell,
-  alarm: undefined as any,
+  alarm: AlarmClockIcon,
   periodic: Repeat,
-  image: undefined as any,
+  image: ImageIcon,
 };
 
 export function MessageBubble({ message, highlighted, onLongPress, onImagePress }: MessageBubbleProps) {
-  const { text } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const reduceMotionRef = useRef(false);
 
@@ -70,7 +72,10 @@ export function MessageBubble({ message, highlighted, onLongPress, onImagePress 
   const isEdited = message.updatedAt > message.createdAt;
   const isVoice = useMemo(() => isVoiceMessage(message), [message]);
   const isImage = useMemo(() => isImageMessage(message), [message]);
-  const TypeIcon = message.type === 'alarm' ? AlarmClockIcon : TYPE_ICON[message.type as keyof typeof TYPE_ICON];
+  const TypeIcon =
+    message.type === 'simple' ? null : TYPE_ICON[message.type as Exclude<MessageType, 'simple'>];
+
+  const bubbleFill = highlighted ? withAlpha(colors.ink, 0.18) : colors.surfaceStrong;
 
   const handleLongPress = useCallback(() => {
     if (!reduceMotionRef.current && getSettings().hapticEnabled) {
@@ -87,11 +92,14 @@ export function MessageBubble({ message, highlighted, onLongPress, onImagePress 
       <Pressable
         onLongPress={handleLongPress}
         delayLongPress={300}
+        android_ripple={
+          Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+        }
         style={({ pressed }) => [
           styles.bubble,
           {
-            backgroundColor: highlighted ? text + '25' : text + '12',
-            opacity: pressed ? 0.85 : 1,
+            backgroundColor: bubbleFill,
+            opacity: pressed && Platform.OS !== 'android' ? 0.92 : 1,
           },
           isImage && styles.bubbleImage,
         ]}
@@ -101,20 +109,20 @@ export function MessageBubble({ message, highlighted, onLongPress, onImagePress 
         ) : isImage ? (
           <ImageMessage message={message} onPress={onImagePress} />
         ) : (
-          <Text variant="body" style={styles.body}>
+          <Text variant="body" tone="ink">
             {message.body}
           </Text>
         )}
         <View style={styles.metaRow}>
           {isEdited && (
-            <Text variant="caption" style={[styles.meta, styles.edited, { color: text + '60' }]}>
+            <Text variant="micro" tone="muted" style={styles.edited}>
               {t.edited}
             </Text>
           )}
-          {!isVoice && !isImage && TypeIcon && (
-            <TypeIcon size={11} color={text + '50'} />
-          )}
-          <Text variant="caption" style={[styles.meta, { color: text + '50' }]}>
+          {!isVoice && !isImage && TypeIcon ? (
+            <TypeIcon size={11} color={colors.mutedSoft} />
+          ) : null}
+          <Text variant="micro" tone="mutedSoft">
             {formatTime(message.createdAt)}
           </Text>
         </View>
@@ -126,7 +134,7 @@ export function MessageBubble({ message, highlighted, onLongPress, onImagePress 
 const styles = StyleSheet.create({
   bubble: {
     maxWidth: '80%',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginVertical: 2,
@@ -135,19 +143,12 @@ const styles = StyleSheet.create({
   bubbleImage: {
     overflow: 'hidden',
   },
-  body: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: 4,
     gap: 6,
-  },
-  meta: {
-    fontSize: 11,
   },
   edited: {
     fontStyle: 'italic',

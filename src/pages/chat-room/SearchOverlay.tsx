@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, FlatList, TextInput, StyleSheet } from 'react-native';
+import { View, FlatList, TextInput, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { X } from 'lucide-react-native';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, spacing, radii, listRow } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 };
 
 export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -51,35 +51,41 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
     <Animated.View
       entering={SlideInDown.duration(200).springify().damping(20).stiffness(200)}
       exiting={FadeOut.duration(150)}
-      style={[styles.container, { backgroundColor: background }]}>
-      {/* Search input */}
-      <View style={[styles.inputRow, { borderBottomColor: text + '20' }]}>
+      style={[styles.container, { backgroundColor: colors.canvas }]}>
+      <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}
           value={query}
           onChangeText={setQuery}
           placeholder={t.searchInChat}
-          placeholderTextColor={text + '55'}
-          style={[styles.input, { color: text, borderColor: text + '33' }]}
+          placeholderTextColor={colors.mutedSoft}
+          style={[
+            styles.input,
+            {
+              color: colors.ink,
+              backgroundColor: colors.surfaceSoft,
+            },
+          ]}
           returnKeyType="search"
           autoCorrect={false}
         />
-        <IconButton icon={X} size={22} onPress={onClose} />
+        <IconButton icon={X} size={24} onPress={onClose} />
       </View>
 
-      {/* Results */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <AnimatedPressable
-            style={[styles.resultItem, { borderBottomColor: text + '10' }]}
-            onPress={() => handleSelect(item)}>
-            <HighlightedBody
-              text={item.highlighted}
-              style={{ color: text }}
-            />
-            <Text variant="caption" style={{ color: text + '40', marginTop: 2 }}>
+            scaleTo={1}
+            pressStyle={{ backgroundColor: colors.surfaceSoft }}
+            style={styles.resultItem}
+            onPress={() => handleSelect(item)}
+            {...(Platform.OS === 'android'
+              ? { android_ripple: { color: colors.surfaceSoft } }
+              : {})}>
+            <HighlightedBody text={item.highlighted} />
+            <Text variant="body-sm" tone="mutedSoft" style={styles.resultTime}>
               {formatTime(item.created_at)}
             </Text>
           </AnimatedPressable>
@@ -87,7 +93,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
         ListEmptyComponent={
           query.trim() ? (
             <View style={styles.emptyResult}>
-              <Text variant="body" style={{ color: text + '60' }}>
+              <Text variant="body-sm" tone="muted">
                 {t.nothingFound}
               </Text>
             </View>
@@ -111,23 +117,24 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 56,
+    paddingHorizontal: spacing.gutter,
     gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   input: {
     flex: 1,
-    height: 38,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 15,
+    height: 40,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    lineHeight: 20,
   },
   resultItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: listRow.chat.paddingHorizontal,
+    paddingVertical: listRow.chat.paddingVertical,
+  },
+  resultTime: {
+    marginTop: 2,
   },
   emptyResult: {
     paddingTop: 40,

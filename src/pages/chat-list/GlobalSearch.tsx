@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, FlatList, TextInput, StyleSheet } from 'react-native';
+import { View, FlatList, TextInput, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from 'lucide-react-native';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, formatShortMonth } from '../../shared/config';
+import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
 
@@ -19,7 +19,7 @@ type Props = {
 
 export function GlobalSearch({ visible, onClose }: Props) {
   const navigation = useNavigation<Nav>();
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t, locale } = useLocale();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -76,47 +76,46 @@ export function GlobalSearch({ visible, onClose }: Props) {
     <Animated.View
       entering={SlideInDown.duration(200).springify().damping(20).stiffness(200)}
       exiting={FadeOut.duration(150)}
-      style={[styles.container, { backgroundColor: background }]}>
-      {/* Search input */}
-      <View
-        style={[
-          styles.inputRow,
-          { borderBottomColor: text + '20' },
-        ]}>
+      style={[styles.container, { backgroundColor: colors.canvas }]}>
+      <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}
           autoFocus
           value={query}
           onChangeText={setQuery}
           placeholder={t.searchMessages}
-          placeholderTextColor={text + '55'}
-          style={[styles.input, { color: text, borderColor: text + '33' }]}
+          placeholderTextColor={colors.mutedSoft}
+          style={[
+            styles.input,
+            {
+              color: colors.ink,
+              backgroundColor: colors.surfaceSoft,
+            },
+          ]}
           returnKeyType="search"
           autoCorrect={false}
         />
-        <IconButton icon={X} size={22} onPress={onClose} />
+        <IconButton icon={X} size={24} onPress={onClose} />
       </View>
 
-      {/* Results */}
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <AnimatedPressable
-            style={[styles.resultItem, { borderBottomColor: text + '10' }]}
-            onPress={() => handleSelect(item)}>
-            <HighlightedBody
-              text={item.highlighted}
-              style={{ color: text }}
-            />
+            scaleTo={1}
+            pressStyle={{ backgroundColor: colors.surfaceSoft }}
+            style={styles.resultItem}
+            onPress={() => handleSelect(item)}
+            {...(Platform.OS === 'android'
+              ? { android_ripple: { color: colors.surfaceSoft } }
+              : {})}>
+            <HighlightedBody text={item.highlighted} />
             <View style={styles.resultMeta}>
-              <Text
-                variant="caption"
-                style={{ color: text + '60' }}
-                numberOfLines={1}>
+              <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
                 {item.chat_title}
               </Text>
-              <Text variant="caption" style={{ color: text + '40' }}>
+              <Text variant="body-sm" tone="mutedSoft">
                 {formatTime(item.created_at)}
               </Text>
             </View>
@@ -125,7 +124,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
         ListEmptyComponent={
           query.trim() ? (
             <View style={styles.emptyResult}>
-              <Text variant="body" style={{ color: text + '60' }}>
+              <Text variant="body-sm" tone="muted">
                 {t.nothingFound}
               </Text>
             </View>
@@ -149,29 +148,31 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    height: 56,
+    paddingHorizontal: spacing.gutter,
     gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   input: {
     flex: 1,
-    height: 38,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    fontSize: 15,
+    height: 40,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    lineHeight: 20,
   },
   resultItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: listRow.chat.paddingHorizontal,
+    paddingVertical: listRow.chat.paddingVertical,
     gap: 4,
   },
   resultMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
+  },
+  metaChat: {
+    flex: 1,
   },
   emptyResult: {
     paddingTop: 40,

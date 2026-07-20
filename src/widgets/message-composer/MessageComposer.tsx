@@ -53,7 +53,7 @@ function formatDuration(ms: number): string {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function MessageComposer({ chatId, onSent }: Props) {
-  const { text, background } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const keyboardHeight = useKeyboardHeight();
   const [body, setBody] = useState('');
@@ -333,22 +333,22 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   if (isRecording) {
     return (
-    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
-              <Animated.View style={[styles.recDot, { backgroundColor: '#ff4444' }, dotAnimatedStyle]} />
+              <Animated.View style={[styles.recDot, { backgroundColor: colors.destructive }, dotAnimatedStyle]} />
               <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
-              <Text variant="caption" style={{ color: text + '50', marginLeft: 8 }}>
+              <Text variant="caption" tone="mutedSoft" style={{ marginLeft: 8 }}>
                 ← {t.cancel}
               </Text>
             </Animated.View>
           </GestureDetector>
           <View style={styles.recordingActions}>
-            <IconButton icon={X} size={22} color={`${text}99`} onPress={handleCancelRecord} />
+            <IconButton icon={X} size={22} color={colors.muted} onPress={handleCancelRecord} />
             <Animated.View style={stopBtnStyle}>
-              <Pressable style={[styles.stopBtn, { backgroundColor: text }]} onPress={handleMicPressOut}>
-                <Square size={16} color={background} fill={background} />
+              <Pressable style={[styles.stopBtn, { backgroundColor: colors.ink }]} onPress={handleMicPressOut}>
+                <Square size={16} color={colors.onInk} fill={colors.onInk} />
               </Pressable>
             </Animated.View>
           </View>
@@ -359,27 +359,27 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   return (
     <>
-    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: background, borderTopColor: `${text}15` }]}>
+    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       {imagePreview ? (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: imagePreview.uri }} style={styles.imagePreview} />
           <Pressable style={styles.removeImageBtn} onPress={handleRemoveImage}>
-            <X size={18} color={text} />
+            <X size={18} color={colors.ink} />
           </Pressable>
         </View>
       ) : null}
-      <View testID="composer-input-wrapper" style={[styles.inputWrapper, { borderColor: `${text}33` }]}>
+      <View testID="composer-input-wrapper" style={[styles.inputWrapper, { backgroundColor: colors.surfaceSoft }]}>
           <TextInput
-            style={[styles.input, { color: text }]}
+            style={[styles.input, { color: colors.ink }]}
             placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
-            placeholderTextColor={`${text}66`}
+            placeholderTextColor={colors.mutedSoft}
             multiline
             textAlignVertical="center"
             value={body}
             onChangeText={setBody}
             maxLength={4000}
           />
-          <IconButton icon={Paperclip} size={22} color={`${text}99`} onPress={handleAttachImage} onPressIn={triggerHapticTap} />
+          <IconButton icon={Paperclip} size={22} color={colors.muted} onPress={handleAttachImage} onPressIn={triggerHapticTap} />
         </View>
         <View style={styles.actions}>
           {!imagePreview && (
@@ -387,13 +387,13 @@ export function MessageComposer({ chatId, onSent }: Props) {
               onLongPress={handleMicLongPress}
               delayLongPress={300}
               style={styles.micBtn}>
-              <MicIcon size={22} color={`${text}99`} />
+              <MicIcon size={22} color={colors.muted} />
             </AnimatedPressable>
           )}
-          <IconButton icon={Repeat} size={22} color={`${text}99`} onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClockIcon} size={22} color={`${text}99`} onPress={handleAlarm} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Bell} size={22} color={`${text}99`} onPress={handleReminder} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Send} size={22} color={text} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Repeat} size={22} color={colors.muted} onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={AlarmClockIcon} size={22} color={colors.muted} onPress={handleAlarm} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Bell} size={22} color={colors.muted} onPress={handleReminder} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Send} size={22} color={colors.ink} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
         </View>
       </Animated.View>
 
@@ -453,7 +453,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 12,
@@ -461,7 +460,6 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
     borderRadius: 20,
     paddingLeft: 16,
     paddingRight: 8,

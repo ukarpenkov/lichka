@@ -20,6 +20,7 @@ export {
   type TextVariant,
   type SemanticColors,
 } from './tokens';
+export { withAlpha } from '../lib/color';
 
 export {
   type Locale,
