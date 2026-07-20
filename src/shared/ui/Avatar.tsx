@@ -59,10 +59,23 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
     }
 
     return (
-      <Image
-        source={{ uri: `file://${resolveMediaPath(avatarPath)}` }}
-        style={[styles.image, { width: size, height: size, borderRadius: radius }]}
-      />
+      <View
+        style={[
+          styles.icon,
+          {
+            width: size,
+            height: size,
+            borderRadius: radius,
+            backgroundColor: text + '15',
+            overflow: 'hidden',
+          },
+        ]}>
+        <Image
+          source={{ uri: `file://${resolveMediaPath(avatarPath)}` }}
+          style={{ width: size, height: size, borderRadius: radius }}
+          resizeMode="cover"
+        />
+      </View>
     );
   }
 

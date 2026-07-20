@@ -7,14 +7,17 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import RNFS from 'react-native-fs';
 import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
 import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
-import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
+import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
+import { createPixelContourAvatarFromBase64 } from '../../features/pixel-avatar';
 
 import { IconGrid } from './IconGrid';
 
@@ -33,9 +36,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [pendingPngBase64, setPendingPngBase64] = useState<string | null>(null);
   const [iconAvatar, setIconAvatar] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [processingAvatar, setProcessingAvatar] = useState(false);
   const [dialog, setDialog] = useState<{
     title?: string;
     message?: string;
@@ -52,19 +57,49 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         const path = editChat.avatarPath;
         if (path && (isChatIconAvatar(path) || (!path.includes('/') && !path.includes('\\') && !path.startsWith('file:')))) {
           setAvatarUri(null);
+          setPendingPngBase64(null);
           setIconAvatar(path);
         } else {
           setAvatarUri(path ? `file://${resolveMediaPath(path)}` : null);
+          setPendingPngBase64(null);
           setIconAvatar(null);
         }
       } else {
         setTitle('');
         setAvatarUri(null);
+        setPendingPngBase64(null);
         setIconAvatar(null);
       }
       setShowIconPicker(false);
+      setProcessingAvatar(false);
     }
   }, [visible, editChat]);
+
+  const applyPixelAvatar = useCallback(
+    async (uri: string, base64?: string) => {
+      setProcessingAvatar(true);
+      try {
+        let b64 = base64;
+        if (!b64) {
+          b64 = await RNFS.readFile(uri.replace('file://', ''), 'base64');
+        }
+        const result = createPixelContourAvatarFromBase64(b64);
+        setAvatarUri(result.dataUri);
+        setPendingPngBase64(result.dataUri);
+        setIconAvatar(null);
+      } catch (e: any) {
+        console.error('pixel avatar error:', e);
+        setDialog({
+          title: t.error,
+          message: e?.message ?? t.photoPickError,
+          buttons: [{ text: t.done }],
+        });
+      } finally {
+        setProcessingAvatar(false);
+      }
+    },
+    [t],
+  );
 
   const handlePickImage = useCallback(() => {
     isPickingImage.current = true;
@@ -74,6 +109,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         maxWidth: 512,
         maxHeight: 512,
         quality: 0.85 as import('react-native-image-picker').PhotoQuality,
+        includeBase64: true,
       },
       (response) => {
         isPickingImage.current = false;
@@ -85,12 +121,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         }
         const asset = response.assets?.[0];
         if (asset?.uri) {
-          setAvatarUri(asset.uri);
-          setIconAvatar(null);
+          void applyPixelAvatar(asset.uri, asset.base64);
         }
       },
     );
-  }, [t]);
+  }, [t, applyPixelAvatar]);
 
   const handleAvatarTap = useCallback(() => {
     if (iconAvatar) {
@@ -103,27 +138,30 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const handleIconSelect = useCallback((iconId: string) => {
     setIconAvatar(iconId);
     setAvatarUri(null);
+    setPendingPngBase64(null);
     setShowIconPicker(false);
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!canSave || saving) return;
+    if (!canSave || saving || processingAvatar) return;
     setSaving(true);
 
     try {
       let avatarPath: string | null = editChat?.avatarPath ?? null;
+      const chatId = editChat?.id || generateId();
 
-      if (avatarUri) {
-        const chatId = editChat?.id || generateId();
-        avatarPath = await saveAvatar(avatarUri, chatId);
+      if (pendingPngBase64) {
+        avatarPath = await saveAvatarPng(pendingPngBase64, chatId);
       } else if (iconAvatar) {
         avatarPath = iconAvatar;
-      } else if (!avatarUri && !iconAvatar && editChat) {
+      } else if (editChat) {
         avatarPath = editChat.avatarPath;
       }
 
       if (isEdit && editChat) {
         updateChat(editChat.id, { title: title.trim(), avatarPath });
+      } else if (pendingPngBase64) {
+        createChat(title.trim(), avatarPath, { id: chatId });
       } else {
         createChat(title.trim(), avatarPath);
       }
@@ -136,15 +174,25 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
+  }, [canSave, saving, processingAvatar, title, pendingPngBase64, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
 
   const avatarContent = () => {
+    if (processingAvatar) {
+      return (
+        <View style={[styles.avatarPlaceholder, { backgroundColor: text + '15', borderColor: text + '33' }]}>
+          <ActivityIndicator color={text} />
+        </View>
+      );
+    }
     if (avatarUri) {
       return (
-        <Image
-          source={{ uri: avatarUri }}
-          style={[styles.avatarImage, { borderColor: text + '33' }]}
-        />
+        <View style={[styles.avatarIcon, { backgroundColor: text + '15' }]}>
+          <Image
+            source={{ uri: avatarUri }}
+            style={[styles.avatarImage, { borderColor: text + '33' }]}
+            resizeMode="cover"
+          />
+        </View>
       );
     }
     if (iconAvatar) {
@@ -226,12 +274,12 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
                 <Button
                   title={isEdit ? t.save : t.create}
                   onPress={handleSave}
-                  disabled={!canSave || saving}
+                  disabled={!canSave || saving || processingAvatar}
                   style={[
                     styles.saveButton,
                     {
                       backgroundColor: text,
-                      opacity: !canSave || saving ? 0.4 : 1,
+                      opacity: !canSave || saving || processingAvatar ? 0.4 : 1,
                     },
                   ]}
                 />
