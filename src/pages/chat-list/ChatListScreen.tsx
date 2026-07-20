@@ -58,7 +58,27 @@ export function ChatListScreen() {
   useOnTabVisible(0, refresh, [refresh]);
 
   useEffect(() => {
-    setChatStackNavigation(navigation);
+    setChatStackNavigation({
+      navigate: (name, params) => navigation.navigate(name, params),
+      getCurrentRoute: () => {
+        const state = navigation.getState();
+        const route = state.routes[state.index];
+        if (!route) return undefined;
+        return {
+          name: route.name,
+          params: route.params as { chatId?: string; messageId?: string } | undefined,
+        };
+      },
+      // setParams работает только когда ChatList в фокусе; для ChatRoom
+      // диспатчим через navigate с merge — см. openChatRoom в mainTabsApi.
+      setParams: (params) => {
+        navigation.navigate({
+          name: 'ChatRoom',
+          params,
+          merge: true,
+        });
+      },
+    });
     return () => setChatStackNavigation(null);
   }, [navigation]);
 

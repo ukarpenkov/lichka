@@ -1,7 +1,7 @@
 # Notification opens Chat list instead of specific chat
 
 **Date:** 2026-07-03
-**Status:** fixed
+**Status:** fixed (re-fixed 2026-07-20 — warm-start emit)
 
 ## Root Cause
 
@@ -10,6 +10,8 @@
 2. **No `messageId` in reminder notification intents.** The native `NotificationHelper.buildReminderNotification()` did not include `messageId` in the `contentIntent` extras, making it impossible to scroll to the specific message that triggered the notification.
 
 3. **`emitNotificationOpen` didn't include `messageId`.** Warm-start notification events only carried `chatId`, missing the `messageId` information.
+
+4. **(2026-07-20) Warm-start emit used `MutableMap` instead of `WritableMap`.** React Native's `Arguments.fromJavaArgs` throws on `LinkedHashMap`, so `onNotificationOpen` never reached JS when the app was already running.
 
 ## Fix
 
@@ -25,7 +27,9 @@
 
 - `src/shared/lib/notificationChannels.ts` — Added `getInitialMessageId()` bridge
 
+- `src/app/mainTabsApi.ts` / `ChatRoomScreen` (2026-07-20) — `focusNonce` + merge navigate when ChatRoom already open
+
 ### Native layer
 - `NotificationHelper.kt` — Added `EXTRA_MESSAGE_ID` to reminder notification content intents
-- `NotificationModule.kt` — Added `getInitialMessageId()` method; updated `emitNotificationOpen()` to accept optional `messageId`; `consumeInitialChatId()` now also removes `EXTRA_MESSAGE_ID`
-- `MainActivity.kt` — Passes `messageId` to `emitNotificationOpen()` in `onNewIntent()`
+- `NotificationModule.kt` — Added `getInitialMessageId()` method; updated `emitNotificationOpen()` to accept optional `messageId`; `consumeInitialChatId()` now also removes `EXTRA_MESSAGE_ID`; (2026-07-20) emit via `Arguments.createMap()`, pending intent capture
+- `MainActivity.kt` — Passes `messageId` to `emitNotificationOpen()` in `onNewIntent()`; (2026-07-20) capture extras in `onCreate`

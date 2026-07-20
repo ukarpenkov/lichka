@@ -5,7 +5,7 @@ export type RootStackParamList = {
 
 export type ChatStackParamList = {
   ChatList: undefined;
-  ChatRoom: { chatId: string; messageId?: string };
+  ChatRoom: { chatId: string; messageId?: string; focusNonce?: number };
 };
 
 export type SettingsStackParamList = {

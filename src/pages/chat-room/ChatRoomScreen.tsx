@@ -82,7 +82,7 @@ function buildListItems(messages: Message[]): ListItem[] {
 export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
-  const { chatId, messageId } = route.params;
+  const { chatId, messageId, focusNonce } = route.params;
   const { colors } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
@@ -217,7 +217,7 @@ export function ChatRoomScreen() {
 
   useEffect(() => {
     scrolledToMessageRef.current = null;
-  }, [messageId]);
+  }, [messageId, focusNonce]);
 
   useEffect(() => {
     return () => {
@@ -263,7 +263,7 @@ export function ChatRoomScreen() {
       });
     }, 200);
     return () => clearTimeout(timer);
-  }, [messageId, listItems]);
+  }, [messageId, focusNonce, listItems]);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 

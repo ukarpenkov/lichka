@@ -16,6 +16,7 @@ class MainActivity : ReactActivity() {
    */
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(null)
+    NotificationModule.captureNotificationOpen(intent)
   }
 
   /**
@@ -34,6 +35,7 @@ class MainActivity : ReactActivity() {
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     setIntent(intent)
+    NotificationModule.captureNotificationOpen(intent)
     val chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
     if (chatId != null) {
       val messageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)

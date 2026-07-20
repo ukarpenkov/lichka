@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -121,18 +122,30 @@ class NotificationModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getInitialChatId(promise: Promise) {
-        val chatId = reactApplicationContext.currentActivity?.intent?.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
+        val chatId =
+            pendingOpenChatId
+                ?: reactApplicationContext.currentActivity
+                    ?.intent
+                    ?.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
         promise.resolve(chatId)
     }
 
     @ReactMethod
     fun getInitialMessageId(promise: Promise) {
-        val messageId = reactApplicationContext.currentActivity?.intent?.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
+        val messageId =
+            if (pendingOpenChatId != null) {
+                pendingOpenMessageId
+            } else {
+                reactApplicationContext.currentActivity
+                    ?.intent
+                    ?.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
+            }
         promise.resolve(messageId)
     }
 
     @ReactMethod
     fun consumeInitialChatId() {
+        clearPendingOpen()
         reactApplicationContext.currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_CHAT_ID)
         reactApplicationContext.currentActivity?.intent?.removeExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
     }
@@ -149,15 +162,23 @@ class NotificationModule(reactContext: ReactApplicationContext) :
 
     fun emitNotificationOpen(chatId: String, messageId: String?) {
         val reactContext = reactApplicationContext
-        if (reactContext.hasActiveReactInstance()) {
-            val payload: MutableMap<String, String?> = mutableMapOf("chatId" to chatId)
-            if (messageId != null) {
-                payload["messageId"] = messageId
-            }
-            reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                .emit("onNotificationOpen", payload)
+        if (!reactContext.hasActiveReactInstance()) {
+            return
         }
+        // WritableMap only — HashMap/MutableMap throws in Arguments.fromJavaArgs
+        // and the warm-start tap never reaches JS.
+        val payload =
+            Arguments.createMap().apply {
+                putString("chatId", chatId)
+                if (messageId != null) {
+                    putString("messageId", messageId)
+                }
+            }
+        reactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            .emit("onNotificationOpen", payload)
+        // Delivered via event — don't leave pending for a later cold-start read.
+        clearPendingOpen()
     }
 
     private fun registerChannels(context: Context) {
@@ -191,5 +212,27 @@ class NotificationModule(reactContext: ReactApplicationContext) :
         const val NAME = "NotificationModule"
         const val CHANNEL_REMINDERS = "reminders"
         const val CHANNEL_ALARMS = "alarms"
+
+        @Volatile
+        private var pendingOpenChatId: String? = null
+
+        @Volatile
+        private var pendingOpenMessageId: String? = null
+
+        /** Сохраняет extras из intent до готовности JS (cold start). */
+        @JvmStatic
+        fun captureNotificationOpen(intent: Intent?) {
+            if (intent == null || !intent.hasExtra(AlarmScheduler.EXTRA_CHAT_ID)) {
+                return
+            }
+            pendingOpenChatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
+            pendingOpenMessageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
+        }
+
+        @JvmStatic
+        fun clearPendingOpen() {
+            pendingOpenChatId = null
+            pendingOpenMessageId = null
+        }
     }
 }

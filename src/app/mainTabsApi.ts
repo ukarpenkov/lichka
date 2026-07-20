@@ -15,15 +15,43 @@ let api: MainTabsApi | null = null;
 let pendingChat: { chatId: string; messageId?: string } | null = null;
 
 /** Навигация вложенного стека чатов, устанавливается из ChatListScreen. */
-let chatStackNav: { navigate: (name: 'ChatRoom', params: { chatId: string; messageId?: string }) => void } | null = null;
+type ChatRoomParams = { chatId: string; messageId?: string; focusNonce?: number };
+
+type ChatStackNav = {
+  navigate: (name: 'ChatRoom', params: ChatRoomParams) => void;
+  getCurrentRoute?: () => { name: string; params?: { chatId?: string; messageId?: string } } | undefined;
+  setParams?: (params: ChatRoomParams) => void;
+};
+
+let chatStackNav: ChatStackNav | null = null;
 
 function flushPending() {
   if (api && pendingChat && chatStackNav) {
     const p = pendingChat;
     pendingChat = null;
     api.switchToTab(0);
-    chatStackNav.navigate('ChatRoom', { chatId: p.chatId, messageId: p.messageId });
+    openChatRoom(p.chatId, p.messageId);
   }
+}
+
+function openChatRoom(chatId: string, messageId?: string) {
+  if (!chatStackNav) return;
+
+  // focusNonce форсирует повторный scroll/highlight при повторном тапе
+  // по уведомлению, когда ChatRoom уже открыт с тем же messageId.
+  const params: ChatRoomParams = { chatId, messageId, focusNonce: Date.now() };
+
+  const current = chatStackNav.getCurrentRoute?.();
+  if (
+    current?.name === 'ChatRoom' &&
+    current.params?.chatId === chatId &&
+    chatStackNav.setParams
+  ) {
+    chatStackNav.setParams(params);
+    return;
+  }
+
+  chatStackNav.navigate('ChatRoom', params);
 }
 
 export function setMainTabsApi(next: MainTabsApi | null) {
@@ -35,9 +63,7 @@ export function getMainTabsApi(): MainTabsApi | null {
   return api;
 }
 
-export function setChatStackNavigation(
-  nav: { navigate: (name: 'ChatRoom', params: { chatId: string; messageId?: string }) => void } | null,
-) {
+export function setChatStackNavigation(nav: ChatStackNav | null) {
   chatStackNav = nav;
   flushPending();
 }
@@ -45,7 +71,7 @@ export function setChatStackNavigation(
 export function navigateToChat(chatId: string, messageId?: string) {
   if (api && chatStackNav) {
     api.switchToTab(0);
-    chatStackNav.navigate('ChatRoom', { chatId, messageId });
+    openChatRoom(chatId, messageId);
   } else {
     pendingChat = { chatId, messageId };
   }
