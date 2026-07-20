@@ -63,7 +63,7 @@ describe('chatRepository', () => {
 
     it('should create system chat with fixed id', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
-      const chat = createChat('Saved messages', 'social-rewards-certified-ribbon', {
+      const chat = createChat('Saved', 'social-rewards-certified-ribbon', {
         id: 'saved-messages',
         isSystem: true,
       });
@@ -260,7 +260,7 @@ describe('chatRepository', () => {
         rows: [
           {
             id: 'saved-messages',
-            title: 'Saved messages',
+            title: 'Saved',
             avatar_path: 'social-rewards-certified-ribbon',
             is_system: 1,
             created_at: '2026-01-01T00:00:00.000Z',
@@ -288,7 +288,7 @@ describe('chatRepository', () => {
         'INSERT INTO chats (id, title, avatar_path, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
         [
           'saved-messages',
-          'Saved messages',
+          'Saved',
           'social-rewards-certified-ribbon',
           1,
           expect.any(String),
@@ -304,7 +304,7 @@ describe('chatRepository', () => {
           rows: [
             {
               id: 'saved-messages',
-              title: 'Saved messages',
+              title: 'Saved',
               avatar_path: 'social-rewards-certified-ribbon',
               is_system: 1,
               created_at: '2026-01-01T00:00:00.000Z',
@@ -327,7 +327,7 @@ describe('chatRepository', () => {
     it('should migrate legacy bookmark emoji to ribbon icon', () => {
       const legacyRow = {
         id: 'saved-messages',
-        title: 'Saved messages',
+        title: 'Saved',
         avatar_path: '🔖',
         is_system: 1,
         created_at: '2026-01-01T00:00:00.000Z',
@@ -345,7 +345,36 @@ describe('chatRepository', () => {
       expect(mockExecuteSync).toHaveBeenCalledWith(
         'UPDATE chats SET title = ?, avatar_path = ?, updated_at = ? WHERE id = ?',
         [
-          'Saved messages',
+          'Saved',
+          'social-rewards-certified-ribbon',
+          expect.any(String),
+          'saved-messages',
+        ],
+      );
+    });
+
+    it('should migrate legacy Saved messages title to Saved', () => {
+      const legacyRow = {
+        id: 'saved-messages',
+        title: 'Saved messages',
+        avatar_path: 'social-rewards-certified-ribbon',
+        is_system: 1,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      };
+
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [{ cnt: 1 }] })
+        .mockReturnValueOnce({ rows: [legacyRow] })
+        .mockReturnValueOnce({ rows: [legacyRow] })
+        .mockReturnValueOnce({ rows: [] });
+
+      seedDefaultChat();
+
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'UPDATE chats SET title = ?, avatar_path = ?, updated_at = ? WHERE id = ?',
+        [
+          'Saved',
           'social-rewards-certified-ribbon',
           expect.any(String),
           'saved-messages',

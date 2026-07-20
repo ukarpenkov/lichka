@@ -56,6 +56,26 @@ const SWIPE_VELOCITY = 420;
 
 const SPRING = { damping: 22, stiffness: 220 };
 
+/**
+ * Day ring is denser (≈12°/step vs 30° for months) — damp finger→rotation
+ * and require >½ step before committing the next day.
+ */
+const DAY_ROTATION_GAIN = 0.62;
+const DAY_STEP_THRESHOLD = 0.62;
+
+function wrapIndex(idx: number, count: number): number {
+  'worklet';
+  return ((idx % count) + count) % count;
+}
+
+/** Shortest signed delta from `from` to continuous index space. */
+function shortestDelta(continuous: number, from: number, count: number): number {
+  'worklet';
+  let d = continuous - from;
+  d -= count * Math.round(d / count);
+  return d;
+}
+
 type Props = {
   visible: boolean;
   value: Date;
@@ -380,7 +400,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
 
       const isDay = activeRing.value === RING_DAY;
       if (isDay) {
-        dayRotation.value += delta;
+        dayRotation.value += delta * DAY_ROTATION_GAIN;
       } else {
         monthRotation.value += delta;
       }
@@ -388,16 +408,24 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       const step = isDay ? dayStep(dayCountSV.value) : MONTH_STEP;
       const count = isDay ? dayCountSV.value : MONTH_COUNT;
       const rot = isDay ? dayRotation.value : monthRotation.value;
-      const idx = ((Math.round(-rot / step) % count) + count) % count;
 
       if (isDay) {
+        const continuous = -rot / step;
+        const d = shortestDelta(continuous, lastDayIdx.value, count);
+        let idx = lastDayIdx.value;
+        if (Math.abs(d) >= DAY_STEP_THRESHOLD) {
+          idx = wrapIndex(lastDayIdx.value + Math.round(d), count);
+        }
         if (idx !== lastDayIdx.value) {
           lastDayIdx.value = idx;
           runOnJS(onStepDay)(idx);
         }
-      } else if (idx !== lastMonthIdx.value) {
-        lastMonthIdx.value = idx;
-        runOnJS(onStepMonth)(idx);
+      } else {
+        const idx = wrapIndex(Math.round(-rot / step), count);
+        if (idx !== lastMonthIdx.value) {
+          lastMonthIdx.value = idx;
+          runOnJS(onStepMonth)(idx);
+        }
       }
     })
     .onTouchesUp((_e, manager) => {
@@ -410,9 +438,23 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       const step = isDay ? dayStep(dayCountSV.value) : MONTH_STEP;
       const count = isDay ? dayCountSV.value : MONTH_COUNT;
       const rot = isDay ? dayRotation : monthRotation;
-      const snapped = Math.round(rot.value / step) * step;
-      rot.value = withSpring(snapped, { damping: 22, stiffness: 220 });
-      const idx = ((Math.round(-snapped / step) % count) + count) % count;
+
+      let idx: number;
+      let snapped: number;
+      if (isDay) {
+        const continuous = -rot.value / step;
+        const d = shortestDelta(continuous, lastDayIdx.value, count);
+        idx =
+          Math.abs(d) < DAY_STEP_THRESHOLD
+            ? lastDayIdx.value
+            : wrapIndex(lastDayIdx.value + Math.round(d), count);
+        snapped = -idx * step;
+      } else {
+        snapped = Math.round(rot.value / step) * step;
+        idx = wrapIndex(Math.round(-snapped / step), count);
+      }
+
+      rot.value = withSpring(snapped, SPRING);
       runOnJS(onGestureEnd)(isDay ? RING_DAY : RING_MONTH, idx);
       activeRing.value = RING_NONE;
       manager.end();

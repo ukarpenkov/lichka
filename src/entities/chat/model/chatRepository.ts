@@ -3,7 +3,9 @@ import { generateId } from '../../../shared/lib';
 import type { Chat } from './types';
 
 const DEFAULT_CHAT_ID = 'saved-messages';
-const DEFAULT_CHAT_TITLE = 'Saved messages';
+const DEFAULT_CHAT_TITLE = 'Saved';
+/** Previous default title — migrated to DEFAULT_CHAT_TITLE on launch. */
+const LEGACY_DEFAULT_CHAT_TITLE = 'Saved messages';
 /** Streamline Pixel: social-rewards-certified-ribbon */
 const DEFAULT_CHAT_ICON = 'social-rewards-certified-ribbon';
 const LEGACY_DEFAULT_CHAT_EMOJI = '🔖';
@@ -93,7 +95,7 @@ export function seedDefaultChat(): void {
   const result = db.executeSync('SELECT COUNT(*) AS cnt FROM chats');
   const count = result.rows[0]?.cnt as number;
   if (count > 0) {
-    migrateLegacyDefaultChatIcon();
+    migrateLegacyDefaultChat();
     return;
   }
 
@@ -103,11 +105,23 @@ export function seedDefaultChat(): void {
   });
 }
 
-/** Replace legacy bookmark emoji on Saved messages with the ribbon pixel icon. */
-function migrateLegacyDefaultChatIcon(): void {
+/** Icon + short title migrations for the system Saved chat. */
+function migrateLegacyDefaultChat(): void {
   const chat = getChatById(DEFAULT_CHAT_ID);
-  if (!chat || chat.avatarPath !== LEGACY_DEFAULT_CHAT_EMOJI) return;
-  updateChat(DEFAULT_CHAT_ID, { avatarPath: DEFAULT_CHAT_ICON });
+  if (!chat) return;
+
+  const nextIcon =
+    chat.avatarPath === LEGACY_DEFAULT_CHAT_EMOJI
+      ? DEFAULT_CHAT_ICON
+      : undefined;
+  const nextTitle =
+    chat.title === LEGACY_DEFAULT_CHAT_TITLE ? DEFAULT_CHAT_TITLE : undefined;
+
+  if (nextIcon === undefined && nextTitle === undefined) return;
+  updateChat(DEFAULT_CHAT_ID, {
+    ...(nextTitle !== undefined ? { title: nextTitle } : {}),
+    ...(nextIcon !== undefined ? { avatarPath: nextIcon } : {}),
+  });
 }
 
 function mapRow(row: Record<string, unknown>): Chat {
