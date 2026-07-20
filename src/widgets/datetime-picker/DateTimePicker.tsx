@@ -19,7 +19,13 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { useTheme, useLocale, getMonthLabels, getFullMonthNames } from '../../shared/config';
+import {
+  useTheme,
+  useLocale,
+  getMonthLabels,
+  getFullMonthNames,
+  fonts,
+} from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { hapticTap } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
@@ -31,7 +37,9 @@ import { makeGeometry } from './geometry';
 import { daysInMonth } from './circularMath';
 import Svg, { Circle } from 'react-native-svg';
 
+/** Fixed picker accents (outside theme pair; same idea as badge/destructive). */
 const ACCENT = '#4A9EFF';
+const TODAY = '#2EAF6E';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RING_SIZE = Math.min(SCREEN_WIDTH - 40, 312);
 const GEO = makeGeometry(RING_SIZE);
@@ -55,7 +63,7 @@ function dayStep(count: number): number {
 }
 
 export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
-  const { text, background } = useTheme();
+  const { text, background, colors } = useTheme();
   const { t, locale } = useLocale();
 
   const monthShort = useMemo(() => getMonthLabels(locale), [locale]);
@@ -348,9 +356,10 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 onLongPress={handleOpenYearModal}
               />
               <Text
+                variant="body"
                 style={{
                   fontSize: 16,
-                  fontWeight: '500',
+                  fontFamily: fonts.medium,
                   color: `${text}66`,
                   marginTop: 4,
                 }}
@@ -361,6 +370,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 style={[
                   {
                     fontSize: 44,
+                    fontFamily: fonts.bold,
                     fontWeight: '700',
                     color: dayActive ? ACCENT : text,
                     lineHeight: 48,
@@ -434,25 +444,28 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
             <View style={[styles.footer, { borderTopColor: `${text}0F` }]}>
               <Pressable
                 onPress={handleCancel}
-                style={[styles.footerBtn, styles.footerBtnCancel, { backgroundColor: `${text}0D` }]}
+                style={[styles.footerBtn, styles.footerBtnCancel]}
+                hitSlop={8}
               >
-                <Text style={{ color: text, fontSize: 15, fontWeight: '600' }}>
+                <Text variant="button" style={{ color: colors.destructive }}>
                   {t.cancel}
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleToday}
-                style={[styles.footerBtn, styles.footerBtnToday, { backgroundColor: `${ACCENT}1A` }]}
+                style={[styles.footerBtn, styles.footerBtnToday]}
+                hitSlop={8}
               >
-                <Text style={{ color: ACCENT, fontSize: 15, fontWeight: '600' }}>
+                <Text variant="button" style={{ color: TODAY }}>
                   {t.today}
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handleConfirm}
-                style={[styles.footerBtn, styles.footerBtnDone, { backgroundColor: ACCENT }]}
+                style={[styles.footerBtn, styles.footerBtnDone]}
+                hitSlop={8}
               >
-                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                <Text variant="button" style={{ color: ACCENT }}>
                   {t.done}
                 </Text>
               </Pressable>
@@ -524,8 +537,7 @@ const styles = StyleSheet.create({
   },
   footerBtn: {
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
   footerBtnCancel: {
@@ -536,6 +548,6 @@ const styles = StyleSheet.create({
   },
   footerBtnDone: {
     flex: 0,
-    minWidth: 100,
+    minWidth: 72,
   },
 });

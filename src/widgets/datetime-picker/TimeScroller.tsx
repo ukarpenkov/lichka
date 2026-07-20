@@ -8,6 +8,7 @@ import {
   type NativeScrollEvent,
   AccessibilityInfo,
 } from 'react-native';
+import { fonts } from '../../shared/config';
 import { Text } from '../../shared/ui';
 
 const ITEM_HEIGHT = 46;
@@ -265,6 +266,7 @@ export function TimeScroller({
             style={{
               fontSize: 24,
               lineHeight: ITEM_HEIGHT,
+              fontFamily: isCenter ? fonts.bold : fonts.regular,
               fontWeight: isCenter ? '700' : '400',
               color: isCenter ? accentColor : `${textColor}55`,
               textAlign: 'center',
@@ -374,6 +376,7 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   colon: {
+    fontFamily: fonts.semiBold,
     fontSize: 28,
     fontWeight: '600',
     paddingHorizontal: 6,
