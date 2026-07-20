@@ -67,12 +67,13 @@ describe('processPixelContourBuffer', () => {
     const src = circleOnWhite(64, 20, [200, 40, 40]);
     const opts = resolvePixelAvatarOptions({
       pixelGrid: 24,
-      outputSize: 48,
+      outputSize: 96,
       colorMode: 'color',
-      edgeThreshold: 0.15,
+      edgeThreshold: 0.2,
+      edgeDensity: 0.08,
     });
     const out = processPixelContourBuffer(src, opts);
-    expect(out.width).toBe(48);
+    expect(out.width).toBe(96);
 
     let transparent = 0;
     let opaque = 0;
@@ -88,9 +89,10 @@ describe('processPixelContourBuffer', () => {
     const src = circleOnWhite(64, 20, [200, 40, 40]);
     const opts = resolvePixelAvatarOptions({
       pixelGrid: 24,
-      outputSize: 48,
+      outputSize: 96,
       colorMode: 'mono',
-      edgeThreshold: 0.15,
+      edgeThreshold: 0.2,
+      edgeDensity: 0.08,
     });
     const out = processPixelContourBuffer(src, opts);
 
@@ -107,20 +109,38 @@ describe('processPixelContourBuffer', () => {
     const src = circleOnWhite(64, 20, [220, 30, 30]);
     const opts = resolvePixelAvatarOptions({
       pixelGrid: 24,
-      outputSize: 48,
+      outputSize: 96,
       colorMode: 'color',
       posterizeLevels: 4,
-      edgeThreshold: 0.15,
+      edgeThreshold: 0.2,
+      edgeDensity: 0.08,
     });
     const out = processPixelContourBuffer(src, opts);
 
-    let colored = 0;
+    let ink = 0;
     for (let i = 0; i < out.data.length; i += 4) {
-      if (out.data[i + 3]! > 0 && (out.data[i]! > 0 || out.data[i + 1]! > 0 || out.data[i + 2]! > 0)) {
-        colored++;
-      }
+      if (out.data[i + 3]! > 0) ink++;
     }
-    expect(colored).toBeGreaterThan(0);
+    expect(ink).toBeGreaterThan(0);
+  });
+
+  it('should leave most of the canvas empty (contour-only, not a filled mush)', () => {
+    const src = circleOnWhite(96, 28, [30, 30, 30]);
+    const opts = resolvePixelAvatarOptions({
+      pixelGrid: 48,
+      outputSize: 96,
+      colorMode: 'mono',
+      edgeThreshold: 0.35,
+    });
+    const out = processPixelContourBuffer(src, opts);
+    let opaque = 0;
+    const total = out.width * out.height;
+    for (let i = 0; i < out.data.length; i += 4) {
+      if (out.data[i + 3]! > 0) opaque++;
+    }
+    // Contours should be a minority of pixels (reference-like)
+    expect(opaque).toBeGreaterThan(10);
+    expect(opaque / total).toBeLessThan(0.35);
   });
 });
 

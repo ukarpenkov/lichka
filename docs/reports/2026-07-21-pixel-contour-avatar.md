@@ -48,4 +48,8 @@
 - Ошибка `expected JPEG` была **маскирующей**: любой сбой декода показывался так же — даже для реального JPG.
 - Частые причины на JPG/Android: base64 через глобальный `atob`/`Buffer`, non-contiguous buffer, original full-res вместо resized uri.
 - Harden: `buffer` package для base64, contiguous copy + `useTArray` для jpeg-js, чтение temp/`content://`, понятные ошибки с hex-head.
-- Fix `pako.deflate of undefined`: Metro ломал `import pako from 'pako'` — PNG encode через `upng-js.encode`.
+## Fix 2026-07-21 (quality — «каша»)
+
+- Старый пайплайн: слабый порог + цветные блоки по любому краю → шум.
+- Новый: blur → Sobel → NMS (тонкие линии) → высокий порог → despeckle → grid-snap с `edgeDensity` → тёмный ink-цвет.
+- Defaults: grid 48, threshold 0.42, output 192; контуры редкие, как на референсе.
