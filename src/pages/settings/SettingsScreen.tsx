@@ -1,10 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, View, Switch, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, View, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
-import { Screen, Text, AlertDialog, PageHeader, type AlertButton } from '../../shared/ui';
+import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
@@ -152,18 +152,12 @@ export function SettingsScreen() {
             <Switch
               value={settings.soundEnabled}
               onValueChange={(v) => handleToggle('soundEnabled', v)}
-              trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
-              thumbColor={settings.soundEnabled ? colors.onInk : colors.muted}
-              ios_backgroundColor={colors.switchTrackOff}
             />
           </SettingsRow>
           <SettingsRow label={t.hapticFeedback} icon={Vibrate}>
             <Switch
               value={settings.hapticEnabled}
               onValueChange={(v) => handleToggle('hapticEnabled', v)}
-              trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
-              thumbColor={settings.hapticEnabled ? colors.onInk : colors.muted}
-              ios_backgroundColor={colors.switchTrackOff}
             />
           </SettingsRow>
         </View>

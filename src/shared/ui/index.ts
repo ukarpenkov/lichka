@@ -9,6 +9,7 @@ export { HighlightedBody, parseHighlights } from './HighlightedBody';
 export { AnimatedPressable } from './AnimatedPressable';
 export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';
 export { AlertDialog, type AlertButton } from './AlertDialog';
+export { Switch, type SwitchProps } from './Switch';
 export {
   AlarmClockIcon,
   MicIcon,

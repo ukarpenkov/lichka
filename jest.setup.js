@@ -85,7 +85,8 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     default: {
-      View: ({ children, style }) => React.createElement('View', { style }, children),
+      View: ({ children, style, ...rest }) =>
+        React.createElement(require('react-native').View, { style, ...rest }, children),
       createAnimatedComponent: (C) => C,
       useSharedValue: (v) => ({ value: v }),
       useAnimatedStyle: (fn) => ({}),
