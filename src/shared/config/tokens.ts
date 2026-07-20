@@ -4,12 +4,12 @@ import { withAlpha } from '../lib/color';
 
 /**
  * Typography faces (Android family = filename without extension).
- * - Press Start 2P — pixel display for root page titles (Latin + Cyrillic).
+ * - Press Start 2P — pixel display for screen titles (Latin + Cyrillic).
  * - JetBrains Mono — UI / body / chat stream.
  * Weight for Mono = file, not faux fontWeight.
  */
 export const fonts = {
-  /** Pixel display — PageHeader titles. https://fonts.google.com/specimen/Press+Start+2P */
+  /** Pixel display — page / chat / stack titles. https://fonts.google.com/specimen/Press+Start+2P */
   display: 'PressStart2P-Regular',
   regular: 'JetBrainsMono-Regular',
   medium: 'JetBrainsMono-Medium',
@@ -79,7 +79,7 @@ function weightToNumeric(weight: FontWeightKey): TextStyle['fontWeight'] {
 /** Typography — Press Start 2P display + JetBrains Mono UI. */
 export const typography = {
   /**
-   * Root tab titles — pixel display.
+   * Screen titles — pixel display (tabs, chat header, stack screens).
    * Size kept modest: Press Start 2P is very wide («Запланировано» must fit).
    */
   display: {

@@ -33,7 +33,7 @@
 
 ## 3. Типографика
 
-**Display:** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (OFL) — pixel, page titles корневых табов; **кириллица есть**.  
+**Display:** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (OFL) — pixel, screen titles (табы, чат, ThemePicker); **кириллица есть**.  
 **UI / body:** JetBrains Mono (OFL) — Regular / Medium / SemiBold / Bold.  
 Файлы: `assets/fonts/` + `android/app/src/main/assets/fonts/`.
 
@@ -41,8 +41,8 @@
 
 | Токен | Size | Face | Где |
 |-------|------|------|-----|
-| `display` | 18 | Press Start 2P | Page titles корневых табов |
-| `title` | 17 | JetBrains SemiBold | Chat header |
+| `display` | 18 | Press Start 2P | Page titles, ChatHeader, ThemePicker |
+| `title` | 17 | JetBrains SemiBold | Secondary titles |
 | `title-sm` | 15 | JetBrains Medium | Chat list / settings row |
 | `body` | 16 | JetBrains Regular | Сообщения, формы |
 | `body-sm` | 13 | JetBrains Regular | Meta secondary |
@@ -115,8 +115,8 @@ Prefix `>` обязателен. Mono input. 4 send icons без смены API.
 
 | Компонент | Контракт |
 |-----------|----------|
-| `PageHeader` | mono `display`, height 56 |
-| `ChatHeader` | mono `title` |
+| `PageHeader` | pixel `display`, height 56 |
+| `ChatHeader` | pixel `display` |
 | `MessageLine` | log row |
 | `MessageComposer` | `>` + mono |
 | `Text` | все variants → JetBrains Mono |

@@ -13,7 +13,7 @@ import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
-import { fonts } from '../shared/config/tokens';
+import { fonts, typography } from '../shared/config/tokens';
 import { withAlpha } from '../shared/lib/color';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
@@ -149,7 +149,14 @@ function SettingsStackScreen() {
           <SettingsStack.Screen
             name="ThemePicker"
             component={ThemePickerScreen}
-            options={{ title: t.themeTitle }}
+            options={{
+              title: t.themeTitle,
+              headerTitleStyle: {
+                fontFamily: fonts.display,
+                fontSize: typography.display.fontSize,
+                fontWeight: '400',
+              },
+            }}
           />
         </SettingsStack.Navigator>
       </BaseNavigationContainer>

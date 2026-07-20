@@ -114,8 +114,8 @@
 
 | Токен | Size | Face | Где |
 |-------|------|------|-----|
-| `display` | 18 | Press Start 2P | Page titles корневых табов |
-| `title` | 17 | JetBrains SemiBold | Chat header title |
+| `display` | 18 | Press Start 2P | Page titles, chat header, ThemePicker |
+| `title` | 17 | JetBrains SemiBold | Secondary titles (если не display) |
 | `title-sm` | 15–16 | JetBrains Medium | Имя чата в списке, settings row |
 | `body` | 15–16 | JetBrains Regular | Текст сообщений, формы |
 | `body-sm` | 13–14 | JetBrains Regular | Meta secondary |
@@ -127,8 +127,7 @@
 ### 6.2 Иерархия на экране
 
 ```
-display (Press Start 2P) →  «Чаты» / «Запланировано» / «Настройки»
-title (JetBrains)        →  имя чата в header
+display (Press Start 2P) →  «Чаты» / имя чата / «Тема оформления»
 body (JetBrains)         →  текст сообщения
 mono-meta                →  [10:39:21]  и прочая meta
 ```

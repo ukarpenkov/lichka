@@ -12,7 +12,7 @@ type ChatHeaderProps = {
   onSearch: () => void;
 };
 
-/** In-chat header: back + avatar/title + search. Same quiet chrome as PageHeader — no hairline. */
+/** In-chat header: back + avatar/title + search. Pixel title, quiet chrome — no hairline. */
 export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderProps) {
   const { colors } = useTheme();
 
@@ -37,7 +37,7 @@ export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderP
           avatarPath={chat.avatarPath}
           size={36}
         />
-        <Text variant="title" numberOfLines={1} style={styles.title}>
+        <Text variant="display" numberOfLines={1} style={styles.title}>
           {chat.title}
         </Text>
       </Pressable>
