@@ -3,6 +3,7 @@ import { View, Image, StyleSheet } from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../config';
 import { resolveMediaPath } from '../lib';
+import { PixelIcon, isChatIconAvatar } from './pixel';
 
 export type AvatarProps = {
   title: string;
@@ -10,8 +11,8 @@ export type AvatarProps = {
   size?: number;
 };
 
-function isEmojiAvatar(path: string): boolean {
-  return !path.includes('/') && !path.includes('\\') && !path.startsWith('file:');
+function isFileAvatar(path: string): boolean {
+  return path.includes('/') || path.includes('\\') || path.startsWith('file:');
 }
 
 export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
@@ -20,7 +21,25 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
   const letter = title.charAt(0).toUpperCase() || '?';
 
   if (avatarPath) {
-    if (isEmojiAvatar(avatarPath)) {
+    if (isChatIconAvatar(avatarPath)) {
+      return (
+        <View
+          style={[
+            styles.icon,
+            {
+              width: size,
+              height: size,
+              borderRadius: radius,
+              backgroundColor: text + '15',
+            },
+          ]}>
+          <PixelIcon name={avatarPath} color={text} size={size * 0.5} />
+        </View>
+      );
+    }
+
+    if (!isFileAvatar(avatarPath)) {
+      // Legacy emoji avatar
       return (
         <View
           style={[
@@ -68,6 +87,10 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
 const styles = StyleSheet.create({
   image: {
     resizeMode: 'cover',
+  },
+  icon: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emoji: {
     alignItems: 'center',

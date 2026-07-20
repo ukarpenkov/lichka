@@ -95,11 +95,13 @@ export interface LocaleDictionary {
   newChat: string;
   photo: string;
   emoji: string;
+  icon: string;
   chatNamePlaceholder: string;
   create: string;
   photoPickError: string;
   chatSaveError: string;
   chooseEmoji: string;
+  chooseIcon: string;
 
   // Date/Time Picker
   selectDate: string;
@@ -237,11 +239,13 @@ export const ru: LocaleDictionary = {
   newChat: 'Новый чат',
   photo: 'Фото',
   emoji: 'Эмодзи',
+  icon: 'Иконка',
   chatNamePlaceholder: 'Название чата',
   create: 'Создать',
   photoPickError: 'Не удалось выбрать фото',
   chatSaveError: 'Не удалось сохранить чат',
   chooseEmoji: 'Выберите эмодзи',
+  chooseIcon: 'Выберите иконку',
 
   // Date/Time Picker
   selectDate: 'Выберите дату',
@@ -379,11 +383,13 @@ export const en: LocaleDictionary = {
   newChat: 'New chat',
   photo: 'Photo',
   emoji: 'Emoji',
+  icon: 'Icon',
   chatNamePlaceholder: 'Chat name',
   create: 'Create',
   photoPickError: 'Failed to pick photo',
   chatSaveError: 'Failed to save chat',
   chooseEmoji: 'Choose emoji',
+  chooseIcon: 'Choose icon',
 
   // Date/Time Picker
   selectDate: 'Select date',

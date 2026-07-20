@@ -4,7 +4,9 @@ import type { Chat } from './types';
 
 const DEFAULT_CHAT_ID = 'saved-messages';
 const DEFAULT_CHAT_TITLE = 'Saved messages';
-const DEFAULT_CHAT_EMOJI = '🔖';
+/** Streamline Pixel: social-rewards-certified-ribbon */
+const DEFAULT_CHAT_ICON = 'social-rewards-certified-ribbon';
+const LEGACY_DEFAULT_CHAT_EMOJI = '🔖';
 
 export function createChat(
   title: string,
@@ -90,12 +92,22 @@ export function seedDefaultChat(): void {
   const db = getDatabase();
   const result = db.executeSync('SELECT COUNT(*) AS cnt FROM chats');
   const count = result.rows[0]?.cnt as number;
-  if (count > 0) return;
+  if (count > 0) {
+    migrateLegacyDefaultChatIcon();
+    return;
+  }
 
-  createChat(DEFAULT_CHAT_TITLE, DEFAULT_CHAT_EMOJI, {
+  createChat(DEFAULT_CHAT_TITLE, DEFAULT_CHAT_ICON, {
     id: DEFAULT_CHAT_ID,
     isSystem: true,
   });
+}
+
+/** Replace legacy bookmark emoji on Saved messages with the ribbon pixel icon. */
+function migrateLegacyDefaultChatIcon(): void {
+  const chat = getChatById(DEFAULT_CHAT_ID);
+  if (!chat || chat.avatarPath !== LEGACY_DEFAULT_CHAT_EMOJI) return;
+  updateChat(DEFAULT_CHAT_ID, { avatarPath: DEFAULT_CHAT_ICON });
 }
 
 function mapRow(row: Record<string, unknown>): Chat {

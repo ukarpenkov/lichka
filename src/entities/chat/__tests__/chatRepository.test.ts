@@ -63,14 +63,14 @@ describe('chatRepository', () => {
 
     it('should create system chat with fixed id', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
-      const chat = createChat('Saved messages', '🔖', {
+      const chat = createChat('Saved messages', 'social-rewards-certified-ribbon', {
         id: 'saved-messages',
         isSystem: true,
       });
 
       expect(chat.id).toBe('saved-messages');
       expect(chat.isSystem).toBe(true);
-      expect(chat.avatarPath).toBe('🔖');
+      expect(chat.avatarPath).toBe('social-rewards-certified-ribbon');
     });
   });
 
@@ -261,7 +261,7 @@ describe('chatRepository', () => {
           {
             id: 'saved-messages',
             title: 'Saved messages',
-            avatar_path: '🔖',
+            avatar_path: 'social-rewards-certified-ribbon',
             is_system: 1,
             created_at: '2026-01-01T00:00:00.000Z',
             updated_at: '2026-01-01T00:00:00.000Z',
@@ -286,18 +286,70 @@ describe('chatRepository', () => {
       );
       expect(mockExecuteSync).toHaveBeenCalledWith(
         'INSERT INTO chats (id, title, avatar_path, is_system, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ['saved-messages', 'Saved messages', '🔖', 1, expect.any(String), expect.any(String)],
+        [
+          'saved-messages',
+          'Saved messages',
+          'social-rewards-certified-ribbon',
+          1,
+          expect.any(String),
+          expect.any(String),
+        ],
       );
     });
 
-    it('should not create chat when chats already exist', () => {
-      mockExecuteSync.mockReturnValueOnce({ rows: [{ cnt: 3 }] });
+    it('should not insert when chats already exist and icon is current', () => {
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [{ cnt: 3 }] })
+        .mockReturnValueOnce({
+          rows: [
+            {
+              id: 'saved-messages',
+              title: 'Saved messages',
+              avatar_path: 'social-rewards-certified-ribbon',
+              is_system: 1,
+              created_at: '2026-01-01T00:00:00.000Z',
+              updated_at: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+        });
 
       seedDefaultChat();
 
-      expect(mockExecuteSync).toHaveBeenCalledTimes(1);
       expect(mockExecuteSync).toHaveBeenCalledWith(
         'SELECT COUNT(*) AS cnt FROM chats',
+      );
+      expect(mockExecuteSync).not.toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO chats'),
+        expect.anything(),
+      );
+    });
+
+    it('should migrate legacy bookmark emoji to ribbon icon', () => {
+      const legacyRow = {
+        id: 'saved-messages',
+        title: 'Saved messages',
+        avatar_path: '🔖',
+        is_system: 1,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      };
+
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [{ cnt: 1 }] })
+        .mockReturnValueOnce({ rows: [legacyRow] })
+        .mockReturnValueOnce({ rows: [legacyRow] })
+        .mockReturnValueOnce({ rows: [] });
+
+      seedDefaultChat();
+
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        'UPDATE chats SET title = ?, avatar_path = ?, updated_at = ? WHERE id = ?',
+        [
+          'Saved messages',
+          'social-rewards-certified-ribbon',
+          expect.any(String),
+          'saved-messages',
+        ],
       );
     });
   });

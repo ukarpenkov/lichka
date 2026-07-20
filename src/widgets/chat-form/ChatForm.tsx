@@ -9,14 +9,14 @@ import {
   Platform,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Camera, Smile, X } from '../../shared/ui/pixel';
+import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
 import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
 
-import { EmojiGrid } from './EmojiGrid';
+import { IconGrid } from './IconGrid';
 
 type ChatFormProps = {
   visible: boolean;
@@ -33,8 +33,8 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [emojiAvatar, setEmojiAvatar] = useState<string | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [iconAvatar, setIconAvatar] = useState<string | null>(null);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dialog, setDialog] = useState<{
     title?: string;
@@ -49,19 +49,20 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     if (visible) {
       if (editChat) {
         setTitle(editChat.title);
-        if (editChat.avatarPath && !editChat.avatarPath.includes('/') && !editChat.avatarPath.includes('\\')) {
+        const path = editChat.avatarPath;
+        if (path && (isChatIconAvatar(path) || (!path.includes('/') && !path.includes('\\') && !path.startsWith('file:')))) {
           setAvatarUri(null);
-          setEmojiAvatar(editChat.avatarPath);
+          setIconAvatar(path);
         } else {
-          setAvatarUri(editChat.avatarPath ? `file://${resolveMediaPath(editChat.avatarPath)}` : null);
-          setEmojiAvatar(null);
+          setAvatarUri(path ? `file://${resolveMediaPath(path)}` : null);
+          setIconAvatar(null);
         }
       } else {
         setTitle('');
         setAvatarUri(null);
-        setEmojiAvatar(null);
+        setIconAvatar(null);
       }
-      setShowEmojiPicker(false);
+      setShowIconPicker(false);
     }
   }, [visible, editChat]);
 
@@ -85,24 +86,24 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         const asset = response.assets?.[0];
         if (asset?.uri) {
           setAvatarUri(asset.uri);
-          setEmojiAvatar(null);
+          setIconAvatar(null);
         }
       },
     );
   }, [t]);
 
   const handleAvatarTap = useCallback(() => {
-    if (emojiAvatar) {
-      setShowEmojiPicker(true);
+    if (iconAvatar) {
+      setShowIconPicker(true);
     } else {
       handlePickImage();
     }
-  }, [emojiAvatar, handlePickImage]);
+  }, [iconAvatar, handlePickImage]);
 
-  const handleEmojiSelect = useCallback((emoji: string) => {
-    setEmojiAvatar(emoji);
+  const handleIconSelect = useCallback((iconId: string) => {
+    setIconAvatar(iconId);
     setAvatarUri(null);
-    setShowEmojiPicker(false);
+    setShowIconPicker(false);
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -115,9 +116,9 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       if (avatarUri) {
         const chatId = editChat?.id || generateId();
         avatarPath = await saveAvatar(avatarUri, chatId);
-      } else if (emojiAvatar) {
-        avatarPath = emojiAvatar;
-      } else if (!avatarUri && !emojiAvatar && editChat) {
+      } else if (iconAvatar) {
+        avatarPath = iconAvatar;
+      } else if (!avatarUri && !iconAvatar && editChat) {
         avatarPath = editChat.avatarPath;
       }
 
@@ -135,7 +136,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, emojiAvatar, editChat, isEdit, onSaved, onClose, t]);
+  }, [canSave, saving, title, avatarUri, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
 
   const avatarContent = () => {
     if (avatarUri) {
@@ -146,10 +147,17 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         />
       );
     }
-    if (emojiAvatar) {
+    if (iconAvatar) {
+      if (isChatIconAvatar(iconAvatar)) {
+        return (
+          <View style={[styles.avatarIcon, { backgroundColor: text + '15' }]}>
+            <PixelIcon name={iconAvatar} color={text} size={48} />
+          </View>
+        );
+      }
       return (
-        <View style={[styles.avatarEmoji, { backgroundColor: text + '15' }]}>
-          <Text style={styles.avatarEmojiText}>{emojiAvatar}</Text>
+        <View style={[styles.avatarIcon, { backgroundColor: text + '15' }]}>
+          <Text style={styles.avatarEmojiText}>{iconAvatar}</Text>
         </View>
       );
     }
@@ -170,15 +178,15 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
-        <View style={[styles.sheetContent, { backgroundColor: background }, showEmojiPicker && styles.sheetContentExpanded]}>
-          {showEmojiPicker ? (
+        <View style={[styles.sheetContent, { backgroundColor: background }, showIconPicker && styles.sheetContentExpanded]}>
+          {showIconPicker ? (
             <>
               <View style={styles.sheetHeader}>
-                <Pressable onPress={() => setShowEmojiPicker(false)} style={styles.closeBtn}>
+                <Pressable onPress={() => setShowIconPicker(false)} style={styles.closeBtn}>
                   <X size={20} color={text + '99'} />
                 </Pressable>
               </View>
-              <EmojiGrid onSelect={handleEmojiSelect} />
+              <IconGrid onSelect={handleIconSelect} />
             </>
           ) : (
             <>
@@ -200,9 +208,9 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
                     <Camera size={18} color={text + '99'} />
                     <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
                   </Pressable>
-                  <Pressable style={styles.avatarActionBtn} onPress={() => setShowEmojiPicker(true)}>
+                  <Pressable style={styles.avatarActionBtn} onPress={() => setShowIconPicker(true)}>
                     <Smile size={18} color={text + '99'} />
-                    <Text variant="caption" style={{ color: text + '99' }}>{t.emoji}</Text>
+                    <Text variant="caption" style={{ color: text + '99' }}>{t.icon}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -291,7 +299,7 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     borderWidth: 2,
   },
-  avatarEmoji: {
+  avatarIcon: {
     width: 96,
     height: 96,
     borderRadius: 48,
