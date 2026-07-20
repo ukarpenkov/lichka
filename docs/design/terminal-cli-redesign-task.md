@@ -146,7 +146,7 @@
 
 | # | Вопрос | Варианты | Решение | Статус |
 |---|--------|----------|---------|--------|
-| D1 | Pixel font | Nothing-like / skip for v1 | **skip v1 — mono only** | closed |
+| D1 | Pixel font | Nothing / VT323 / Press Start 2P | **Press Start 2P** для `display` (Cyrillic OK) | closed |
 | D2 | Mono font | JetBrains Mono / IBM Plex Mono / other | **JetBrains Mono** (OFL, Cyrillic) | closed |
 | D3 | Формат timestamp | `[HH:MM:SS]` / `HH:MM` / relative | **`[HH:MM:SS]`** | closed |
 | D4 | Маркеры типов | ASCII glyphs vs existing icons | **Bell / AlarmClock / Repeat** (как Scheduled) | closed |

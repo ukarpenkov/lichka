@@ -105,45 +105,36 @@
 
 ## 6. Типографика
 
-**Решение (2026-07-20):** одно семейство — **monospace** для всего UI, включая заголовки.  
-Pixel / Nothing-like для display — **отложено** (nice-to-have позже), не блокер редизайна.
+**Решение (2026-07-20, обновлено):**  
+- **Display (page titles):** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) — pixel, **кириллица OK**.  
+- **UI / body / chat:** JetBrains Mono.  
+- ~~VT323~~ отклонён: нет кириллицы.
 
-### 6.1 Шкала (всё mono)
+### 6.1 Шкала
 
-| Токен | Size | Weight | Где |
-|-------|------|--------|-----|
-| `display` | 24–26 | 600–700 | Page titles корневых табов, brand/empty headlines |
-| `title` | 17 | 600 | Chat header title |
-| `title-sm` | 15–16 | 500–600 | Имя чата в списке, settings row |
-| `body` | 15–16 | 400 | Текст сообщений, формы |
-| `body-sm` | 13–14 | 400 | Meta secondary |
-| `mono-meta` | 12–13 | 400 | Timestamp в ленте `[HH:MM:SS]` |
-| `caption` | 12–13 | 500–600 | Section label (допустим ALL CAPS) |
-| `micro` | 11 | 600 | Badge digit |
-| `button` | 15–16 | 500 | Text-кнопки |
-
-**Требования к mono:**
-- отличная кириллица + латиница + цифры одинаковой ширины;
-- tabular figures для времени;
-- читаемость ≥16px на body в чате;
-- один family на display и body — иерархия через **size / weight**, не через смену гарнитуры.
-
-**Кандидаты:** JetBrains Mono, IBM Plex Mono, Geist Mono (если Cyrillic ок), Iosevka — выбрать 1 при внедрении.
-
-**Не используем:** Inter / Roboto / SF Pro как целевой UI (только emergency fallback до загрузки шрифта).
+| Токен | Size | Face | Где |
+|-------|------|------|-----|
+| `display` | 18 | Press Start 2P | Page titles корневых табов |
+| `title` | 17 | JetBrains SemiBold | Chat header title |
+| `title-sm` | 15–16 | JetBrains Medium | Имя чата в списке, settings row |
+| `body` | 15–16 | JetBrains Regular | Текст сообщений, формы |
+| `body-sm` | 13–14 | JetBrains Regular | Meta secondary |
+| `mono-meta` | 12–13 | JetBrains Regular | Timestamp в ленте `[HH:MM:SS]` |
+| `caption` | 12–13 | JetBrains SemiBold | Section label (ALL CAPS) |
+| `micro` | 11 | JetBrains SemiBold | Badge digit |
+| `button` | 15–16 | JetBrains Medium | Text-кнопки |
 
 ### 6.2 Иерархия на экране
 
 ```
-display (mono bold) →  «Чаты» / «Запланировано» / «Настройки»
-title (mono)        →  имя чата в header
-body (mono)         →  текст сообщения
-mono-meta (mono)    →  [10:39:21]  и прочая meta
+display (Press Start 2P) →  «Чаты» / «Запланировано» / «Настройки»
+title (JetBrains)        →  имя чата в header
+body (JetBrains)         →  текст сообщения
+mono-meta                →  [10:39:21]  и прочая meta
 ```
 
-### 6.3 Later: pixel display (опционально)
+**Не используем:** Inter / Roboto / SF Pro как целевой UI (только emergency fallback).
 
-Когда найдётся pixel/dot-matrix с полной кириллицей и нормальной лицензией — можно вернуть отдельный `display` face. До тех пор **не блокируем** редизайн.
 ---
 
 ## 7. Сообщения: stream строк, не bubbles
@@ -290,8 +281,8 @@ Terminal-характер = типографика + раскладка стро
 
 ## 13. Открытые решения (до внедрения)
 
-1. ~~Pixel font~~ → **отложено**; display = mono.
-2. ~~Конкретный mono font~~ → **JetBrains Mono** (OFL, Cyrillic OK).
+1. ~~Pixel font~~ → **Press Start 2P** для `display` (кириллица OK). VT323 отклонён (Latin-only).
+2. ~~Конкретный mono font~~ → **JetBrains Mono** (OFL, Cyrillic OK) для UI/body.
 3. ~~Префиксы типов~~ → **существующие иконки** (`Bell` / `AlarmClock` / `Repeat`); simple без иконки.
 4. ~~Prompt `>`~~ → **да**, слева от поля ввода.
 5. ~~Миграция bubble~~ → **`MessageLine` напрямую**, без bubble и без feature flag.

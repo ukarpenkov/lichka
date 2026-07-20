@@ -67,12 +67,13 @@ describe('tokens', () => {
       expect(radii.full).toBe(9999);
     });
 
-    it('should use JetBrains Mono for the whole typography scale', () => {
+    it('should use Press Start 2P for display and JetBrains Mono for UI body', () => {
+      expect(fonts.display).toBe('PressStart2P-Regular');
       expect(fonts.regular).toBe('JetBrainsMono-Regular');
-      expect(typography.display.fontFamily).toBe(fonts.semiBold);
+      expect(typography.display.fontFamily).toBe(fonts.display);
+      expect(typography.display.fontSize).toBe(18);
       expect(typography.body.fontFamily).toBe(fonts.regular);
       expect(typography['mono-meta'].fontFamily).toBe(fonts.regular);
-      expect(typography.display.fontSize).toBe(26);
       expect(typography['mono-meta'].fontSize).toBe(12);
     });
   });

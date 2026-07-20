@@ -5,7 +5,7 @@
 **North star:** [`DESIGN.md`](../../DESIGN.md)  
 **Задача:** [`terminal-cli-redesign-task.md`](./terminal-cli-redesign-task.md)
 
-> Soft-journal / Airbnb-ритм **superseded**. Текущий контракт — **личный терминал**: единый JetBrains Mono, stream строк вместо bubbles, 2 цвета темы без изменений.
+> Soft-journal / Airbnb-ритм **superseded**. Текущий контракт — **личный терминал**: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) для page titles (с кириллицей) + JetBrains Mono для UI/ленты, stream строк вместо bubbles, 2 цвета темы без изменений.
 
 > **Контракт реализации:** gutter **20**, header **56**, CLI-density rows, radii **none / sm(8) / md(12) / lg(16) / full**, press = `surfaceSoft` (ink @ 6%). Токены в `src/shared/config/tokens.ts`.
 
@@ -15,7 +15,7 @@
 
 > **Личный терминал мыслей.**  
 > Экран читается как CLI-сессия / лог: плоский холст темы, строка за строкой, без пузырей.  
-> Характер дают **пара цветов темы** и **JetBrains Mono** — не декоративный хром.
+> Характер дают **пара цветов темы**, **Press Start 2P** на заголовках табов и **JetBrains Mono** в UI.
 
 ---
 
@@ -33,23 +33,25 @@
 
 ## 3. Типографика
 
-**Семейство:** JetBrains Mono (OFL) — Regular / Medium / SemiBold / Bold.  
-Файлы: `assets/fonts/` + `android/app/src/main/assets/fonts/`.  
-Fallback до загрузки: system mono / System.
+**Display:** [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (OFL) — pixel, page titles корневых табов; **кириллица есть**.  
+**UI / body:** JetBrains Mono (OFL) — Regular / Medium / SemiBold / Bold.  
+Файлы: `assets/fonts/` + `android/app/src/main/assets/fonts/`.
+
+> Press Start 2P очень широкий: `display` = **18 / 28**, чтобы «Запланировано» помещалось в header 56.
 
 | Токен | Size | Face | Где |
 |-------|------|------|-----|
-| `display` | 26 | SemiBold | Page titles корневых табов |
-| `title` | 17 | SemiBold | Chat header |
-| `title-sm` | 15 | Medium | Chat list / settings row |
-| `body` | 16 | Regular | Сообщения, формы |
-| `body-sm` | 13 | Regular | Meta secondary |
-| `mono-meta` | 12 | Regular | Timestamp `[HH:MM:SS]`, date sep |
-| `caption` | 12 | SemiBold + tracking | Section labels (ALL CAPS) |
-| `micro` | 11 | SemiBold | Badge digit |
-| `button` | 15 | Medium | Text-кнопки |
+| `display` | 18 | Press Start 2P | Page titles корневых табов |
+| `title` | 17 | JetBrains SemiBold | Chat header |
+| `title-sm` | 15 | JetBrains Medium | Chat list / settings row |
+| `body` | 16 | JetBrains Regular | Сообщения, формы |
+| `body-sm` | 13 | JetBrains Regular | Meta secondary |
+| `mono-meta` | 12 | JetBrains Regular | Timestamp `[HH:MM:SS]`, date sep |
+| `caption` | 12 | JetBrains SemiBold + tracking | Section labels (ALL CAPS) |
+| `micro` | 11 | JetBrains SemiBold | Badge digit |
+| `button` | 15 | JetBrains Medium | Text-кнопки |
 
-Иерархия только size/weight — **одна гарнитура**.
+Иерархия: **две гарнитуры** (pixel display + mono UI), дальше size/weight.
 
 ---
 

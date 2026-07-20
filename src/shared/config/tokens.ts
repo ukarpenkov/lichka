@@ -3,18 +3,21 @@ import { Platform } from 'react-native';
 import { withAlpha } from '../lib/color';
 
 /**
- * JetBrains Mono — единый UI font (terminal / CLI).
- * На Android family = имя файла без расширения (assets/fonts).
- * Weight берём файлом, не синтезом fontWeight.
+ * Typography faces (Android family = filename without extension).
+ * - Press Start 2P — pixel display for root page titles (Latin + Cyrillic).
+ * - JetBrains Mono — UI / body / chat stream.
+ * Weight for Mono = file, not faux fontWeight.
  */
 export const fonts = {
+  /** Pixel display — PageHeader titles. https://fonts.google.com/specimen/Press+Start+2P */
+  display: 'PressStart2P-Regular',
   regular: 'JetBrainsMono-Regular',
   medium: 'JetBrainsMono-Medium',
   semiBold: 'JetBrainsMono-SemiBold',
   bold: 'JetBrainsMono-Bold',
 } as const;
 
-export type FontWeightKey = keyof typeof fonts;
+export type FontWeightKey = Exclude<keyof typeof fonts, 'display'>;
 
 /** Spacing scale — base 4. */
 export const spacing = {
@@ -73,13 +76,19 @@ function weightToNumeric(weight: FontWeightKey): TextStyle['fontWeight'] {
   }
 }
 
-/** Typography — all JetBrains Mono; hierarchy via size/weight only. */
+/** Typography — Press Start 2P display + JetBrains Mono UI. */
 export const typography = {
-  display: monoFace('semiBold', {
-    fontSize: 26,
-    lineHeight: 32,
-    letterSpacing: -0.2,
-  }),
+  /**
+   * Root tab titles — pixel display.
+   * Size kept modest: Press Start 2P is very wide («Запланировано» must fit).
+   */
+  display: {
+    fontFamily: fonts.display,
+    fontSize: 18,
+    lineHeight: 28,
+    letterSpacing: 0,
+    fontWeight: Platform.OS === 'ios' ? ('400' as const) : ('normal' as const),
+  },
   title: monoFace('semiBold', {
     fontSize: 17,
     lineHeight: 22,
