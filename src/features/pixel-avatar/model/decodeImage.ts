@@ -1,9 +1,24 @@
 import jpeg from 'jpeg-js';
-import * as UPNG from 'upng-js';
+import UPNGImport from 'upng-js';
 import type { RgbaImage } from './types';
 import { base64ToBytes } from './pngEncode';
 
 export type ImageBinaryFormat = 'jpeg' | 'png' | 'webp' | 'unknown';
+
+type UpngApi = {
+  decode: (buffer: ArrayBuffer) => { width: number; height: number };
+  toRGBA8: (img: { width: number; height: number }) => ArrayBuffer[];
+};
+
+function getUpng(): UpngApi {
+  const mod = UPNGImport as unknown as UpngApi & { default?: UpngApi };
+  const api = (mod?.decode ? mod : mod?.default) as UpngApi | undefined;
+  if (!api?.decode) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('upng-js') as UpngApi;
+  }
+  return api;
+}
 
 export function sniffImageFormat(bytes: Uint8Array): ImageBinaryFormat {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
@@ -91,6 +106,7 @@ function decodeJpeg(bytes: Uint8Array): RgbaImage {
 
 function decodePng(bytes: Uint8Array): RgbaImage {
   try {
+    const UPNG = getUpng();
     const img = UPNG.decode(toArrayBuffer(bytes));
     const frames = UPNG.toRGBA8(img);
     const frame = frames[0];
