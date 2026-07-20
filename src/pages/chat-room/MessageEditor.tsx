@@ -6,7 +6,7 @@ import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
 import type { Message } from '../../entities/message';
 import type { EditFields } from '../../features/edit-message';
-import { CalendarClock, Repeat } from 'lucide-react-native';
+import { CalendarClock, Repeat } from '../../shared/ui/pixel';
 
 type Props = {
   visible: boolean;

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { Bell, Repeat, Image as ImageIcon } from 'lucide-react-native';
-import type { LucideIcon } from 'lucide-react-native';
+import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { AlarmClockIcon } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
@@ -18,7 +17,7 @@ export type ScheduledItemProps = {
   onLongPress: () => void;
 };
 
-const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, LucideIcon | typeof AlarmClockIcon> = {
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
   reminder: Bell,
   alarm: AlarmClockIcon,
   periodic: Repeat,

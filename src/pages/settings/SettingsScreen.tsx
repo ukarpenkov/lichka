@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { ScrollView, View, Switch, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from 'lucide-react-native';
+import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
 import { Screen, Text, AlertDialog, PageHeader, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii } from '../../shared/config';

@@ -13,24 +13,26 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import { Clock, X } from 'lucide-react-native';
+import { Clock, X } from '../../shared/ui/pixel';
 import { Screen, Text, AlarmClockIcon, AnimatedPressable } from '../../shared/ui';
+import { useTheme } from '../../shared/config';
+import { fonts, spacing, fixedColors } from '../../shared/config/tokens';
 import { hapticTap, hapticSuccess } from '../../shared/lib';
 import type { RootStackParamList } from '../../app/types';
 
 type AlarmRouteProp = RouteProp<RootStackParamList, 'Alarm'>;
 
-const ICON_WRAPPER = 128;
+const ICON_WRAPPER = 120;
 const ICON_SIZE = 56;
 const PULSE_DURATION = 2400;
 const PULSE_DELAY = 800;
 const SHAKE_DURATION = 600;
 const SHAKE_DEG = 3;
-const DESTRUCTIVE = '#ff5c5c';
 
 export function AlarmScreen() {
   const navigation = useNavigation();
   const route = useRoute<AlarmRouteProp>();
+  const { colors } = useTheme();
 
   const { body, chatTitle } = route.params ?? {};
   const label = body || chatTitle || 'Будильник';
@@ -111,19 +113,15 @@ export function AlarmScreen() {
     navigation.goBack();
   }, [navigation]);
 
-  const dimmed = '#666666';
-  const ringBorder = '#1e1e1e';
-  const ringBg = '#0f0f0f';
-  const pulseBorder = '#0AFFFFFF';
-  const snoozeColor = '#555555';
-  const dividerColor = '#1e1e1e';
-  const homeIndicatorColor = '#333333';
-
   return (
     <Screen style={styles.screen}>
       <View style={styles.topBar}>
-        <Text style={[styles.topBarLabel, { color: dimmed }]}>Будильник</Text>
-        <Text style={[styles.statusTime, { color: dimmed }]}>{timeStr}</Text>
+        <Text variant="caption" tone="muted">
+          БУДИЛЬНИК
+        </Text>
+        <Text variant="mono-meta" tone="muted">
+          {timeStr}
+        </Text>
       </View>
 
       <View style={styles.mainContent}>
@@ -131,36 +129,37 @@ export function AlarmScreen() {
           <Animated.View
             style={[
               styles.pulseRing,
-              { borderColor: pulseBorder },
+              { borderColor: colors.surfaceStrong },
               pulse1AnimStyle,
             ]}
           />
           <Animated.View
             style={[
               styles.pulseRing,
-              { borderColor: pulseBorder },
+              { borderColor: colors.surfaceStrong },
               pulse2AnimStyle,
             ]}
           />
           <View
             style={[
               styles.iconRing,
-              {
-                borderColor: ringBorder,
-                backgroundColor: ringBg,
-              },
+              { backgroundColor: colors.surfaceStrong },
             ]}
           />
           <Animated.View style={[styles.iconCenter, shakeAnimStyle]}>
-            <AlarmClockIcon color={text} size={ICON_SIZE} />
+            <AlarmClockIcon color={colors.ink} size={ICON_SIZE} />
           </Animated.View>
         </View>
 
         <View style={styles.alarmInfo}>
-          <Text style={styles.alarmTime}>{timeStr}</Text>
+          <Text tone="ink" style={styles.alarmTime}>
+            {timeStr}
+          </Text>
           <Text
-            style={[styles.alarmLabel, { color: '#888888' }]}
-            numberOfLines={2}>
+            variant="body"
+            tone="muted"
+            style={styles.alarmLabel}
+            numberOfLines={3}>
             {label}
           </Text>
         </View>
@@ -171,58 +170,45 @@ export function AlarmScreen() {
           style={styles.textAction}
           scaleTo={0.96}
           onPress={handleDismiss}>
-          <X color={DESTRUCTIVE} size={18} strokeWidth={2.5} />
-          <Text style={[styles.actionLabel, { color: DESTRUCTIVE }]}>
+          <X color={fixedColors.destructive} size={18} />
+          <Text
+            variant="button"
+            style={[styles.actionLabel, { color: fixedColors.destructive }]}>
             Отключить
           </Text>
         </AnimatedPressable>
-
-        <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
         <AnimatedPressable
           style={styles.textAction}
           scaleTo={0.96}
           onPress={handleSnooze}>
-          <Clock color={snoozeColor} size={18} strokeWidth={2.5} />
-          <Text style={[styles.actionLabel, { color: snoozeColor }]}>
+          <Clock color={colors.muted} size={18} />
+          <Text variant="button" tone="muted" style={styles.actionLabel}>
             Отложить · 5 мин
           </Text>
         </AnimatedPressable>
       </View>
-
-      <View style={[styles.homeIndicator, { backgroundColor: homeIndicatorColor }]} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.gutter,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.base,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
-  },
-  topBarLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.3,
-  },
-  statusTime: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 0.3,
+    minHeight: 28,
   },
   mainContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 28,
+    gap: spacing.xxl,
   },
   iconWrapper: {
     width: ICON_WRAPPER,
@@ -232,8 +218,8 @@ const styles = StyleSheet.create({
   },
   pulseRing: {
     position: 'absolute',
-    width: ICON_WRAPPER + 12,
-    height: ICON_WRAPPER + 12,
+    width: ICON_WRAPPER + 16,
+    height: ICON_WRAPPER + 16,
     borderRadius: 9999,
     borderWidth: 1,
   },
@@ -242,55 +228,39 @@ const styles = StyleSheet.create({
     width: ICON_WRAPPER,
     height: ICON_WRAPPER,
     borderRadius: 9999,
-    borderWidth: 1,
   },
   iconCenter: {
     zIndex: 2,
   },
   alarmInfo: {
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
+    paddingHorizontal: spacing.base,
   },
+  /** Pixel display clock — Press Start 2P */
   alarmTime: {
-    fontSize: 64,
-    fontWeight: '200',
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
+    fontFamily: fonts.display,
+    fontSize: 40,
+    lineHeight: 56,
+    letterSpacing: 0,
+    textAlign: 'center',
   },
   alarmLabel: {
-    fontSize: 20,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-    lineHeight: 24,
     textAlign: 'center',
-    paddingHorizontal: 16,
   },
   actions: {
     alignItems: 'center',
-    gap: 24,
-    paddingBottom: 20,
+    gap: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   textAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 100,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   actionLabel: {
-    fontSize: 17,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  divider: {
-    width: 32,
-    height: 1,
-  },
-  homeIndicator: {
-    width: 120,
-    height: 4,
-    borderRadius: 100,
-    alignSelf: 'center',
+    letterSpacing: 0,
   },
 });

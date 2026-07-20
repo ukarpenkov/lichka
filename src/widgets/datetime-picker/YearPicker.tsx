@@ -1,7 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Text } from '../../shared/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight } from '../../shared/ui/pixel';
 
 const MIN_YEAR = 2020;
 const MAX_YEAR = 2035;

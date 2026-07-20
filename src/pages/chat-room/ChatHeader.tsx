@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
-import { ArrowLeft, Search } from 'lucide-react-native';
+import { ArrowLeft, Search } from '../../shared/ui/pixel';
 import { Text, SharedElementAvatar, IconButton } from '../../shared/ui';
 import { useTheme, spacing } from '../../shared/config';
 import type { Chat } from '../../entities/chat';

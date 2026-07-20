@@ -15,7 +15,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { X } from 'lucide-react-native';
+import { X } from '../../shared/ui/pixel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../shared/config';
 

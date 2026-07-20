@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme, useLocale } from '../../shared/config';
 import { Text } from '../../shared/ui';
 import { IconButton } from '../../shared/ui';
-import { X } from 'lucide-react-native';
+import { X } from '../../shared/ui/pixel';
 
 type Props = {
   visible: boolean;

@@ -8,7 +8,7 @@ import {
 } from '@react-navigation/native';
 import type { NavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MessageCircle, CalendarDays, Settings } from 'lucide-react-native';
+import { MessageCircle, CalendarDays, Settings } from '../shared/ui/pixel';
 import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';

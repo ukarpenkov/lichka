@@ -3,7 +3,7 @@ import { View, FlatList, TextInput, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { X } from 'lucide-react-native';
+import { X } from '../../shared/ui/pixel';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow } from '../../shared/config';

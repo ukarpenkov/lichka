@@ -1,13 +1,12 @@
 import React from 'react';
 import { Pressable, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
-import type { LucideIcon } from 'lucide-react-native';
-
 import { Text } from '../../shared/ui';
+import type { PixelIconComponent } from '../../shared/ui/pixel';
 import { useTheme, listRow } from '../../shared/config';
 
 export type SettingsRowProps = {
   label: string;
-  icon?: LucideIcon;
+  icon?: PixelIconComponent;
   onPress?: () => void;
   children?: React.ReactNode;
 };

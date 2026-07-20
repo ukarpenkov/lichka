@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
-import { Pencil, Trash2 } from 'lucide-react-native';
+import { Pencil, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
 import { useTheme, useLocale, radii } from '../../shared/config';
 

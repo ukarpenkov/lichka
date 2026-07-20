@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Play, Pause } from 'lucide-react-native';
+import { Play, Pause } from '../../shared/ui/pixel';
 import { useTheme } from '../../shared/config';
 import { IconButton } from '../../shared/ui';
 import { Text } from '../../shared/ui';

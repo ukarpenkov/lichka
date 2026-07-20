@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, FlatList, TextInput, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
-import { X } from 'lucide-react-native';
+import { X } from '../../shared/ui/pixel';
 
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, spacing, radii, listRow } from '../../shared/config';

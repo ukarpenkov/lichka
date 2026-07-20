@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
-import { Bell, Repeat, Image as ImageIcon } from 'lucide-react-native';
-import type { LucideIcon } from 'lucide-react-native';
 import { useTheme, useLocale, spacing } from '../../shared/config';
+import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { Text, AlarmClockIcon } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { ImageMessage } from '../../widgets/image-message';
@@ -48,10 +47,7 @@ function isImageMessage(message: Message): boolean {
   }
 }
 
-const TYPE_ICON: Record<
-  Exclude<MessageType, 'simple'>,
-  LucideIcon | typeof AlarmClockIcon | null
-> = {
+const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent | null> = {
   reminder: Bell,
   alarm: AlarmClockIcon,
   periodic: Repeat,

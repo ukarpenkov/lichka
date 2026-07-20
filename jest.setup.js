@@ -180,17 +180,6 @@ jest.mock('react-native-sound', () => {
   return MockSound;
 });
 
-jest.mock('lucide-react-native', () => {
-  const React = require('react');
-  return new Proxy({}, {
-    get: (_, name) => {
-      const Component = (props) => React.createElement('View', { testID: `icon-${name}`, ...props });
-      Component.displayName = name;
-      return Component;
-    },
-  });
-});
-
 jest.mock('react-native-document-picker', () => ({
   pickSingle: jest.fn(),
   types: { allFiles: 'all' },

@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, View, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Check } from 'lucide-react-native';
+import { Check } from '../../shared/ui/pixel';
 
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, DEFAULT_LIGHT, DEFAULT_DARK, THEME_PRESETS, type ThemePreset } from '../../shared/config';

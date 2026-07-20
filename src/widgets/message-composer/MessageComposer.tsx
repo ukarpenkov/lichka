@@ -20,7 +20,7 @@ import {
   requestBatteryOptimizationExemption,
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
-import { Send, Bell, Repeat, X, Square, Paperclip } from 'lucide-react-native';
+import { Send, Bell, Repeat, X, Square, Paperclip } from '../../shared/ui/pixel';
 import {
   hapticTap,
   hapticLongPress,
@@ -343,7 +343,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
             <IconButton icon={X} size={22} color={colors.muted} onPress={handleCancelRecord} />
             <Animated.View style={stopBtnStyle}>
               <Pressable style={[styles.stopBtn, { backgroundColor: colors.ink }]} onPress={handleMicPressOut}>
-                <Square size={16} color={colors.onInk} fill={colors.onInk} />
+                <Square size={16} color={colors.onInk} />
               </Pressable>
             </Animated.View>
           </View>

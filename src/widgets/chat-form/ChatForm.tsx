@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Camera, Smile, X } from 'lucide-react-native';
+import { Camera, Smile, X } from '../../shared/ui/pixel';
 
 import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { FlatList, View, StyleSheet, Platform } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Plus, Search } from 'lucide-react-native';
+import { Plus, Search } from '../../shared/ui/pixel';
 
 import {
   Screen,

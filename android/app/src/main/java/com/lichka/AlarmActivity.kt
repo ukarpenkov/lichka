@@ -3,9 +3,10 @@ package com.lichka
 import android.app.Activity
 import android.app.NotificationManager
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.LayerDrawable
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -19,6 +20,7 @@ import android.view.WindowManager
 import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.graphics.drawable.DrawableCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,13 +61,16 @@ class AlarmActivity : Activity() {
         val themeText = ThemeModule.getText(this)
 
         applyTheme(themeBackground, themeText)
+        applyFonts()
 
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-        findViewById<TextView>(R.id.alarm_body).text = body
+        findViewById<TextView>(R.id.alarm_body).text = body.ifBlank { chatTitle }
 
         if (triggerTime > 0) {
             findViewById<TextView>(R.id.alarm_time).text = timeFormat.format(Date(triggerTime))
+        } else {
+            findViewById<TextView>(R.id.alarm_time).text = timeFormat.format(Date())
         }
 
         findViewById<TextView>(R.id.status_time).text = timeFormat.format(Date())
@@ -92,32 +97,86 @@ class AlarmActivity : Activity() {
         acquireWakeLock()
     }
 
+    private fun applyFonts() {
+        val display = Typeface.createFromAsset(assets, "fonts/PressStart2P-Regular.ttf")
+        val mono = Typeface.createFromAsset(assets, "fonts/JetBrainsMono-Regular.ttf")
+        val monoMedium = Typeface.createFromAsset(assets, "fonts/JetBrainsMono-Medium.ttf")
+        val monoSemiBold = Typeface.createFromAsset(assets, "fonts/JetBrainsMono-SemiBold.ttf")
+
+        findViewById<TextView>(R.id.top_label).typeface = monoSemiBold
+        findViewById<TextView>(R.id.status_time).typeface = mono
+        findViewById<TextView>(R.id.alarm_time).typeface = display
+        findViewById<TextView>(R.id.alarm_body).typeface = mono
+        findViewById<TextView>(R.id.btn_dismiss).typeface = monoMedium
+        findViewById<TextView>(R.id.btn_snooze).typeface = monoMedium
+    }
+
     private fun applyTheme(background: String, text: String) {
         val bgColor = parseColorOr(background, Color.parseColor("#0a0a0a"))
         val textColor = parseColorOr(text, Color.WHITE)
+        val muted = withAlpha(textColor, 0.6f)
+        val surfaceStrong = withAlpha(textColor, 0.12f)
 
         val root = findViewById<View>(R.id.alarm_root)
-        root.background = createBackground(bgColor)
+        root.setBackgroundColor(bgColor)
 
-        val timeView = findViewById<TextView>(R.id.alarm_time)
-        timeView.setTextColor(textColor)
+        findViewById<TextView>(R.id.top_label).setTextColor(muted)
+        findViewById<TextView>(R.id.status_time).setTextColor(muted)
+        findViewById<TextView>(R.id.alarm_time).setTextColor(textColor)
+        findViewById<TextView>(R.id.alarm_body).setTextColor(muted)
 
-        val bodyView = findViewById<TextView>(R.id.alarm_body)
-        bodyView.setTextColor(withAlpha(textColor, 0.53f))
+        val dismissBtn = findViewById<TextView>(R.id.btn_dismiss)
+        dismissBtn.setTextColor(DESTRUCTIVE)
+        tintCompoundDrawables(dismissBtn, DESTRUCTIVE)
+
+        val snoozeBtn = findViewById<TextView>(R.id.btn_snooze)
+        snoozeBtn.setTextColor(muted)
+        tintCompoundDrawables(snoozeBtn, muted)
+
+        val icon = findViewById<ImageView>(R.id.alarm_icon)
+        icon.imageTintList = ColorStateList.valueOf(textColor)
+
+        findViewById<View>(R.id.alarm_icon_ring).background =
+            ovalFill(surfaceStrong)
+        findViewById<View>(R.id.alarm_pulse_ring_1).background =
+            ovalStroke(surfaceStrong)
+        findViewById<View>(R.id.alarm_pulse_ring_2).background =
+            ovalStroke(surfaceStrong)
     }
 
-    private fun createBackground(baseColor: Int): LayerDrawable {
-        val layers = arrayOf(
-            GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                orientation = GradientDrawable.Orientation.TOP_BOTTOM
-                colors = intArrayOf(
-                    lighten(baseColor, 0.08f),
-                    darken(baseColor, 0.04f),
-                )
-            },
+    private fun tintCompoundDrawables(view: TextView, color: Int) {
+        val drawables = view.compoundDrawablesRelative
+        for (i in drawables.indices) {
+            val d = drawables[i] ?: continue
+            val wrapped = DrawableCompat.wrap(d.mutate())
+            DrawableCompat.setTint(wrapped, color)
+            drawables[i] = wrapped
+        }
+        view.setCompoundDrawablesRelative(
+            drawables[0],
+            drawables[1],
+            drawables[2],
+            drawables[3],
         )
-        return LayerDrawable(layers)
+    }
+
+    private fun ovalFill(color: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
+        }
+    }
+
+    private fun ovalStroke(color: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(Color.TRANSPARENT)
+            setStroke(dp(1), color)
+        }
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
     }
 
     private fun startAnimations() {
@@ -199,6 +258,7 @@ class AlarmActivity : Activity() {
 
     companion object {
         private const val PULSE_DELAY = 800L
+        private val DESTRUCTIVE = Color.parseColor("#E53935")
 
         private fun parseColorOr(hex: String, fallback: Int): Int {
             return try {
@@ -209,22 +269,8 @@ class AlarmActivity : Activity() {
         }
 
         private fun withAlpha(color: Int, alpha: Float): Int {
-            val a = (Color.alpha(color) * alpha).toInt().coerceIn(0, 255)
+            val a = (255 * alpha).toInt().coerceIn(0, 255)
             return Color.argb(a, Color.red(color), Color.green(color), Color.blue(color))
-        }
-
-        private fun lighten(color: Int, amount: Float): Int {
-            val r = (Color.red(color) * (1f + amount)).toInt().coerceIn(0, 255)
-            val g = (Color.green(color) * (1f + amount)).toInt().coerceIn(0, 255)
-            val b = (Color.blue(color) * (1f + amount)).toInt().coerceIn(0, 255)
-            return Color.argb(Color.alpha(color), r, g, b)
-        }
-
-        private fun darken(color: Int, amount: Float): Int {
-            val r = (Color.red(color) * (1f - amount)).toInt().coerceIn(0, 255)
-            val g = (Color.green(color) * (1f - amount)).toInt().coerceIn(0, 255)
-            val b = (Color.blue(color) * (1f - amount)).toInt().coerceIn(0, 255)
-            return Color.argb(Color.alpha(color), r, g, b)
         }
     }
 }
