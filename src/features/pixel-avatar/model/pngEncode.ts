@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import pako from 'pako';
 
 const CRC_TABLE = (() => {
@@ -71,27 +72,12 @@ export function encodePngRgba(width: number, height: number, rgba: Uint8Array): 
   return out;
 }
 
+/** Hermes-safe base64 — use `buffer` package, not global atob/Buffer. */
 export function bytesToBase64(bytes: Uint8Array): string {
-  const CHUNK = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    const slice = bytes.subarray(i, i + CHUNK);
-    binary += String.fromCharCode.apply(null, Array.from(slice) as number[]);
-  }
-  // btoa is available in RN Hermes / Jest jsdom-like envs
-  if (typeof globalThis.btoa === 'function') {
-    return globalThis.btoa(binary);
-  }
   return Buffer.from(bytes).toString('base64');
 }
 
 export function base64ToBytes(base64: string): Uint8Array {
-  const clean = base64.replace(/^data:[^;]+;base64,/, '');
-  if (typeof globalThis.atob === 'function') {
-    const bin = globalThis.atob(clean);
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  }
+  const clean = base64.replace(/^data:[^;]+;base64,/, '').replace(/\s/g, '');
   return new Uint8Array(Buffer.from(clean, 'base64'));
 }

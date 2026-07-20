@@ -45,5 +45,6 @@
 
 ## Fix 2026-07-21 (Android gallery)
 
-- Ошибка `expected JPEG`: на Android `asset.base64` часто оригинал (PNG), а не JPEG.
-- Читаем байты с temp `uri` пикера; декод JPEG/PNG через sniff + `upng-js`.
+- Ошибка `expected JPEG` была **маскирующей**: любой сбой декода показывался так же — даже для реального JPG.
+- Частые причины на JPG/Android: base64 через глобальный `atob`/`Buffer`, non-contiguous buffer, original full-res вместо resized uri.
+- Harden: `buffer` package для base64, contiguous copy + `useTArray` для jpeg-js, чтение temp/`content://`, понятные ошибки с hex-head.

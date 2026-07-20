@@ -166,6 +166,39 @@ describe('createPixelContourAvatar', () => {
     expect(result.png[0]).toBe(137);
   });
 
+  it('should decode JPEG bytes and produce avatar', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const jpeg = require('jpeg-js') as typeof import('jpeg-js');
+    const rgba = new Uint8Array(16 * 16 * 4);
+    for (let i = 0; i < rgba.length; i += 4) {
+      rgba[i] = 200;
+      rgba[i + 1] = 40;
+      rgba[i + 2] = 40;
+      rgba[i + 3] = 255;
+    }
+    // draw a dark square so edges exist after encode/decode
+    for (let y = 4; y < 12; y++) {
+      for (let x = 4; x < 12; x++) {
+        const i = (y * 16 + x) * 4;
+        rgba[i] = 20;
+        rgba[i + 1] = 20;
+        rgba[i + 2] = 20;
+      }
+    }
+    const encoded = jpeg.encode({ width: 16, height: 16, data: rgba }, 90);
+    const bytes = new Uint8Array(encoded.data);
+    expect(sniffImageFormat(bytes)).toBe('jpeg');
+
+    const decoded = decodeImageBytes(bytes);
+    expect(decoded.width).toBe(16);
+
+    const result = createPixelContourAvatar(
+      { kind: 'bytes', bytes },
+      { pixelGrid: 8, outputSize: 32, edgeThreshold: 0.05 },
+    );
+    expect(result.png[0]).toBe(137);
+  });
+
   it('should sniff jpeg magic bytes', () => {
     expect(sniffImageFormat(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe('jpeg');
     expect(sniffImageFormat(new Uint8Array([0x00, 0x01, 0x02]))).toBe('unknown');

@@ -29,27 +29,61 @@ type ChatFormProps = {
 };
 
 async function loadPickedImageBytes(uri: string, pickerBase64?: string): Promise<Uint8Array> {
-  const filePath = uri.startsWith('file://') ? uri.replace('file://', '') : uri.startsWith('/') ? uri : null;
+  const errors: string[] = [];
 
-  if (filePath) {
+  const tryReadPath = async (path: string): Promise<Uint8Array | null> => {
     try {
-      const exists = await RNFS.exists(filePath);
-      if (exists) {
-        const b64 = await RNFS.readFile(filePath, 'base64');
-        return base64ToBytes(b64);
+      const exists = await RNFS.exists(path);
+      if (!exists) {
+        errors.push(`missing:${path}`);
+        return null;
       }
-    } catch {
-      // fall through to picker base64 / content uri
+      const b64 = await RNFS.readFile(path, 'base64');
+      if (!b64) {
+        errors.push(`empty-file:${path}`);
+        return null;
+      }
+      return base64ToBytes(b64);
+    } catch (e: unknown) {
+      errors.push(`read:${path}:${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
+  };
+
+  // 1) Resized picker temp file (preferred — real bytes after maxWidth/quality)
+  if (uri.startsWith('file://')) {
+    const fromFile = await tryReadPath(uri.replace('file://', ''));
+    if (fromFile) return fromFile;
+  } else if (uri.startsWith('/')) {
+    const fromFile = await tryReadPath(uri);
+    if (fromFile) return fromFile;
+  }
+
+  // 2) content:// — copy into cache then read (common on Android gallery)
+  if (uri.startsWith('content://')) {
+    try {
+      const dest = `${RNFS.CachesDirectoryPath}/lichka-pixel-avatar-in.bin`;
+      if (await RNFS.exists(dest)) {
+        await RNFS.unlink(dest);
+      }
+      await RNFS.copyFile(uri, dest);
+      const copied = await tryReadPath(dest);
+      if (copied) return copied;
+    } catch (e: unknown) {
+      errors.push(`content-copy:${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
+  // 3) Picker base64 fallback
   if (pickerBase64) {
-    return base64ToBytes(pickerBase64.replace(/\s/g, ''));
+    try {
+      return base64ToBytes(pickerBase64.replace(/\s/g, ''));
+    } catch (e: unknown) {
+      errors.push(`base64:${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
-  const fallbackPath = uri.replace(/^file:\/\//, '');
-  const b64 = await RNFS.readFile(fallbackPath, 'base64');
-  return base64ToBytes(b64);
+  throw new Error(`Could not load picked image (${uri}). ${errors.join(' | ')}`);
 }
 
 export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps) {
@@ -133,6 +167,8 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         maxHeight: 512,
         quality: 0.85 as import('react-native-image-picker').PhotoQuality,
         includeBase64: true,
+        // Prefer JPEG-compatible representation when gallery has HEIC/HEIF
+        assetRepresentationMode: 'compatible',
       },
       (response) => {
         isPickingImage.current = false;
