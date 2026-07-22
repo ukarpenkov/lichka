@@ -184,6 +184,11 @@ describe('ImageMessage', () => {
   });
 
   it('bleeds the image past the clip to avoid a light hairline under the radius', () => {
+    const { Dimensions } = require('react-native');
+    const screenWidth = Dimensions.get('window').width;
+    const contentColumn = Math.round(screenWidth - 20 * 2 - 88 - 8);
+    const expectedHeight = Math.round(Math.min(contentColumn / (800 / 600), 300));
+
     const { UNSAFE_getByType } = render(
       <ImageMessage message={createMessage()} />,
     );
@@ -191,9 +196,41 @@ describe('ImageMessage', () => {
     const { Image } = require('react-native');
     const image = UNSAFE_getByType(Image);
     const style = image.props.style;
-    expect(style.top).toBe(-1);
-    expect(style.bottom).toBe(-1);
-    expect(style.left).toBe(-1);
-    expect(style.right).toBe(-1);
+    expect(style.marginLeft).toBe(-1);
+    expect(style.marginTop).toBe(-1);
+    expect(style.width).toBe(contentColumn + 2);
+    expect(style.height).toBe(expectedHeight + 2);
+  });
+
+  it('keeps an explicit preview size so the bitmap is not covered by a black frame', () => {
+    const { UNSAFE_getByType, UNSAFE_getAllByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { Image, View } = require('react-native');
+    const image = UNSAFE_getByType(Image);
+    expect(typeof image.props.style.width).toBe('number');
+    expect(typeof image.props.style.height).toBe('number');
+    expect(image.props.style.width).toBeGreaterThan(0);
+    expect(image.props.style.height).toBeGreaterThan(0);
+
+    const frame = UNSAFE_getAllByType(View).find(
+      (node: { props: { style?: unknown } }) => {
+        const style = node.props.style;
+        if (!Array.isArray(style)) return false;
+        return style.some(
+          (entry) =>
+            entry &&
+            typeof entry === 'object' &&
+            'borderRadius' in entry &&
+            typeof entry.width === 'number',
+        );
+      },
+    );
+    expect(frame).toBeTruthy();
+    const flat = Array.isArray(frame!.props.style)
+      ? Object.assign({}, ...frame!.props.style.filter(Boolean))
+      : frame!.props.style;
+    expect(flat.backgroundColor).toBeUndefined();
   });
 });

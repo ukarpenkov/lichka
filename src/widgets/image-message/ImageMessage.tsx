@@ -17,6 +17,8 @@ const IMAGE_RADIUS = radii.md;
 const MAX_IMAGE_HEIGHT = 300;
 /** MessageLine time column minWidth — used only as layout fallback before onLayout. */
 const MESSAGE_TIME_COL_FALLBACK = 88;
+/** 1px bleed past clip edge — covers radius AA hairline without a black underlay. */
+const CLIP_BLEED = 1;
 
 type ImageMessageProps = {
   message: Message;
@@ -42,29 +44,46 @@ function parseImagePayload(
   }
 }
 
-function ImageVignette({ gradientId }: { gradientId: string }) {
+function ImageVignette({
+  width,
+  height,
+  gradientId,
+}: {
+  width: number;
+  height: number;
+  gradientId: string;
+}) {
+  // Pixel-space radial — percentage rx/ry on RN SVG often collapses to a solid
+  // black fill, which made chat previews unreadable.
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.sqrt(cx * cx + cy * cy);
+
   return (
     <Svg
+      width={width}
+      height={height}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <Defs>
-        {/*
-          Large soft radial: clear center, gentle falloff, darkest at corners
-          (corners are farthest from center). Avoids the hard oval ring of a
-          short-radius gradient and the near-black stack of 4 corner overlays.
-        */}
-        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="92%" ry="92%">
+        <RadialGradient
+          id={gradientId}
+          cx={cx}
+          cy={cy}
+          rx={radius}
+          ry={radius}
+          gradientUnits="userSpaceOnUse"
+        >
           <Stop offset="0%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="45%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="72%" stopColor="#000" stopOpacity={0.1} />
-          <Stop offset="88%" stopColor="#000" stopOpacity={0.28} />
-          <Stop offset="100%" stopColor="#000" stopOpacity={0.48} />
+          <Stop offset="55%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="82%" stopColor="#000" stopOpacity={0.1} />
+          <Stop offset="100%" stopColor="#000" stopOpacity={0.22} />
         </RadialGradient>
       </Defs>
-      <Rect width="100%" height="100%" fill={`url(#${gradientId})`} />
+      <Rect width={width} height={height} fill={`url(#${gradientId})`} />
     </Svg>
   );
 }
@@ -125,13 +144,27 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     height: imageHeight,
     borderRadius: IMAGE_RADIUS,
   };
+  const previewStyle = {
+    width: imageWidth + CLIP_BLEED * 2,
+    height: imageHeight + CLIP_BLEED * 2,
+    marginLeft: -CLIP_BLEED,
+    marginTop: -CLIP_BLEED,
+  };
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
       <Pressable onPress={handlePress} accessibilityRole="imagebutton">
         <View style={[styles.frame, frameStyle]}>
-          <Image source={{ uri: absoluteUri }} style={styles.image} />
-          <ImageVignette gradientId={vignetteId} />
+          <Image
+            source={{ uri: absoluteUri }}
+            style={previewStyle}
+            resizeMode="cover"
+          />
+          <ImageVignette
+            width={imageWidth}
+            height={imageHeight}
+            gradientId={vignetteId}
+          />
         </View>
       </Pressable>
       {hasCaption && (
@@ -153,17 +186,6 @@ const styles = StyleSheet.create({
   frame: {
     overflow: 'hidden',
     maxWidth: '100%',
-    // Absorbs anti-alias gap so canvas (#FAFAFA) never flashes as a white hairline
-    backgroundColor: '#000',
-  },
-  image: {
-    ...StyleSheet.absoluteFillObject,
-    // 1px bleed past the clip edge covers the classic radius AA seam
-    top: -1,
-    right: -1,
-    bottom: -1,
-    left: -1,
-    resizeMode: 'cover',
   },
   caption: {
     fontSize: 14,
