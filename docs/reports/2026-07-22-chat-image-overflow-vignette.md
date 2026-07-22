@@ -7,7 +7,8 @@
 - Убраны bubble-era отрицательные отступы (`marginHorizontal: -12`, `marginVertical: -8`) у `ImageMessage` — они тянули превью поверх иконки типа и за край ряда
 - Ширина превью считается по колонке контента `MessageLine` (gutter + time col + gap), с уточнением через `onLayout`, а не `screenWidth * 0.8`
 - Иконка типа для image-сообщений стоит слева от превью (как у текста), а не над ним
-- Виньетка в чате усилена: радиус градиента уже, затемнение к краям до ~48% opacity (fullscreen без изменений)
+- Виньетка в чате усилена: радиус градиента уже, затемнение к краям до ~72% opacity (fullscreen без изменений)
+- Насыщенность виньетки дополнительно поднята (края темнее: mid ~38%, edge ~72%)
 
 ## Изменённые файлы
 - `src/widgets/image-message/ImageMessage.tsx` — fit-to-column, без negative margins, сильнее vignette

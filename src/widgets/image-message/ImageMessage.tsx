@@ -61,12 +61,12 @@ function ImageVignette({
       importantForAccessibility="no-hide-descendants"
     >
       <Defs>
-        {/* Tighter radius + higher edge opacity — stronger vignette in chat preview only */}
-        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="62%" ry="62%">
+        {/* Darker edge vignette — chat preview only; fullscreen stays untouched */}
+        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="58%" ry="58%">
           <Stop offset="0%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="35%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="70%" stopColor="#000" stopOpacity={0.22} />
-          <Stop offset="100%" stopColor="#000" stopOpacity={0.48} />
+          <Stop offset="30%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="65%" stopColor="#000" stopOpacity={0.38} />
+          <Stop offset="100%" stopColor="#000" stopOpacity={0.72} />
         </RadialGradient>
       </Defs>
       <Rect width={width} height={height} fill={`url(#${gradientId})`} />
