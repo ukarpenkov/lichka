@@ -4,7 +4,7 @@ import {
   type PixelAvatarResult,
   type RgbaImage,
 } from './types';
-import { processPixelContourBuffer } from './processPixelContourBuffer';
+import { processThemePixelBuffer } from './processThemePixelBuffer';
 import { encodePngRgba, bytesToBase64, base64ToBytes } from './pngEncode';
 import { decodeImageBase64, decodeImageBytes } from './decodeImage';
 
@@ -18,10 +18,10 @@ export type PixelAvatarInput =
   | { kind: 'jpeg-base64'; base64: string };
 
 /**
- * Create a pixel-contour avatar PNG from a photo.
- * Local-only; designed so the buffer pipeline can move to Nitro C++ later.
+ * Create a theme-pixel avatar PNG from a photo.
+ * Luminance posterize mapped onto the current theme palette (background ↔ text).
  */
-export function createPixelContourAvatar(
+export function createThemePixelAvatar(
   input: PixelAvatarInput,
   options?: PixelAvatarOptions,
 ): PixelAvatarResult {
@@ -46,7 +46,7 @@ export function createPixelContourAvatar(
     }
   }
 
-  const rgba = processPixelContourBuffer(source, resolved);
+  const rgba = processThemePixelBuffer(source, resolved);
   const png = encodePngRgba(rgba.width, rgba.height, rgba.data);
   const b64 = bytesToBase64(png);
 
@@ -59,18 +59,25 @@ export function createPixelContourAvatar(
 }
 
 /** Helper for RNFS / picker base64 (JPEG or PNG). */
-export function createPixelContourAvatarFromBase64(
+export function createThemePixelAvatarFromBase64(
   base64: string,
   options?: PixelAvatarOptions,
 ): PixelAvatarResult {
-  return createPixelContourAvatar({ kind: 'base64', base64 }, options);
+  return createThemePixelAvatar({ kind: 'base64', base64 }, options);
 }
 
-export function createPixelContourAvatarFromBytes(
+export function createThemePixelAvatarFromBytes(
   bytes: Uint8Array,
   options?: PixelAvatarOptions,
 ): PixelAvatarResult {
-  return createPixelContourAvatar({ kind: 'bytes', bytes }, options);
+  return createThemePixelAvatar({ kind: 'bytes', bytes }, options);
 }
+
+/** @deprecated Use createThemePixelAvatar */
+export const createPixelContourAvatar = createThemePixelAvatar;
+/** @deprecated Use createThemePixelAvatarFromBase64 */
+export const createPixelContourAvatarFromBase64 = createThemePixelAvatarFromBase64;
+/** @deprecated Use createThemePixelAvatarFromBytes */
+export const createPixelContourAvatarFromBytes = createThemePixelAvatarFromBytes;
 
 export { base64ToBytes };

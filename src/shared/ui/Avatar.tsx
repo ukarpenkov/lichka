@@ -16,7 +16,7 @@ function isFileAvatar(path: string): boolean {
 }
 
 export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
-  const { text } = useTheme();
+  const { text, background } = useTheme();
   const radius = size / 2;
   const letter = title.charAt(0).toUpperCase() || '?';
 
@@ -66,8 +66,8 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
             width: size,
             height: size,
             borderRadius: radius,
-            // Pixel-contour avatars are white+black ink; keep white plate under PNG
-            backgroundColor: avatarPath.endsWith('.png') ? '#ffffff' : text + '15',
+            // Theme-pixel avatars are opaque theme palette; plate matches theme bg
+            backgroundColor: avatarPath.endsWith('.png') ? background : text + '15',
             overflow: 'hidden',
           },
         ]}>

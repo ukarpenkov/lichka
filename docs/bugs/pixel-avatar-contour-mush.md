@@ -1,10 +1,11 @@
 # Баг: пиксельный контур аватара превращается в «кашу»
 
 **Ветка:** `feat/pixel-avatar`  
-**Статус:** open — выбран выход: **theme-pixel** вместо контурного MVP  
+**Статус:** resolved — внедрён **theme-pixel** (won't-fix contour MVP)  
 **Платформа:** Android (воспроизведено), ожидаемо и iOS  
 **Дата:** 2026-07-22  
-**Обновлено:** 2026-07-22
+**Обновлено:** 2026-07-22  
+**Закрыто:** 2026-07-22 — см. `docs/features/theme-pixel-avatar-proposal.md`
 
 ## Описание проблемы
 
@@ -99,6 +100,13 @@
 - Контурный режим — optional later (только с face-detect).
 - Переименовать/переписать proposal под **theme-pixel chat avatar**; заменить `processPixelContourBuffer` на luminance→theme quantize.
 - Статус этого бага после внедрения theme-pixel: **resolved** (won't-fix contour MVP) либо закрыть с ссылкой на новую фичу.
+
+### Внедрено (2026-07-22)
+
+- `processThemePixelBuffer` / `createThemePixelAvatar` — luminance → theme palette.
+- `ChatForm` передаёт `background` + `text` из `useTheme`.
+- Proposal: `docs/features/theme-pixel-avatar-proposal.md`.
+- Контурный proposal помечен `rejected` / superseded.
 
 ## Вложения / референсы
 

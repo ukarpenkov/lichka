@@ -1,6 +1,17 @@
+# Пиксельная контурная аватарка чата (устарело)
+
+**Статус:** rejected — заменено на [`theme-pixel-avatar-proposal.md`](./theme-pixel-avatar-proposal.md)
+
+Контурный Sobel MVP не дал читаемого результата на реальных gallery-фото без face ROI.
+См. баг [`docs/bugs/pixel-avatar-contour-mush.md`](../bugs/pixel-avatar-contour-mush.md).
+
+Историческое описание цели и референс контура сохранены ниже для контекста; реализация в коде — **theme-pixel**.
+
+---
+
 # Пиксельная контурная аватарка чата
 
-**Статус:** implemented
+**Статус (архив):** implemented → superseded
 
 ## Название фичи
 

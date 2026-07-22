@@ -17,7 +17,7 @@ import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
-import { createPixelContourAvatarFromBytes, base64ToBytes } from '../../features/pixel-avatar';
+import { createThemePixelAvatarFromBytes, base64ToBytes } from '../../features/pixel-avatar';
 
 import { IconGrid } from './IconGrid';
 
@@ -140,7 +140,10 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         // Prefer the picker temp file (resized) over asset.base64 — on Android
         // base64 is often the original PNG/WebP while uri points to a JPEG.
         const bytes = await loadPickedImageBytes(uri, pickerBase64);
-        const result = createPixelContourAvatarFromBytes(bytes);
+        const result = createThemePixelAvatarFromBytes(bytes, {
+          background,
+          text,
+        });
         setAvatarUri(result.dataUri);
         setPendingPngBase64(result.dataUri);
         setIconAvatar(null);
@@ -155,7 +158,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         setProcessingAvatar(false);
       }
     },
-    [t],
+    [t, background, text],
   );
 
   const handlePickImage = useCallback(() => {
