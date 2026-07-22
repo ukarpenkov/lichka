@@ -20,6 +20,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../shared/config';
 
 import type { ImageViewerData } from './useImageViewer';
+import {
+  getRelativePanTranslation,
+  getSingleTapAction,
+  isImageZoomed,
+} from './viewerGestureState';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
@@ -135,6 +140,10 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
   const pinchStartFocalY = useSharedValue(0);
   const panStartTranslateX = useSharedValue(0);
   const panStartTranslateY = useSharedValue(0);
+  const panEventStartX = useSharedValue(0);
+  const panEventStartY = useSharedValue(0);
+  const panEventTranslationX = useSharedValue(0);
+  const panEventTranslationY = useSharedValue(0);
   const isPinching = useSharedValue(false);
 
   const centerX = useSharedValue(screenWidth / 2);
@@ -168,6 +177,10 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       containerTranslateY.value = 0;
       panStartTranslateX.value = 0;
       panStartTranslateY.value = 0;
+      panEventStartX.value = 0;
+      panEventStartY.value = 0;
+      panEventTranslationX.value = 0;
+      panEventTranslationY.value = 0;
       // Fade in here — cached images often skip a second onLoad after remount.
       const openTiming = reduceMotion ? { duration: 0 } : { duration: OPEN_DURATION };
       imageOpacity.value = withTiming(1, openTiming);
@@ -267,6 +280,8 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       pinchStartFocalY.value = e.focalY;
       panStartTranslateX.value = imageTranslateX.value;
       panStartTranslateY.value = imageTranslateY.value;
+      panEventStartX.value = panEventTranslationX.value;
+      panEventStartY.value = panEventTranslationY.value;
     })
     .onUpdate((e) => {
       const next = focalZoomTranslation(
@@ -294,9 +309,8 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       imageTranslateY.value = clamped.y;
     })
     .onEnd(() => {
-      isPinching.value = false;
-
       if (scale.value <= MIN_SCALE + 0.02) {
+        isPinching.value = false;
         runOnJS(resetZoom)(true);
         return;
       }
@@ -312,29 +326,59 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       imageTranslateY.value = clamped.y;
       panStartTranslateX.value = clamped.x;
       panStartTranslateY.value = clamped.y;
+      panEventStartX.value = panEventTranslationX.value;
+      panEventStartY.value = panEventTranslationY.value;
+      isPinching.value = false;
     })
-    .onFinalize(() => {
+    .onFinalize((_event, success) => {
+      if (!success) {
+        const clamped = clampTranslation(
+          imageTranslateX.value,
+          imageTranslateY.value,
+          scale.value,
+          frameWidth.value,
+          frameHeight.value,
+        );
+        imageTranslateX.value = clamped.x;
+        imageTranslateY.value = clamped.y;
+        panStartTranslateX.value = clamped.x;
+        panStartTranslateY.value = clamped.y;
+        panEventStartX.value = panEventTranslationX.value;
+        panEventStartY.value = panEventTranslationY.value;
+      }
       isPinching.value = false;
     });
 
   const panGesture = Gesture.Pan()
-    .onStart(() => {
-      if (isPinching.value) {
-        return;
-      }
-
+    .averageTouches(true)
+    .onStart((e) => {
       panStartTranslateX.value = imageTranslateX.value;
       panStartTranslateY.value = imageTranslateY.value;
+      panEventStartX.value = e.translationX;
+      panEventStartY.value = e.translationY;
+      panEventTranslationX.value = e.translationX;
+      panEventTranslationY.value = e.translationY;
     })
     .onUpdate((e) => {
+      panEventTranslationX.value = e.translationX;
+      panEventTranslationY.value = e.translationY;
+
       if (isPinching.value) {
         return;
       }
 
-      if (scale.value > MIN_SCALE + 0.01) {
+      if (isImageZoomed(scale.value)) {
         const clamped = clampTranslation(
-          panStartTranslateX.value + e.translationX,
-          panStartTranslateY.value + e.translationY,
+          getRelativePanTranslation(
+            panStartTranslateX.value,
+            e.translationX,
+            panEventStartX.value,
+          ),
+          getRelativePanTranslation(
+            panStartTranslateY.value,
+            e.translationY,
+            panEventStartY.value,
+          ),
           scale.value,
           frameWidth.value,
           frameHeight.value,
@@ -356,11 +400,14 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       overlayOpacity.value = 1 - Math.min(1, containerTranslateY.value / 300);
     })
     .onEnd((e) => {
+      panEventTranslationX.value = e.translationX;
+      panEventTranslationY.value = e.translationY;
+
       if (isPinching.value) {
         return;
       }
 
-      if (scale.value > MIN_SCALE + 0.01) {
+      if (isImageZoomed(scale.value)) {
         const clamped = clampTranslation(
           imageTranslateX.value,
           imageTranslateY.value,
@@ -394,10 +441,8 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
     .maxDuration(250)
     .requireExternalGestureToFail(doubleTapGesture)
     .onEnd(() => {
-      if (scale.value <= MIN_SCALE + 0.01) {
+      if (getSingleTapAction(scale.value) === 'close') {
         runOnJS(close)();
-      } else {
-        runOnJS(resetZoom)(true);
       }
     });
 
