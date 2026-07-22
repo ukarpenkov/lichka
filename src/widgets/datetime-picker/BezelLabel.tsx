@@ -18,6 +18,8 @@ type Props = {
   fontSize: number;
   textColor: string;
   accentColor: string;
+  /** Angular step in degrees; defaults to 360/count. */
+  step?: number;
   dim?: boolean;
 };
 
@@ -30,16 +32,18 @@ export function BezelLabel({
   fontSize,
   textColor,
   accentColor,
+  step: stepProp,
   dim,
 }: Props) {
-  const step = 360 / count;
-  const base = step * index;
+  const step = stepProp ?? 360 / count;
   const dimOpacity = 0.35;
 
   const style = useAnimatedStyle(() => {
-    const onScreen = base + rotation.value;
-    let a = ((onScreen % 360) + 360) % 360;
-    if (a > 180) a -= 360;
+    // Index-space shortest path — safe when count*step > 360 (day spacing > 1×).
+    const continuous = -rotation.value / step;
+    let d = index - continuous;
+    d -= count * Math.round(d / count);
+    const a = d * step;
     const dist = Math.abs(a);
 
     const opacity = interpolate(
@@ -50,7 +54,7 @@ export function BezelLabel({
     );
     const scale = interpolate(dist, [0, step], [1.32, 0.92], Extrapolation.CLAMP);
 
-    const rad = ((onScreen - 90) * Math.PI) / 180;
+    const rad = ((a - 90) * Math.PI) / 180;
     const x = radius * Math.cos(rad);
     const y = radius * Math.sin(rad);
 

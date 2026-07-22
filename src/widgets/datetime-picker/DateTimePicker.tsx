@@ -59,9 +59,11 @@ const SPRING = { damping: 22, stiffness: 220 };
 /**
  * Day ring is denser (≈12°/step vs 30° for months) — damp finger→rotation
  * and require >½ step before committing the next day.
+ * Visual spacing is 1.5× so neighbors sit farther apart on the ring.
  */
-const DAY_ROTATION_GAIN = 0.62;
+const DAY_ROTATION_GAIN = 0.31;
 const DAY_STEP_THRESHOLD = 0.62;
+const DAY_SPACING = 1.5;
 
 function wrapIndex(idx: number, count: number): number {
   'worklet';
@@ -85,7 +87,7 @@ type Props = {
 
 function dayStep(count: number): number {
   'worklet';
-  return 360 / count;
+  return (360 / count) * DAY_SPACING;
 }
 
 export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
@@ -584,6 +586,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                     textColor={text}
                     accentColor={ACCENT}
                     fontSize={12}
+                    step={dayStep(dayCount)}
                     dimIndices={dimDayIndices}
                   />
                 </View>

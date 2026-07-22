@@ -14,6 +14,8 @@ type Props = {
   textColor: string;
   accentColor: string;
   fontSize: number;
+  /** Angular step in degrees; defaults to 360/count. */
+  step?: number;
   dimIndices?: Set<number>;
 };
 
@@ -27,6 +29,7 @@ export function Bezel({
   textColor,
   accentColor,
   fontSize,
+  step,
   dimIndices,
 }: Props) {
   const cx = size / 2;
@@ -63,6 +66,7 @@ export function Bezel({
           fontSize={fontSize}
           textColor={textColor}
           accentColor={accentColor}
+          step={step}
           dim={dimIndices?.has(i)}
         />
       ))}
