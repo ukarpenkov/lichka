@@ -82,35 +82,64 @@ describe('ImageMessage', () => {
   });
 
   it('computes image dimensions from payload width/height', () => {
-    const { UNSAFE_getByType } = render(
+    const { UNSAFE_getAllByType } = render(
       <ImageMessage message={createMessage({
         payload: JSON.stringify({ uri: 'media/images/2.jpg', width: 400, height: 300 }),
       })} />,
     );
 
-    const { Image } = require('react-native');
-    const image = UNSAFE_getByType(Image);
-    const style = image.props.style[1];
-    expect(style).toBeDefined();
-    expect(style.height).toBeGreaterThan(0);
-    expect(style.height).toBeLessThanOrEqual(300);
+    const { View } = require('react-native');
+    const frame = UNSAFE_getAllByType(View).find(
+      (node: { props: { style?: unknown } }) => {
+        const style = node.props.style;
+        if (!Array.isArray(style)) return false;
+        return style.some(
+          (entry) =>
+            entry &&
+            typeof entry === 'object' &&
+            'borderRadius' in entry &&
+            typeof entry.height === 'number',
+        );
+      },
+    );
+    expect(frame).toBeTruthy();
+    const frameSize = (frame!.props.style as Array<Record<string, number>>).find(
+      (entry) => entry && typeof entry.height === 'number',
+    )!;
+    expect(frameSize.height).toBeGreaterThan(0);
+    expect(frameSize.height).toBeLessThanOrEqual(300);
   });
 
   it('keeps preview width within the content column, not full screen', () => {
     const { Dimensions } = require('react-native');
     const screenWidth = Dimensions.get('window').width;
     // gutter*2 + MessageLine time col + row gap
-    const contentColumn = screenWidth - 20 * 2 - 88 - 8;
+    const contentColumn = Math.round(screenWidth - 20 * 2 - 88 - 8);
 
-    const { UNSAFE_getByType } = render(
+    const { UNSAFE_getAllByType } = render(
       <ImageMessage message={createMessage()} />,
     );
 
-    const { Image } = require('react-native');
-    const image = UNSAFE_getByType(Image);
-    const style = image.props.style[1];
-    expect(style.width).toBe(contentColumn);
-    expect(style.width).toBeLessThan(screenWidth);
+    const { View } = require('react-native');
+    const frame = UNSAFE_getAllByType(View).find(
+      (node: { props: { style?: unknown } }) => {
+        const style = node.props.style;
+        if (!Array.isArray(style)) return false;
+        return style.some(
+          (entry) =>
+            entry &&
+            typeof entry === 'object' &&
+            'borderRadius' in entry &&
+            typeof entry.width === 'number',
+        );
+      },
+    );
+    expect(frame).toBeTruthy();
+    const frameSize = (frame!.props.style as Array<Record<string, number>>).find(
+      (entry) => entry && typeof entry.width === 'number',
+    )!;
+    expect(frameSize.width).toBe(contentColumn);
+    expect(frameSize.width).toBeLessThan(screenWidth);
   });
 
   it('does not use bubble-era negative margins that overflow the row', () => {
@@ -152,5 +181,19 @@ describe('ImageMessage', () => {
     );
     expect(frames.length).toBeGreaterThan(0);
     expect(UNSAFE_getByType(Svg)).toBeTruthy();
+  });
+
+  it('bleeds the image past the clip to avoid a light hairline under the radius', () => {
+    const { UNSAFE_getByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { Image } = require('react-native');
+    const image = UNSAFE_getByType(Image);
+    const style = image.props.style;
+    expect(style.top).toBe(-1);
+    expect(style.bottom).toBe(-1);
+    expect(style.left).toBe(-1);
+    expect(style.right).toBe(-1);
   });
 });

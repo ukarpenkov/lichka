@@ -42,34 +42,47 @@ function parseImagePayload(
   }
 }
 
-function ImageVignette({
-  width,
-  height,
-  gradientId,
-}: {
-  width: number;
-  height: number;
-  gradientId: string;
-}) {
+/** Soft corner glows — darkest at corners, no hard oval ring from a center radial. */
+const VIGNETTE_CORNERS = [
+  { key: 'tl', cx: '0%', cy: '0%' },
+  { key: 'tr', cx: '100%', cy: '0%' },
+  { key: 'bl', cx: '0%', cy: '100%' },
+  { key: 'br', cx: '100%', cy: '100%' },
+] as const;
+
+function ImageVignette({ gradientId }: { gradientId: string }) {
   return (
     <Svg
-      width={width}
-      height={height}
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <Defs>
-        {/* Darker edge vignette — chat preview only; fullscreen stays untouched */}
-        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="58%" ry="58%">
-          <Stop offset="0%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="30%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="65%" stopColor="#000" stopOpacity={0.38} />
-          <Stop offset="100%" stopColor="#000" stopOpacity={0.72} />
-        </RadialGradient>
+        {VIGNETTE_CORNERS.map(({ key, cx, cy }) => (
+          <RadialGradient
+            key={key}
+            id={`${gradientId}-${key}`}
+            cx={cx}
+            cy={cy}
+            rx="72%"
+            ry="72%"
+          >
+            <Stop offset="0%" stopColor="#000" stopOpacity={0.42} />
+            <Stop offset="35%" stopColor="#000" stopOpacity={0.18} />
+            <Stop offset="70%" stopColor="#000" stopOpacity={0.05} />
+            <Stop offset="100%" stopColor="#000" stopOpacity={0} />
+          </RadialGradient>
+        ))}
       </Defs>
-      <Rect width={width} height={height} fill={`url(#${gradientId})`} />
+      {VIGNETTE_CORNERS.map(({ key }) => (
+        <Rect
+          key={key}
+          width="100%"
+          height="100%"
+          fill={`url(#${gradientId}-${key})`}
+        />
+      ))}
     </Svg>
   );
 }
@@ -118,8 +131,13 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     imageData.width > 0 && imageData.height > 0
       ? imageData.width / imageData.height
       : 1;
-  const imageHeight = Math.min(availableWidth / aspectRatio, MAX_IMAGE_HEIGHT);
-  const imageWidth = availableWidth;
+  // Integer bounds — fractional height + overflow:hidden + radius leaves a 1px
+  // light seam (reads as a white line) at the bottom of the clip on both platforms.
+  const imageHeight = Math.max(
+    1,
+    Math.round(Math.min(availableWidth / aspectRatio, MAX_IMAGE_HEIGHT)),
+  );
+  const imageWidth = Math.max(1, Math.round(availableWidth));
   const frameStyle = {
     width: imageWidth,
     height: imageHeight,
@@ -130,15 +148,8 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     <View style={styles.container} onLayout={handleLayout}>
       <Pressable onPress={handlePress} accessibilityRole="imagebutton">
         <View style={[styles.frame, frameStyle]}>
-          <Image
-            source={{ uri: absoluteUri }}
-            style={[styles.image, { width: imageWidth, height: imageHeight }]}
-          />
-          <ImageVignette
-            width={imageWidth}
-            height={imageHeight}
-            gradientId={vignetteId}
-          />
+          <Image source={{ uri: absoluteUri }} style={styles.image} />
+          <ImageVignette gradientId={vignetteId} />
         </View>
       </Pressable>
       {hasCaption && (
@@ -160,8 +171,16 @@ const styles = StyleSheet.create({
   frame: {
     overflow: 'hidden',
     maxWidth: '100%',
+    // Absorbs anti-alias gap so canvas (#FAFAFA) never flashes as a white hairline
+    backgroundColor: '#000',
   },
   image: {
+    ...StyleSheet.absoluteFillObject,
+    // 1px bleed past the clip edge covers the classic radius AA seam
+    top: -1,
+    right: -1,
+    bottom: -1,
+    left: -1,
     resizeMode: 'cover',
   },
   caption: {
