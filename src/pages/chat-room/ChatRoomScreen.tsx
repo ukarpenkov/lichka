@@ -159,6 +159,7 @@ export function ChatRoomScreen() {
       loadData();
       timerRef.current = setInterval(loadData, REFRESH_INTERVAL);
       return () => {
+        markChatAsRead(chatId);
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;

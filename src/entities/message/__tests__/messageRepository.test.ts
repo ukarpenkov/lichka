@@ -17,6 +17,7 @@ import {
   getMessagesForChatAtTime,
   disableFiredMessages,
   getPeriodicDisplayMessages,
+  getUnreadCounts,
   isPeriodicDisplayId,
   extractTemplateId,
 } from '../model/messageRepository';
@@ -533,6 +534,89 @@ describe('messageRepository', () => {
       expect(sql).toContain("type = 'periodic'");
       expect(sql).toContain('enabled = 1');
       expect(params[0]).toBe('chat-abc');
+    });
+  });
+
+  describe('getUnreadCounts', () => {
+    it('should count only fired reminder/alarm messages after last read', () => {
+      mockExecuteSync
+        .mockReturnValueOnce({
+          rows: [{ chat_id: 'chat-1', cnt: 2 }],
+        })
+        .mockReturnValueOnce({ rows: [] });
+
+      expect(getUnreadCounts()).toEqual({ 'chat-1': 2 });
+
+      const [sql] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("type IN ('reminder', 'alarm')");
+      expect(sql).toContain("REPLACE(SUBSTR(m.scheduled_at, 1, 19), 'T', ' ') <= datetime('now')");
+      expect(sql).not.toContain("'simple'");
+      expect(sql).not.toContain("'image'");
+    });
+
+    it('should not treat simple user messages as unread', () => {
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [] })
+        .mockReturnValueOnce({ rows: [] });
+
+      expect(getUnreadCounts()).toEqual({});
+
+      const [sql] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain("type IN ('reminder', 'alarm')");
+    });
+
+    it('should count a periodic template when latest fire is after last read', () => {
+      const createdMs = Date.now() - 90 * 60_000;
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [] })
+        .mockReturnValueOnce({
+          rows: [
+            {
+              chat_id: 'chat-1',
+              created_at: new Date(createdMs).toISOString(),
+              interval_minutes: 60,
+              last_read_at: new Date(createdMs + 30 * 60_000).toISOString(),
+            },
+          ],
+        });
+
+      expect(getUnreadCounts()).toEqual({ 'chat-1': 1 });
+    });
+
+    it('should skip periodic when latest fire is already read', () => {
+      const createdMs = Date.now() - 90 * 60_000;
+      const latestFireMs = createdMs + 60 * 60_000;
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [] })
+        .mockReturnValueOnce({
+          rows: [
+            {
+              chat_id: 'chat-1',
+              created_at: new Date(createdMs).toISOString(),
+              interval_minutes: 60,
+              last_read_at: new Date(latestFireMs + 1000).toISOString(),
+            },
+          ],
+        });
+
+      expect(getUnreadCounts()).toEqual({});
+    });
+
+    it('should skip periodic that has not fired yet', () => {
+      mockExecuteSync
+        .mockReturnValueOnce({ rows: [] })
+        .mockReturnValueOnce({
+          rows: [
+            {
+              chat_id: 'chat-1',
+              created_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+              interval_minutes: 60,
+              last_read_at: null,
+            },
+          ],
+        });
+
+      expect(getUnreadCounts()).toEqual({});
     });
   });
 });

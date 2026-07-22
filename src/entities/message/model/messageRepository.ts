@@ -246,22 +246,54 @@ export function getMessagesForChatAtTime(chatId: string): Message[] {
   return result.rows.map(mapRow);
 }
 
+/**
+ * Unread = fired app notifications only (reminder / alarm / periodic),
+ * not user-authored simple/image messages.
+ */
 export function getUnreadCounts(): Record<string, number> {
   const db = getDatabase();
-  const result = db.executeSync(
-    `SELECT chat_id, COUNT(*) AS cnt
-     FROM messages
-     WHERE chat_id NOT IN (
-       SELECT chat_id FROM chat_read_markers
-       WHERE last_read_at >= messages.created_at
-     )
-     GROUP BY chat_id`,
+  const counts: Record<string, number> = {};
+
+  const firedResult = db.executeSync(
+    `SELECT m.chat_id, COUNT(*) AS cnt
+     FROM messages m
+     LEFT JOIN chat_read_markers r ON r.chat_id = m.chat_id
+     WHERE m.type IN ('reminder', 'alarm')
+       AND m.scheduled_at IS NOT NULL
+       AND REPLACE(SUBSTR(m.scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
+       AND (r.last_read_at IS NULL OR r.last_read_at < m.created_at)
+     GROUP BY m.chat_id`,
   );
 
-  const counts: Record<string, number> = {};
-  for (const row of result.rows) {
+  for (const row of firedResult.rows) {
     counts[row.chat_id as string] = row.cnt as number;
   }
+
+  const periodicResult = db.executeSync(
+    `SELECT m.chat_id, m.created_at, m.interval_minutes, r.last_read_at
+     FROM messages m
+     LEFT JOIN chat_read_markers r ON r.chat_id = m.chat_id
+     WHERE m.type = 'periodic'
+       AND m.enabled = 1
+       AND m.interval_minutes IS NOT NULL`,
+  );
+
+  const now = Date.now();
+  for (const row of periodicResult.rows) {
+    const intervalMinutes = row.interval_minutes as number;
+    const createdAtMs = new Date(row.created_at as string).getTime();
+    const intervalMs = intervalMinutes * 60_000;
+    const fires = Math.floor((now - createdAtMs) / intervalMs);
+    if (fires <= 0) continue;
+
+    const latestFireAt = new Date(createdAtMs + fires * intervalMs).toISOString();
+    const lastReadAt = row.last_read_at as string | null;
+    if (lastReadAt !== null && lastReadAt >= latestFireAt) continue;
+
+    const chatId = row.chat_id as string;
+    counts[chatId] = (counts[chatId] ?? 0) + 1;
+  }
+
   return counts;
 }
 
