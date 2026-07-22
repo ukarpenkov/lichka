@@ -1,13 +1,22 @@
-import React, { useCallback, useMemo } from 'react';
-import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  Image,
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Text } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
-import { radii } from '../../shared/config';
+import { radii, spacing } from '../../shared/config';
 import type { Message } from '../../entities/message';
 
 const IMAGE_RADIUS = radii.md;
 const MAX_IMAGE_HEIGHT = 300;
+/** MessageLine time column minWidth — used only as layout fallback before onLayout. */
+const MESSAGE_TIME_COL_FALLBACK = 88;
 
 type ImageMessageProps = {
   message: Message;
@@ -52,10 +61,12 @@ function ImageVignette({
       importantForAccessibility="no-hide-descendants"
     >
       <Defs>
-        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="72%" ry="72%">
+        {/* Tighter radius + higher edge opacity — stronger vignette in chat preview only */}
+        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="62%" ry="62%">
           <Stop offset="0%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="55%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="100%" stopColor="#000" stopOpacity={0.28} />
+          <Stop offset="35%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="70%" stopColor="#000" stopOpacity={0.22} />
+          <Stop offset="100%" stopColor="#000" stopOpacity={0.48} />
         </RadialGradient>
       </Defs>
       <Rect width={width} height={height} fill={`url(#${gradientId})`} />
@@ -65,6 +76,7 @@ function ImageVignette({
 
 export function ImageMessage({ message, onPress }: ImageMessageProps) {
   const { width: screenWidth } = useWindowDimensions();
+  const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
 
   const imageData = useMemo(() => parseImagePayload(message.payload), [message.payload]);
   const absoluteUri = useMemo(
@@ -74,6 +86,19 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
 
   const hasCaption = Boolean(message.body && message.body.trim().length > 0);
   const vignetteId = `img-vignette-${message.id}`;
+
+  const fallbackWidth = Math.max(
+    120,
+    screenWidth - spacing.gutter * 2 - MESSAGE_TIME_COL_FALLBACK - spacing.sm,
+  );
+  const availableWidth = measuredWidth ?? fallbackWidth;
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const next = Math.floor(event.nativeEvent.layout.width);
+    if (next > 0) {
+      setMeasuredWidth((prev) => (prev === next ? prev : next));
+    }
+  }, []);
 
   const handlePress = useCallback(() => {
     if (imageData && absoluteUri && onPress) {
@@ -89,28 +114,28 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
     );
   }
 
-  const bubbleWidth = screenWidth * 0.8;
   const aspectRatio =
     imageData.width > 0 && imageData.height > 0
       ? imageData.width / imageData.height
       : 1;
-  const imageHeight = Math.min(bubbleWidth / aspectRatio, MAX_IMAGE_HEIGHT);
+  const imageHeight = Math.min(availableWidth / aspectRatio, MAX_IMAGE_HEIGHT);
+  const imageWidth = availableWidth;
   const frameStyle = {
-    width: bubbleWidth,
+    width: imageWidth,
     height: imageHeight,
     borderRadius: IMAGE_RADIUS,
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleLayout}>
       <Pressable onPress={handlePress} accessibilityRole="imagebutton">
         <View style={[styles.frame, frameStyle]}>
           <Image
             source={{ uri: absoluteUri }}
-            style={[styles.image, { width: bubbleWidth, height: imageHeight }]}
+            style={[styles.image, { width: imageWidth, height: imageHeight }]}
           />
           <ImageVignette
-            width={bubbleWidth}
+            width={imageWidth}
             height={imageHeight}
             gradientId={vignetteId}
           />
@@ -127,12 +152,14 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: -12,
-    marginVertical: -8,
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
     gap: 4,
   },
   frame: {
     overflow: 'hidden',
+    maxWidth: '100%',
   },
   image: {
     resizeMode: 'cover',
@@ -140,8 +167,6 @@ const styles = StyleSheet.create({
   caption: {
     fontSize: 14,
     marginTop: 2,
-    paddingHorizontal: 12,
-    paddingBottom: 8,
   },
   fallback: {
     fontSize: 15,

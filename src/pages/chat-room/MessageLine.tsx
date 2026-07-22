@@ -153,13 +153,15 @@ export function MessageLine({
               <VoiceMessage message={message} />
             </View>
           ) : isImage ? (
-            <View style={styles.mediaBlock}>
+            <View style={styles.textRow}>
               {TypeIcon ? (
                 <View style={styles.typeIcon} accessibilityLabel={typeA11y}>
                   <TypeIcon size={14} color={colors.muted} />
                 </View>
               ) : null}
-              <ImageMessage message={message} onPress={onImagePress} />
+              <View style={styles.mediaBody}>
+                <ImageMessage message={message} onPress={onImagePress} />
+              </View>
             </View>
           ) : (
             <View style={styles.textRow}>
@@ -224,6 +226,12 @@ const styles = StyleSheet.create({
   },
   mediaBlock: {
     gap: spacing.xs,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  mediaBody: {
+    flex: 1,
+    minWidth: 0,
   },
   editedAlone: {
     marginTop: spacing.xxs,

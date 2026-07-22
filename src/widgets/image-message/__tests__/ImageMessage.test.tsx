@@ -96,6 +96,40 @@ describe('ImageMessage', () => {
     expect(style.height).toBeLessThanOrEqual(300);
   });
 
+  it('keeps preview width within the content column, not full screen', () => {
+    const { Dimensions } = require('react-native');
+    const screenWidth = Dimensions.get('window').width;
+    // gutter*2 + MessageLine time col + row gap
+    const contentColumn = screenWidth - 20 * 2 - 88 - 8;
+
+    const { UNSAFE_getByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { Image } = require('react-native');
+    const image = UNSAFE_getByType(Image);
+    const style = image.props.style[1];
+    expect(style.width).toBe(contentColumn);
+    expect(style.width).toBeLessThan(screenWidth);
+  });
+
+  it('does not use bubble-era negative margins that overflow the row', () => {
+    const { UNSAFE_getAllByType } = render(
+      <ImageMessage message={createMessage()} />,
+    );
+
+    const { View } = require('react-native');
+    const containers = UNSAFE_getAllByType(View);
+    const withNegativeMargin = containers.some(
+      (node: { props: { style?: { marginHorizontal?: number; marginVertical?: number } } }) => {
+        const style = node.props.style;
+        if (!style || Array.isArray(style)) return false;
+        return style.marginHorizontal === -12 || style.marginVertical === -8;
+      },
+    );
+    expect(withNegativeMargin).toBe(false);
+  });
+
   it('rounds preview corners and overlays a vignette', () => {
     const { UNSAFE_getByType, UNSAFE_getAllByType } = render(
       <ImageMessage message={createMessage()} />,

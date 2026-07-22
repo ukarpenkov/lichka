@@ -46,6 +46,8 @@ test(entities/note): add unit tests for Note model
 
 ## Авторство коммитов
 
-- **Не добавлять** `Co-Authored-By: Claude…`, `Generated with Claude Code` и любые AI/Anthropic trailers
+- **Не указывать соавторов** — никаких строк `Co-Authored-By: …` (ни людей, ни AI, ни Cursor/Claude/Copilot)
+- **Не добавлять** trailer'ы вроде `Generated with …`, `Signed-off-by:` от агента и подобные метаданные авторства
 - **Author/Committer** — только человек (локальный `git config user.name` / `user.email`)
-- Hook `.githooks/commit-msg` удалит такие строки, если агент всё же их добавит
+- Сообщение коммита = только Conventional Commits subject (и body при необходимости), без блока соавторов в конце
+- Hook `.githooks/commit-msg` удалит AI-trailers, если агент всё же их добавит — на это полагаться нельзя, не добавлять изначально
