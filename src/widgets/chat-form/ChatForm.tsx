@@ -17,7 +17,13 @@ import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
-import { createThemePixelAvatarFromBytes, base64ToBytes } from '../../features/pixel-avatar';
+import {
+  createThemePixelAvatarFromBytes,
+  recolorThemePixelAvatarFromBase64,
+  getThemeTintedAvatarDataUri,
+  isThemePixelFileAvatar,
+  base64ToBytes,
+} from '../../features/pixel-avatar';
 
 import { IconGrid } from './IconGrid';
 
@@ -118,7 +124,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
           setPendingPngBase64(null);
           setIconAvatar(path);
         } else {
-          setAvatarUri(path ? `file://${resolveMediaPath(path)}` : null);
+          setAvatarUri(null);
           setPendingPngBase64(null);
           setIconAvatar(null);
         }
@@ -133,6 +139,43 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     }
   }, [visible, editChat]);
 
+  // Live-tint: pending mask, or existing PNG on disk when editing
+  useEffect(() => {
+    if (!visible) return;
+
+    if (pendingPngBase64) {
+      try {
+        const painted = recolorThemePixelAvatarFromBase64(pendingPngBase64, {
+          background,
+          text,
+        });
+        setAvatarUri(painted.dataUri);
+      } catch (e) {
+        console.error('pixel avatar recolor error:', e);
+      }
+      return;
+    }
+
+    const path = editChat?.avatarPath;
+    if (path && isThemePixelFileAvatar(path) && !iconAvatar) {
+      let alive = true;
+      void getThemeTintedAvatarDataUri(path, { background, text })
+        .then((uri) => {
+          if (alive) setAvatarUri(uri);
+        })
+        .catch(() => {
+          if (alive) setAvatarUri(`file://${resolveMediaPath(path)}`);
+        });
+      return () => {
+        alive = false;
+      };
+    }
+
+    if (path && !iconAvatar && (path.includes('/') || path.startsWith('file:'))) {
+      setAvatarUri(`file://${resolveMediaPath(path)}`);
+    }
+  }, [visible, pendingPngBase64, editChat, iconAvatar, background, text]);
+
   const applyPixelAvatar = useCallback(
     async (uri: string, pickerBase64?: string) => {
       setProcessingAvatar(true);
@@ -144,8 +187,8 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
           background,
           text,
         });
-        setAvatarUri(result.dataUri);
-        setPendingPngBase64(result.dataUri);
+        // Persist grayscale mask; preview recolors via effect
+        setPendingPngBase64(result.maskDataUri);
         setIconAvatar(null);
       } catch (e: any) {
         console.error('pixel avatar error:', e);
@@ -248,7 +291,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     }
     if (avatarUri) {
       return (
-        <View style={[styles.avatarIcon, { backgroundColor: '#ffffff' }]}>
+        <View style={[styles.avatarIcon, { backgroundColor: background }]}>
           <Image
             source={{ uri: avatarUri }}
             style={[styles.avatarImage, { borderColor: text + '33' }]}

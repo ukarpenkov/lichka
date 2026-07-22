@@ -1,55 +1,55 @@
 # Theme-pixel avatar вместо контурного MVP
 
 **Дата:** 2026-07-22  
-**Промпт/задача:** По staged-изменениям на `feat/pixel-avatar` — зафиксировать внедрение theme-pixel (выход из бага `pixel-avatar-contour-mush`).  
-**Scope staged:** 15 файлов, +642 / −632
+**Промпт/задача:** Внедрить theme-pixel (выход из бага `pixel-avatar-contour-mush`), затем по фидбеку на реальном фото — больше оттенков и мягче пикселизация.
 
 ## Что сделано
 
-- Контурный Sobel-пайплайн заменён на **theme-pixel**: center crop → box downsample (сетка 32–48) → luminance posterize (2–4 уровня) → lerp палитры темы (`background` ↔ `text`) → nearest-neighbor upscale.
-- Новый API: `createThemePixelAvatar` / `FromBytes` / `FromBase64`, `processThemePixelBuffer`.
-- Старые имена `createPixelContourAvatar*` / `processPixelContourBuffer` оставлены как deprecated aliases.
-- `ChatForm` при генерации передаёт `background` + `text` из `useTheme`.
-- `Avatar`: подложка PNG = theme `background` (вместо белой пластины под контур).
-- Баг `pixel-avatar-contour-mush` → **resolved** (won't-fix contour MVP).
-- Proposal: `theme-pixel-avatar` (implemented); contour proposal → rejected / superseded.
+- Контурный Sobel-пайплайн заменён на **theme-pixel**: center crop → box downsample → luminance quantize → duotone-ramp темы → NN upscale.
+- API: `createThemePixelAvatar` / `FromBytes` / `FromBase64`, `processThemePixelBuffer` (+ deprecated contour aliases).
+- `ChatForm` передаёт `background` + `text` из `useTheme`.
+- `Avatar`: подложка PNG = theme `background`.
+- Баг → **resolved**; proposal `theme-pixel-avatar`; contour proposal → rejected.
 
-## Изменённые файлы (staged)
+### Тюнинг по фидбеку (duotone «как ЧБ», но черно-зелёный)
 
-### Код
-- `src/features/pixel-avatar/model/types.ts` — опции `background` / `text` / `posterizeLevels`; убраны `colorMode`, `edgeKeepFraction`, `whiteBackground`
-- `src/features/pixel-avatar/model/processThemePixelBuffer.ts` — новый алгоритм (+ alias contour)
-- `src/features/pixel-avatar/model/createThemePixelAvatar.ts` — rename/оркестрация decode → process → encode
-- `src/features/pixel-avatar/index.ts` — публичные экспорты theme-pixel + deprecated aliases
-- `src/features/pixel-avatar/__tests__/processThemePixelBuffer.test.ts` — unit-тесты нового пайплайна
-- `src/widgets/chat-form/ChatForm.tsx` — вызов `createThemePixelAvatarFromBytes` с цветами темы
-- `src/shared/ui/Avatar.tsx` — plate = `background`
-- `src/shared/ui/__tests__/Avatar.test.tsx` — mock `useTheme` с `background`
-- `src/shared/lib/mediaPath.ts` — комментарий к `saveAvatarPng`
+На green-on-black фото ребёнка давало ~4 плоских бэнда и крупную сетку (~40) + инверсию (светлая кожа → чёрный).
 
-### Удалено
-- `src/features/pixel-avatar/model/processPixelContourBuffer.ts`
-- `src/features/pixel-avatar/__tests__/processPixelContourBuffer.test.ts`
+| Параметр | Было | Стало |
+|----------|------|-------|
+| `pixelGrid` | 40 (32–48) | **96** (64–128) — лёгкая пиксельность |
+| `posterizeLevels` | 4 (2–4) | **16** (8–32) — много оттенков |
+| `contrast` | 1.35 | **1.1** — мягче midtones |
+| `outputSize` | 224 | **256** |
+| Ramp | светлый→bg, тёмный→text | **тёмный→более тёмный цвет темы, светлый→более светлый** (phosphor: чёрный→зелёный) |
 
-### Документация
-- `docs/bugs/pixel-avatar-contour-mush.md` — статус resolved + блок «Внедрено»
-- `docs/features/theme-pixel-avatar-proposal.md` — новый proposal
-- `docs/features/pixel-contour-avatar-proposal.md` — rejected / архив
-- `docs/reports/2026-07-22-theme-pixel-avatar-fix.md` — этот отчёт
+## Изменённые файлы
+
+- `src/features/pixel-avatar/model/types.ts`
+- `src/features/pixel-avatar/model/processThemePixelBuffer.ts` — `themeRampEnds` + алгоритм
+- `src/features/pixel-avatar/model/createThemePixelAvatar.ts`
+- `src/features/pixel-avatar/index.ts`
+- `src/features/pixel-avatar/__tests__/processThemePixelBuffer.test.ts`
+- `src/widgets/chat-form/ChatForm.tsx`
+- `src/shared/ui/Avatar.tsx`, `__tests__/Avatar.test.tsx`
+- `src/shared/lib/mediaPath.ts`
+- `docs/features/theme-pixel-avatar-proposal.md`
+- `docs/features/pixel-contour-avatar-proposal.md`
+- `docs/bugs/pixel-avatar-contour-mush.md`
+- `docs/reports/2026-07-22-theme-pixel-avatar-fix.md`
 
 ## Принятые решения
 
-- Won't-fix контурный MVP без face ROI; цель «как GameBoy ink-референс» снята с scope.
-- Цвета запекаются в PNG в момент выбора фото (live re-tint при смене темы — later).
-- Default: `pixelGrid=40`, `posterizeLevels=4`, `outputSize=224` — «чуть пиксельно», не 16×16.
+- Won't-fix contour MVP; цель — duotone-фото в палитре темы, не GameBoy ink.
+- Цвета запекаются при pick (live re-tint — later).
 
 ## Известные ограничения
 
-- Смена темы не перекрашивает уже сохранённые аватары.
-- Center crop без face-detect: на широких кадрах лицо может быть не в центре.
-- Контурный режим отложен до face-detect.
+- Смена темы не перекрашивает сохранённые PNG.
+- Center crop без face-detect.
+- Переснять аватар в форме, чтобы увидеть новый пайплайн.
 
 ## Тестирование
 
-- Unit: crop, downsample, NN upscale, posterize, palette-only pixels, opaque fill, PNG/JPEG decode, Avatar mock.
-- `./node_modules/.bin/jest src/features/pixel-avatar src/shared/ui/__tests__/Avatar.test.tsx` — 18 passed.
+- Unit (16): crop/downsample/upscale, palette-only, green-on-black polarity (bright→green), mild defaults, PNG/JPEG.
+- `./node_modules/.bin/jest src/features/pixel-avatar` — PASS.

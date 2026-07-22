@@ -2,6 +2,8 @@ import {
   centerCropSquare,
   downsampleBox,
   processThemePixelBuffer,
+  buildThemePixelMask,
+  paintThemePixelMask,
   posterizeLevel,
   themeColorForLevel,
   upscaleNearest,
@@ -12,7 +14,10 @@ import {
   type RgbaImage,
 } from '../model/types';
 import { encodePngRgba, bytesToBase64, base64ToBytes } from '../model/pngEncode';
-import { createThemePixelAvatar } from '../model/createThemePixelAvatar';
+import {
+  createThemePixelAvatar,
+  recolorThemePixelAvatarFromBytes,
+} from '../model/createThemePixelAvatar';
 import { sniffImageFormat, decodeImageBytes } from '../model/decodeImage';
 
 function solidImage(w: number, h: number, r: number, g: number, b: number): RgbaImage {
@@ -82,9 +87,9 @@ describe('processThemePixelBuffer', () => {
     }
 
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 32,
+      pixelGrid: 64,
       outputSize: 96,
-      posterizeLevels: 2,
+      posterizeLevels: 8,
       background: '#FAFAFA',
       text: '#000000',
       contrast: 1,
@@ -107,18 +112,18 @@ describe('processThemePixelBuffer', () => {
   it('should only use colors from the theme palette lerp', () => {
     const src = softBlob(96);
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 40,
-      outputSize: 120,
-      posterizeLevels: 4,
+      pixelGrid: 64,
+      outputSize: 128,
+      posterizeLevels: 8,
       background: '#000000',
       text: '#39FF14',
-      contrast: 1.2,
+      contrast: 1.1,
     });
     const out = processThemePixelBuffer(src, opts);
 
     const allowed = new Set<string>();
-    for (let level = 0; level < 4; level++) {
-      const [r, g, b] = themeColorForLevel(level, 4, [0, 0, 0], [57, 255, 20]);
+    for (let level = 0; level < 8; level++) {
+      const [r, g, b] = themeColorForLevel(level, 8, [0, 0, 0], [57, 255, 20]);
       allowed.add(`${r},${g},${b}`);
     }
 
@@ -129,15 +134,43 @@ describe('processThemePixelBuffer', () => {
     }
   });
 
-  it('should keep mild pixelation (grid fills whole canvas, not sparse contours)', () => {
-    const src = softBlob(128);
+  it('should map bright areas to green on green-on-black (duotone photo, not inverted)', () => {
+    const src = solidImage(64, 64, 0, 0, 0);
+    for (let y = 16; y < 48; y++) {
+      for (let x = 16; x < 48; x++) {
+        const i = (y * 64 + x) * 4;
+        src.data[i] = 240;
+        src.data[i + 1] = 240;
+        src.data[i + 2] = 240;
+      }
+    }
     const opts = resolvePixelAvatarOptions({
-      pixelGrid: 40,
-      outputSize: 160,
-      posterizeLevels: 4,
+      pixelGrid: 64,
+      outputSize: 128,
+      posterizeLevels: 8,
+      background: '#000000',
+      text: '#39FF14',
+      contrast: 1,
+    });
+    const out = processThemePixelBuffer(src, opts);
+    expect(out.width).toBe(128);
+    // center (bright) → near text green; corner (dark) → near black bg
+    const center = (64 * 128 + 64) * 4;
+    const corner = 0;
+    expect(out.data[center + 1]!).toBeGreaterThan(150);
+    expect(out.data[corner]!).toBeLessThan(40);
+    expect(out.data[corner + 1]!).toBeLessThan(40);
+  });
+
+  it('should keep mild pixelation (opaque fill, finer default grid)', () => {
+    const src = softBlob(160);
+    const opts = resolvePixelAvatarOptions({
       background: '#F5F0DC',
       text: '#2C2C2C',
     });
+    expect(opts.pixelGrid).toBeGreaterThanOrEqual(64);
+    expect(opts.posterizeLevels).toBeGreaterThanOrEqual(8);
+
     const out = processThemePixelBuffer(src, opts);
     const total = out.width * out.height;
     let opaque = 0;
@@ -156,13 +189,19 @@ describe('theme palette helpers', () => {
     expect(posterizeLevel(200, 2)).toBe(1);
   });
 
-  it('should lerp text→background across levels', () => {
+  it('should lerp dark→light theme colors across levels', () => {
+    // light theme: dark=text, light=background
     expect(themeColorForLevel(0, 3, [255, 255, 255], [0, 0, 0])).toEqual([0, 0, 0]);
     expect(themeColorForLevel(2, 3, [255, 255, 255], [0, 0, 0])).toEqual([
       255, 255, 255,
     ]);
     expect(themeColorForLevel(1, 3, [255, 255, 255], [0, 0, 0])).toEqual([
       128, 128, 128,
+    ]);
+    // dark theme: dark=background, light=text (green phosphor)
+    expect(themeColorForLevel(0, 3, [0, 0, 0], [57, 255, 20])).toEqual([0, 0, 0]);
+    expect(themeColorForLevel(2, 3, [0, 0, 0], [57, 255, 20])).toEqual([
+      57, 255, 20,
     ]);
   });
 
@@ -193,16 +232,59 @@ describe('createThemePixelAvatar', () => {
     const result = createThemePixelAvatar(
       { kind: 'rgba', image: src },
       {
-        pixelGrid: 40,
-        outputSize: 120,
+        pixelGrid: 64,
+        outputSize: 128,
         background: '#FAFAFA',
         text: '#000000',
       },
     );
-    expect(result.width).toBe(120);
-    expect(result.height).toBe(120);
+    expect(result.width).toBe(128);
+    expect(result.height).toBe(128);
     expect(result.dataUri.startsWith('data:image/png;base64,')).toBe(true);
+    expect(result.maskDataUri).toBe(result.dataUri);
+    expect(result.previewDataUri.startsWith('data:image/png;base64,')).toBe(true);
     expect(result.png[0]).toBe(137);
+  });
+
+  it('should persist a grayscale mask that recolors under a new theme', () => {
+    const src = softBlob(64);
+    const created = createThemePixelAvatar(
+      { kind: 'rgba', image: src },
+      {
+        pixelGrid: 64,
+        outputSize: 96,
+        background: '#000000',
+        text: '#39FF14',
+      },
+    );
+
+    const mask = decodeImageBytes(created.maskPng);
+    // mask is grayscale: R === G === B
+    expect(mask.data[0]).toBe(mask.data[1]);
+    expect(mask.data[1]).toBe(mask.data[2]);
+
+    const green = recolorThemePixelAvatarFromBytes(created.maskPng, {
+      background: '#000000',
+      text: '#39FF14',
+    });
+    const amber = recolorThemePixelAvatarFromBytes(created.maskPng, {
+      background: '#000000',
+      text: '#FFB000',
+    });
+    expect(green.dataUri).not.toBe(amber.dataUri);
+
+    const greenImg = decodeImageBytes(green.png);
+    const amberImg = decodeImageBytes(amber.png);
+    // Find a non-black pixel — should shift from green toward amber (more red)
+    let found = false;
+    for (let i = 0; i < greenImg.data.length; i += 4) {
+      if (greenImg.data[i + 1]! > 80) {
+        expect(amberImg.data[i]!).toBeGreaterThan(greenImg.data[i]!);
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
   });
 
   it('should decode PNG bytes and produce avatar', () => {
@@ -215,7 +297,7 @@ describe('createThemePixelAvatar', () => {
 
     const result = createThemePixelAvatar(
       { kind: 'bytes', bytes: png },
-      { pixelGrid: 32, outputSize: 96, background: '#000', text: '#FFF' },
+      { pixelGrid: 64, outputSize: 96, background: '#000', text: '#FFF' },
     );
     expect(result.png[0]).toBe(137);
   });
@@ -230,7 +312,7 @@ describe('createThemePixelAvatar', () => {
 
     const result = createThemePixelAvatar(
       { kind: 'bytes', bytes },
-      { pixelGrid: 32, outputSize: 96, background: '#1B4332', text: '#95D5B2' },
+      { pixelGrid: 64, outputSize: 96, background: '#1B4332', text: '#95D5B2' },
     );
     expect(result.png[0]).toBe(137);
   });
@@ -238,5 +320,32 @@ describe('createThemePixelAvatar', () => {
   it('should sniff jpeg magic bytes', () => {
     expect(sniffImageFormat(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe('jpeg');
     expect(sniffImageFormat(new Uint8Array([0x00, 0x01, 0x02]))).toBe('unknown');
+  });
+});
+
+describe('paintThemePixelMask', () => {
+  it('should map the same mask to different theme ramps', () => {
+    const opts = resolvePixelAvatarOptions({
+      pixelGrid: 64,
+      outputSize: 64,
+      posterizeLevels: 8,
+      contrast: 1,
+    });
+    const mask = buildThemePixelMask(softBlob(64), {
+      ...opts,
+      background: [0, 0, 0],
+      text: [255, 255, 255],
+    });
+    const a = paintThemePixelMask(mask, {
+      ...opts,
+      background: [0, 0, 0],
+      text: [57, 255, 20],
+    });
+    const b = paintThemePixelMask(mask, {
+      ...opts,
+      background: [0, 0, 0],
+      text: [255, 176, 0],
+    });
+    expect(a.data).not.toEqual(b.data);
   });
 });

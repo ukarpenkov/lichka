@@ -26,11 +26,11 @@
 Вход: RGBA-буфер + цвета темы. Выход: непрозрачный PNG.
 
 1. Center-crop в квадрат.
-2. Box-downsample до `pixelGrid` (32–48, default 40).
+2. Box-downsample до `pixelGrid` (64–128, default 96) — лёгкая пиксельность.
 3. Luminance + мягкий контраст.
-4. Posterize в 2–4 уровня яркости.
-5. Уровни → lerp палитры: самый тёмный = `text`, самый светлый = `background`, середины — смеси.
-6. Nearest-neighbor upscale до `outputSize` (default 224).
+4. Posterize в 8–32 уровня яркости (default 16).
+5. Уровни → duotone-ramp: тёмный полюс темы ↔ светлый (не «text всегда = тёмный»).
+6. Nearest-neighbor upscale до `outputSize` (default 256).
 
 Контурный режим (Sobel / GameBoy ink) отложен до face-detect; не входит в MVP.
 
@@ -38,12 +38,14 @@
 
 | Опция | Default | Описание |
 |-------|---------|----------|
-| `pixelGrid` | `40` | Сетка пикселей (32–48) |
-| `outputSize` | `224` | Размер PNG |
-| `contrast` | `1.35` | Контраст luminance |
-| `posterizeLevels` | `4` | Уровней яркости (2–4) |
-| `background` | `#FAFAFA` | Светлый полюс палитры |
-| `text` | `#000000` | Тёмный полюс палитры |
+| `pixelGrid` | `96` | Сетка пикселей (64–128), мягкая пикселизация |
+| `outputSize` | `256` | Размер PNG |
+| `contrast` | `1.1` | Мягкий контраст luminance |
+| `posterizeLevels` | `16` | Оттенков на ramp (8–32), duotone «как ЧБ фото» |
+| `background` | `#FAFAFA` | Один полюс палитры |
+| `text` | `#000000` | Другой полюс палитры |
+
+Ramp: тёмные области фото → более тёмный из `background`/`text`, светлые → более светлый (на green-on-black: чёрный→зелёный).
 
 ```ts
 createThemePixelAvatar(input, { background, text }): PixelAvatarResult
@@ -53,16 +55,19 @@ createThemePixelAvatar(input, { background, text }): PixelAvatarResult
 
 ### Хранение
 
-- Файл: `media/avatars/{chatId}.png`
-- Цвета запекаются на момент выбора фото (перекраска при смене темы — later, через luminance-маску).
+- Файл: `media/avatars/{chatId}.png` — **grayscale luminance mask** (не запечённая тема).
+- При показе `ChatAvatar` / `useThemePixelAvatarUri` красит маску в `background`↔`text` текущей темы (кэш по path+цветам).
+- Старые запечённые PNG тоже перекрашиваются через luminance (приближённо).
+- Иконки пака без изменений.
 
 ## Влияние на архитектуру (FSD)
 
 | Слой | Изменение |
 |------|-----------|
 | `features/pixel-avatar` | `processThemePixelBuffer` + `createThemePixelAvatar` |
-| `widgets/chat-form` | Передаёт `background` / `text` из `useTheme` |
-| `shared/ui/Avatar` | Подложка PNG = theme `background` |
+| `widgets/chat-form` | Передаёт тему; сохраняет mask; превью live-tint |
+| `widgets/chat-avatar` | `ChatAvatar` — live recolor PNG при смене темы |
+| `shared/ui/Avatar` | Иконки / emoji / fallback; PNG-фото идут через ChatAvatar |
 | `shared/lib/mediaPath` | `saveAvatarPng` без смены контракта |
 
 ## Альтернативы
@@ -71,7 +76,7 @@ createThemePixelAvatar(input, { background, text }): PixelAvatarResult
 |---------|---------|
 | Довести Sobel + face ROI | Отложено (optional later) |
 | Обычный JPEG | Отвергнуто — не pixel |
-| Live re-tint при смене темы | Later |
+| Live re-tint при смене темы | **Implemented** — grayscale mask + paint on display |
 
 ## Оценка сложности
 

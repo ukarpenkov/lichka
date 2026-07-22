@@ -107,6 +107,7 @@
 - `ChatForm` передаёт `background` + `text` из `useTheme`.
 - Proposal: `docs/features/theme-pixel-avatar-proposal.md`.
 - Контурный proposal помечен `rejected` / superseded.
+- Тюнинг: сетка ~96, 16 оттенков, duotone-ramp (на dark-теме светлое → text/зелёный, не инверсия).
 
 ## Вложения / референсы
 

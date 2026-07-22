@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
-import { Text, SharedElementAvatar, AnimatedPressable, Badge } from '../../shared/ui';
+import { Text, AnimatedPressable, Badge } from '../../shared/ui';
+import { ChatAvatar } from '../../widgets/chat-avatar';
 import { useTheme, listRow } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
@@ -29,7 +30,7 @@ export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: Ch
           ? { android_ripple: { color: colors.surfaceSoft } }
           : {})}>
         <View style={styles.avatarContainer}>
-          <SharedElementAvatar sharedId={`avatar-${chat.id}`} title={chat.title} avatarPath={chat.avatarPath} />
+          <ChatAvatar title={chat.title} avatarPath={chat.avatarPath} />
         </View>
         <Text variant="title-sm" numberOfLines={1} style={styles.title}>
           {chat.title}

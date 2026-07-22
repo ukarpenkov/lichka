@@ -4,11 +4,17 @@ export type {
   RgbaImage,
   Rgb,
 } from './model/types';
-export type { PixelAvatarInput } from './model/createThemePixelAvatar';
+export type {
+  PixelAvatarInput,
+  ThemePixelPaintResult,
+} from './model/createThemePixelAvatar';
 export {
   createThemePixelAvatar,
   createThemePixelAvatarFromBase64,
   createThemePixelAvatarFromBytes,
+  recolorThemePixelAvatar,
+  recolorThemePixelAvatarFromBase64,
+  recolorThemePixelAvatarFromBytes,
   createPixelContourAvatar,
   createPixelContourAvatarFromBase64,
   createPixelContourAvatarFromBytes,
@@ -23,4 +29,11 @@ export {
 export {
   processThemePixelBuffer,
   processPixelContourBuffer,
+  buildThemePixelMask,
+  paintThemePixelMask,
 } from './model/processThemePixelBuffer';
+export { getThemeTintedAvatarDataUri, clearThemePixelTintCache } from './lib/getThemeTintedAvatarDataUri';
+export {
+  useThemePixelAvatarUri,
+  isThemePixelFileAvatar,
+} from './ui/useThemePixelAvatarUri';

@@ -34,7 +34,7 @@ export async function saveAvatar(
   return `media/avatars/${chatId}.jpg`;
 }
 
-/** Persist theme-pixel avatar PNG. Removes prior jpg/png for the chat. */
+/** Persist theme-pixel avatar PNG (grayscale luminance mask). Removes prior jpg/png for the chat. */
 export async function saveAvatarPng(
   pngBase64: string,
   chatId: string,

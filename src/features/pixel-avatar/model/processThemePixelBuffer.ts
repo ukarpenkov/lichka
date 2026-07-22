@@ -16,18 +16,32 @@ export function posterizeLevel(value: number, levels: number): number {
   return Math.min(levels - 1, Math.floor(t * levels));
 }
 
-/** Lerp theme text (dark) → background (light) by band index. */
+/**
+ * Duotone photo ramp: dark photo → darker theme color, light photo → lighter.
+ * Works for light themes (ink on paper) and dark (green phosphor on black).
+ */
+export function themeRampEnds(background: Rgb, text: Rgb): { dark: Rgb; light: Rgb } {
+  const bgLum = luminance(background[0], background[1], background[2]);
+  const textLum = luminance(text[0], text[1], text[2]);
+  if (bgLum <= textLum) {
+    return { dark: background, light: text };
+  }
+  return { dark: text, light: background };
+}
+
+/** Lerp dark→light by band index (0 = darkest). */
 export function themeColorForLevel(
   level: number,
   levels: number,
   background: Rgb,
   text: Rgb,
 ): Rgb {
+  const { dark, light } = themeRampEnds(background, text);
   const t = levels <= 1 ? 1 : level / (levels - 1);
   return [
-    Math.round(text[0] + (background[0] - text[0]) * t),
-    Math.round(text[1] + (background[1] - text[1]) * t),
-    Math.round(text[2] + (background[2] - text[2]) * t),
+    Math.round(dark[0] + (light[0] - dark[0]) * t),
+    Math.round(dark[1] + (light[1] - dark[1]) * t),
+    Math.round(dark[2] + (light[2] - dark[2]) * t),
   ];
 }
 
@@ -115,10 +129,10 @@ function applyContrast(value: number, contrast: number): number {
 }
 
 /**
- * Theme-pixel pipeline: center crop → box downsample → luminance posterize
- * → paint with theme background/text palette → nearest-neighbor upscale.
+ * Build a grayscale luminance mask (theme-independent).
+ * Gray value = posterized luminance; persist this PNG and recolor on theme change.
  */
-export function processThemePixelBuffer(
+export function buildThemePixelMask(
   source: RgbaImage,
   options: ResolvedPixelAvatarOptions,
 ): RgbaImage {
@@ -133,6 +147,34 @@ export function processThemePixelBuffer(
       options.contrast,
     );
     const level = posterizeLevel(lum, levels);
+    const gray =
+      levels <= 1 ? 255 : Math.round((level / (levels - 1)) * 255);
+    out[p] = gray;
+    out[p + 1] = gray;
+    out[p + 2] = gray;
+    out[p + 3] = 255;
+  }
+
+  return upscaleNearest(
+    { width: grid.width, height: grid.height, data: out },
+    options.outputSize,
+  );
+}
+
+/**
+ * Paint any RGBA source onto the theme duotone ramp using per-pixel luminance.
+ * Works for grayscale masks and previously baked theme-pixel PNGs.
+ */
+export function paintThemePixelMask(
+  source: RgbaImage,
+  options: ResolvedPixelAvatarOptions,
+): RgbaImage {
+  const levels = options.posterizeLevels;
+  const out = new Uint8Array(source.data.length);
+
+  for (let p = 0; p < source.data.length; p += 4) {
+    const lum = luminance(source.data[p]!, source.data[p + 1]!, source.data[p + 2]!);
+    const level = posterizeLevel(lum, levels);
     const [r, g, b] = themeColorForLevel(
       level,
       levels,
@@ -145,10 +187,17 @@ export function processThemePixelBuffer(
     out[p + 3] = 255;
   }
 
-  return upscaleNearest(
-    { width: grid.width, height: grid.height, data: out },
-    options.outputSize,
-  );
+  return { width: source.width, height: source.height, data: out };
+}
+
+/**
+ * Full pipeline: mask → paint with current theme.
+ */
+export function processThemePixelBuffer(
+  source: RgbaImage,
+  options: ResolvedPixelAvatarOptions,
+): RgbaImage {
+  return paintThemePixelMask(buildThemePixelMask(source, options), options);
 }
 
 /** @deprecated Use processThemePixelBuffer — contour MVP replaced by theme-pixel. */
