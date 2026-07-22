@@ -19,6 +19,13 @@ const MAX_IMAGE_HEIGHT = 300;
 const MESSAGE_TIME_COL_FALLBACK = 88;
 /** 1px bleed past clip edge — covers radius AA hairline without a black underlay. */
 const CLIP_BLEED = 1;
+const VIGNETTE_STOPS = [
+  { offset: '0%', opacity: 0 },
+  { offset: '40%', opacity: 0 },
+  { offset: '68%', opacity: 0.06 },
+  { offset: '88%', opacity: 0.16 },
+  { offset: '100%', opacity: 0.26 },
+] as const;
 
 type ImageMessageProps = {
   message: Message;
@@ -77,10 +84,9 @@ function ImageVignette({
           ry={radius}
           gradientUnits="userSpaceOnUse"
         >
-          <Stop offset="0%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="55%" stopColor="#000" stopOpacity={0} />
-          <Stop offset="82%" stopColor="#000" stopOpacity={0.1} />
-          <Stop offset="100%" stopColor="#000" stopOpacity={0.22} />
+          {VIGNETTE_STOPS.map(({ offset, opacity }) => (
+            <Stop key={offset} offset={offset} stopColor="#000" stopOpacity={opacity} />
+          ))}
         </RadialGradient>
       </Defs>
       <Rect width={width} height={height} fill={`url(#${gradientId})`} />

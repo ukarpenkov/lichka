@@ -55,7 +55,6 @@ describe('ImageMessage', () => {
       <ImageMessage message={createMessage({ body: '' })} />,
     );
 
-    const { Text } = require('../../../shared/ui/Text');
     expect(queryByText('[image')).toBeFalsy();
   });
 
@@ -159,13 +158,13 @@ describe('ImageMessage', () => {
     expect(withNegativeMargin).toBe(false);
   });
 
-  it('rounds preview corners and overlays a vignette', () => {
+  it('rounds preview corners and overlays a subtle edge vignette', () => {
     const { UNSAFE_getByType, UNSAFE_getAllByType } = render(
       <ImageMessage message={createMessage()} />,
     );
 
     const { View } = require('react-native');
-    const Svg = require('react-native-svg').default;
+    const { default: Svg, Stop } = require('react-native-svg');
     const frames = UNSAFE_getAllByType(View).filter(
       (node: { props: { style?: unknown } }) => {
         const style = node.props.style;
@@ -181,6 +180,20 @@ describe('ImageMessage', () => {
     );
     expect(frames.length).toBeGreaterThan(0);
     expect(UNSAFE_getByType(Svg)).toBeTruthy();
+    expect(
+      UNSAFE_getAllByType(Stop).map(
+        (stop: { props: { offset: string; stopOpacity: number } }) => ({
+          offset: stop.props.offset,
+          opacity: stop.props.stopOpacity,
+        }),
+      ),
+    ).toEqual([
+      { offset: '0%', opacity: 0 },
+      { offset: '40%', opacity: 0 },
+      { offset: '68%', opacity: 0.06 },
+      { offset: '88%', opacity: 0.16 },
+      { offset: '100%', opacity: 0.26 },
+    ]);
   });
 
   it('bleeds the image past the clip to avoid a light hairline under the radius', () => {
