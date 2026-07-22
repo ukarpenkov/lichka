@@ -3,7 +3,7 @@ import { render } from '@testing-library/react-native';
 import { Avatar } from '../Avatar';
 
 jest.mock('../../config', () => ({
-  useTheme: () => ({ text: '#39FF14' }),
+  useTheme: () => ({ text: '#39FF14', background: '#000000' }),
 }));
 
 jest.mock('../pixel', () => {

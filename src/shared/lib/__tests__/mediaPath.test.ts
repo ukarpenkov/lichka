@@ -1,4 +1,4 @@
-import { saveImage, IMAGES_DIR } from '../mediaPath';
+import { saveImage, saveAvatarPng, IMAGES_DIR, AVATARS_DIR } from '../mediaPath';
 
 jest.mock('react-native-fs', () => ({
   DocumentDirectoryPath: '/mock/docs',
@@ -6,6 +6,7 @@ jest.mock('react-native-fs', () => ({
   exists: jest.fn().mockResolvedValue(false),
   unlink: jest.fn().mockResolvedValue(undefined),
   copyFile: jest.fn().mockResolvedValue(undefined),
+  writeFile: jest.fn().mockResolvedValue(undefined),
 }));
 
 import RNFS from 'react-native-fs';
@@ -59,6 +60,31 @@ describe('mediaPath', () => {
         '/storage/emulated/0/photo.jpg',
         `${IMAGES_DIR}/${messageId}.jpg`,
       );
+    });
+  });
+
+  describe('saveAvatarPng', () => {
+    it('should write base64 png and return relative path', async () => {
+      const result = await saveAvatarPng('data:image/png;base64,AAAA', 'chat-1');
+
+      expect(RNFS.mkdir).toHaveBeenCalledWith(AVATARS_DIR);
+      expect(RNFS.writeFile).toHaveBeenCalledWith(
+        `${AVATARS_DIR}/chat-1.png`,
+        'AAAA',
+        'base64',
+      );
+      expect(result).toBe('media/avatars/chat-1.png');
+    });
+
+    it('should remove legacy jpg when present', async () => {
+      (RNFS.exists as jest.Mock).mockImplementation((path: string) =>
+        Promise.resolve(path.endsWith('.jpg') || path.endsWith('.png')),
+      );
+
+      await saveAvatarPng('BBBB', 'chat-2');
+
+      expect(RNFS.unlink).toHaveBeenCalledWith(`${AVATARS_DIR}/chat-2.png`);
+      expect(RNFS.unlink).toHaveBeenCalledWith(`${AVATARS_DIR}/chat-2.jpg`);
     });
   });
 });

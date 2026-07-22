@@ -7,14 +7,23 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import RNFS from 'react-native-fs';
 import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
 import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
-import { resolveMediaPath, saveAvatar, generateId } from '../../shared/lib';
+import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
+import {
+  createThemePixelAvatarFromBytes,
+  recolorThemePixelAvatarFromBase64,
+  getThemeTintedAvatarDataUri,
+  isThemePixelFileAvatar,
+  base64ToBytes,
+} from '../../features/pixel-avatar';
 
 import { IconGrid } from './IconGrid';
 
@@ -25,6 +34,64 @@ type ChatFormProps = {
   editChat?: Chat | null;
 };
 
+async function loadPickedImageBytes(uri: string, pickerBase64?: string): Promise<Uint8Array> {
+  const errors: string[] = [];
+
+  const tryReadPath = async (path: string): Promise<Uint8Array | null> => {
+    try {
+      const exists = await RNFS.exists(path);
+      if (!exists) {
+        errors.push(`missing:${path}`);
+        return null;
+      }
+      const b64 = await RNFS.readFile(path, 'base64');
+      if (!b64) {
+        errors.push(`empty-file:${path}`);
+        return null;
+      }
+      return base64ToBytes(b64);
+    } catch (e: unknown) {
+      errors.push(`read:${path}:${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
+  };
+
+  // 1) Resized picker temp file (preferred — real bytes after maxWidth/quality)
+  if (uri.startsWith('file://')) {
+    const fromFile = await tryReadPath(uri.replace('file://', ''));
+    if (fromFile) return fromFile;
+  } else if (uri.startsWith('/')) {
+    const fromFile = await tryReadPath(uri);
+    if (fromFile) return fromFile;
+  }
+
+  // 2) content:// — copy into cache then read (common on Android gallery)
+  if (uri.startsWith('content://')) {
+    try {
+      const dest = `${RNFS.CachesDirectoryPath}/lichka-pixel-avatar-in.bin`;
+      if (await RNFS.exists(dest)) {
+        await RNFS.unlink(dest);
+      }
+      await RNFS.copyFile(uri, dest);
+      const copied = await tryReadPath(dest);
+      if (copied) return copied;
+    } catch (e: unknown) {
+      errors.push(`content-copy:${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  // 3) Picker base64 fallback
+  if (pickerBase64) {
+    try {
+      return base64ToBytes(pickerBase64.replace(/\s/g, ''));
+    } catch (e: unknown) {
+      errors.push(`base64:${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  throw new Error(`Could not load picked image (${uri}). ${errors.join(' | ')}`);
+}
+
 export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps) {
   const { text, background } = useTheme();
   const { t } = useLocale();
@@ -33,9 +100,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
   const [title, setTitle] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [pendingPngBase64, setPendingPngBase64] = useState<string | null>(null);
   const [iconAvatar, setIconAvatar] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [processingAvatar, setProcessingAvatar] = useState(false);
   const [dialog, setDialog] = useState<{
     title?: string;
     message?: string;
@@ -52,19 +121,88 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         const path = editChat.avatarPath;
         if (path && (isChatIconAvatar(path) || (!path.includes('/') && !path.includes('\\') && !path.startsWith('file:')))) {
           setAvatarUri(null);
+          setPendingPngBase64(null);
           setIconAvatar(path);
         } else {
-          setAvatarUri(path ? `file://${resolveMediaPath(path)}` : null);
+          setAvatarUri(null);
+          setPendingPngBase64(null);
           setIconAvatar(null);
         }
       } else {
         setTitle('');
         setAvatarUri(null);
+        setPendingPngBase64(null);
         setIconAvatar(null);
       }
       setShowIconPicker(false);
+      setProcessingAvatar(false);
     }
   }, [visible, editChat]);
+
+  // Live-tint: pending mask, or existing PNG on disk when editing
+  useEffect(() => {
+    if (!visible) return;
+
+    if (pendingPngBase64) {
+      try {
+        const painted = recolorThemePixelAvatarFromBase64(pendingPngBase64, {
+          background,
+          text,
+        });
+        setAvatarUri(painted.dataUri);
+      } catch (e) {
+        console.error('pixel avatar recolor error:', e);
+      }
+      return;
+    }
+
+    const path = editChat?.avatarPath;
+    if (path && isThemePixelFileAvatar(path) && !iconAvatar) {
+      let alive = true;
+      void getThemeTintedAvatarDataUri(path, { background, text })
+        .then((uri) => {
+          if (alive) setAvatarUri(uri);
+        })
+        .catch(() => {
+          if (alive) setAvatarUri(`file://${resolveMediaPath(path)}`);
+        });
+      return () => {
+        alive = false;
+      };
+    }
+
+    if (path && !iconAvatar && (path.includes('/') || path.startsWith('file:'))) {
+      setAvatarUri(`file://${resolveMediaPath(path)}`);
+    }
+  }, [visible, pendingPngBase64, editChat, iconAvatar, background, text]);
+
+  const applyPixelAvatar = useCallback(
+    async (uri: string, pickerBase64?: string) => {
+      setProcessingAvatar(true);
+      try {
+        // Prefer the picker temp file (resized) over asset.base64 — on Android
+        // base64 is often the original PNG/WebP while uri points to a JPEG.
+        const bytes = await loadPickedImageBytes(uri, pickerBase64);
+        const result = createThemePixelAvatarFromBytes(bytes, {
+          background,
+          text,
+        });
+        // Persist grayscale mask; preview recolors via effect
+        setPendingPngBase64(result.maskDataUri);
+        setIconAvatar(null);
+      } catch (e: any) {
+        console.error('pixel avatar error:', e);
+        setDialog({
+          title: t.error,
+          message: e?.message ?? t.photoPickError,
+          buttons: [{ text: t.done }],
+        });
+      } finally {
+        setProcessingAvatar(false);
+      }
+    },
+    [t, background, text],
+  );
 
   const handlePickImage = useCallback(() => {
     isPickingImage.current = true;
@@ -74,6 +212,9 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         maxWidth: 512,
         maxHeight: 512,
         quality: 0.85 as import('react-native-image-picker').PhotoQuality,
+        includeBase64: true,
+        // Prefer JPEG-compatible representation when gallery has HEIC/HEIF
+        assetRepresentationMode: 'compatible',
       },
       (response) => {
         isPickingImage.current = false;
@@ -85,12 +226,11 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         }
         const asset = response.assets?.[0];
         if (asset?.uri) {
-          setAvatarUri(asset.uri);
-          setIconAvatar(null);
+          void applyPixelAvatar(asset.uri, asset.base64);
         }
       },
     );
-  }, [t]);
+  }, [t, applyPixelAvatar]);
 
   const handleAvatarTap = useCallback(() => {
     if (iconAvatar) {
@@ -103,27 +243,30 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const handleIconSelect = useCallback((iconId: string) => {
     setIconAvatar(iconId);
     setAvatarUri(null);
+    setPendingPngBase64(null);
     setShowIconPicker(false);
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!canSave || saving) return;
+    if (!canSave || saving || processingAvatar) return;
     setSaving(true);
 
     try {
       let avatarPath: string | null = editChat?.avatarPath ?? null;
+      const chatId = editChat?.id || generateId();
 
-      if (avatarUri) {
-        const chatId = editChat?.id || generateId();
-        avatarPath = await saveAvatar(avatarUri, chatId);
+      if (pendingPngBase64) {
+        avatarPath = await saveAvatarPng(pendingPngBase64, chatId);
       } else if (iconAvatar) {
         avatarPath = iconAvatar;
-      } else if (!avatarUri && !iconAvatar && editChat) {
+      } else if (editChat) {
         avatarPath = editChat.avatarPath;
       }
 
       if (isEdit && editChat) {
         updateChat(editChat.id, { title: title.trim(), avatarPath });
+      } else if (pendingPngBase64) {
+        createChat(title.trim(), avatarPath, { id: chatId });
       } else {
         createChat(title.trim(), avatarPath);
       }
@@ -136,15 +279,25 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, title, avatarUri, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
+  }, [canSave, saving, processingAvatar, title, pendingPngBase64, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
 
   const avatarContent = () => {
+    if (processingAvatar) {
+      return (
+        <View style={[styles.avatarPlaceholder, { backgroundColor: text + '15', borderColor: text + '33' }]}>
+          <ActivityIndicator color={text} />
+        </View>
+      );
+    }
     if (avatarUri) {
       return (
-        <Image
-          source={{ uri: avatarUri }}
-          style={[styles.avatarImage, { borderColor: text + '33' }]}
-        />
+        <View style={[styles.avatarIcon, { backgroundColor: background }]}>
+          <Image
+            source={{ uri: avatarUri }}
+            style={[styles.avatarImage, { borderColor: text + '33' }]}
+            resizeMode="cover"
+          />
+        </View>
       );
     }
     if (iconAvatar) {
@@ -226,12 +379,12 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
                 <Button
                   title={isEdit ? t.save : t.create}
                   onPress={handleSave}
-                  disabled={!canSave || saving}
+                  disabled={!canSave || saving || processingAvatar}
                   style={[
                     styles.saveButton,
                     {
                       backgroundColor: text,
-                      opacity: !canSave || saving ? 0.4 : 1,
+                      opacity: !canSave || saving || processingAvatar ? 0.4 : 1,
                     },
                   ]}
                 />

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { ArrowLeft, Search } from '../../shared/ui/pixel';
-import { Text, SharedElementAvatar, IconButton } from '../../shared/ui';
+import { Text, IconButton } from '../../shared/ui';
+import { ChatAvatar } from '../../widgets/chat-avatar';
 import { useTheme, spacing } from '../../shared/config';
 import type { Chat } from '../../entities/chat';
 
@@ -31,8 +32,7 @@ export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderP
           Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
         }
         onPress={onTitlePress}>
-        <SharedElementAvatar
-          sharedId={`avatar-${chat.id}`}
+        <ChatAvatar
           title={chat.title}
           avatarPath={chat.avatarPath}
           size={36}

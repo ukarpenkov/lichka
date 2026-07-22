@@ -16,7 +16,7 @@ function isFileAvatar(path: string): boolean {
 }
 
 export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
-  const { text } = useTheme();
+  const { text, background } = useTheme();
   const radius = size / 2;
   const letter = title.charAt(0).toUpperCase() || '?';
 
@@ -59,10 +59,24 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
     }
 
     return (
-      <Image
-        source={{ uri: `file://${resolveMediaPath(avatarPath)}` }}
-        style={[styles.image, { width: size, height: size, borderRadius: radius }]}
-      />
+      <View
+        style={[
+          styles.icon,
+          {
+            width: size,
+            height: size,
+            borderRadius: radius,
+            // Theme-pixel avatars are opaque theme palette; plate matches theme bg
+            backgroundColor: avatarPath.endsWith('.png') ? background : text + '15',
+            overflow: 'hidden',
+          },
+        ]}>
+        <Image
+          source={{ uri: `file://${resolveMediaPath(avatarPath)}` }}
+          style={{ width: size, height: size, borderRadius: radius }}
+          resizeMode="cover"
+        />
+      </View>
     );
   }
 

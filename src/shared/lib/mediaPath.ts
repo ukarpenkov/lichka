@@ -34,6 +34,27 @@ export async function saveAvatar(
   return `media/avatars/${chatId}.jpg`;
 }
 
+/** Persist theme-pixel avatar PNG (grayscale luminance mask). Removes prior jpg/png for the chat. */
+export async function saveAvatarPng(
+  pngBase64: string,
+  chatId: string,
+): Promise<string> {
+  await ensureDir(AVATARS_DIR);
+  const dest = `${AVATARS_DIR}/${chatId}.png`;
+  const legacyJpg = `${AVATARS_DIR}/${chatId}.jpg`;
+
+  const clean = pngBase64.replace(/^data:image\/png;base64,/, '');
+
+  for (const path of [dest, legacyJpg]) {
+    if (await RNFS.exists(path)) {
+      await RNFS.unlink(path);
+    }
+  }
+
+  await RNFS.writeFile(dest, clean, 'base64');
+  return `media/avatars/${chatId}.png`;
+}
+
 export async function saveImage(
   sourceUri: string,
   messageId: string,
