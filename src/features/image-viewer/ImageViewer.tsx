@@ -21,6 +21,7 @@ import { useTheme } from '../../shared/config';
 
 import type { ImageViewerData } from './useImageViewer';
 import {
+  getPinchStartDismissState,
   getRelativePanTranslation,
   getSingleTapAction,
   isImageZoomed,
@@ -272,6 +273,11 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
 
   const pinchGesture = Gesture.Pinch()
     .onStart((e) => {
+      const dismissState = getPinchStartDismissState();
+      cancelAnimation(containerTranslateY);
+      cancelAnimation(overlayOpacity);
+      containerTranslateY.value = dismissState.containerTranslateY;
+      overlayOpacity.value = dismissState.overlayOpacity;
       isPinching.value = true;
       pinchStartScale.value = scale.value;
       pinchStartTranslateX.value = imageTranslateX.value;

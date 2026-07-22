@@ -21,10 +21,10 @@ const MESSAGE_TIME_COL_FALLBACK = 88;
 const CLIP_BLEED = 1;
 const VIGNETTE_STOPS = [
   { offset: '0%', opacity: 0 },
-  { offset: '40%', opacity: 0 },
-  { offset: '68%', opacity: 0.06 },
-  { offset: '88%', opacity: 0.16 },
-  { offset: '100%', opacity: 0.26 },
+  { offset: '35%', opacity: 0 },
+  { offset: '62%', opacity: 0.08 },
+  { offset: '82%', opacity: 0.2 },
+  { offset: '100%', opacity: 0.36 },
 ] as const;
 
 type ImageMessageProps = {

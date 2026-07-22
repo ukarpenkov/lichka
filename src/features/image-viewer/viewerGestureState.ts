@@ -1,6 +1,17 @@
 const MIN_SCALE = 1;
 const RESTING_SCALE_EPSILON = 0.01;
 
+export function getPinchStartDismissState(): {
+  containerTranslateY: number;
+  overlayOpacity: number;
+} {
+  'worklet';
+  return {
+    containerTranslateY: 0,
+    overlayOpacity: 1,
+  };
+}
+
 export function isImageZoomed(scale: number): boolean {
   'worklet';
   return scale > MIN_SCALE + RESTING_SCALE_EPSILON;

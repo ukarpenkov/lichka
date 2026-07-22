@@ -1,10 +1,18 @@
 import {
+  getPinchStartDismissState,
   getRelativePanTranslation,
   getSingleTapAction,
   isImageZoomed,
 } from '../viewerGestureState';
 
 describe('viewerGestureState', () => {
+  it('centers the container and restores overlay before pinch zoom starts', () => {
+    expect(getPinchStartDismissState()).toEqual({
+      containerTranslateY: 0,
+      overlayOpacity: 1,
+    });
+  });
+
   it('continues pan from the pinch end without reapplying previous movement', () => {
     const translation = getRelativePanTranslation(80, 46, 42);
 

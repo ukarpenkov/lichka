@@ -189,10 +189,10 @@ describe('ImageMessage', () => {
       ),
     ).toEqual([
       { offset: '0%', opacity: 0 },
-      { offset: '40%', opacity: 0 },
-      { offset: '68%', opacity: 0.06 },
-      { offset: '88%', opacity: 0.16 },
-      { offset: '100%', opacity: 0.26 },
+      { offset: '35%', opacity: 0 },
+      { offset: '62%', opacity: 0.08 },
+      { offset: '82%', opacity: 0.2 },
+      { offset: '100%', opacity: 0.36 },
     ]);
   });
 
