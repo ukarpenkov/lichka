@@ -103,7 +103,13 @@ export function ChatRoomScreen() {
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const { open, close, visible: viewerVisible, data: viewerData } = useImageViewer();
+  const {
+    open,
+    close,
+    visible: viewerVisible,
+    data: viewerData,
+    openKey: viewerOpenKey,
+  } = useImageViewer();
 
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
@@ -475,7 +481,12 @@ export function ChatRoomScreen() {
         onClose={() => setDialog(null)}
       />
 
-      <ImageViewer visible={viewerVisible} data={viewerData} onClose={close} />
+      <ImageViewer
+        visible={viewerVisible}
+        data={viewerData}
+        openKey={viewerOpenKey}
+        onClose={close}
+      />
     </View>
   );
 }

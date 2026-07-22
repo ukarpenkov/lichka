@@ -97,9 +97,11 @@ interface ImageViewerProps {
   visible: boolean;
   data: ImageViewerData | null;
   onClose: () => void;
+  /** Changes on every open(); keeps reopen working if parent `visible` was stuck true. */
+  openKey?: number;
 }
 
-export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
+export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewerProps) {
   const { background, text } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -108,6 +110,8 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
   const [internalVisible, setInternalVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const isClosingRef = useRef(false);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -143,6 +147,13 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
     centerY.value = screenHeight / 2;
   }, [centerX, centerY, screenWidth, screenHeight]);
 
+  const finishClose = useCallback(() => {
+    // Ignore cancelled / stale close animations after a reopen.
+    if (!visibleRef.current) {
+      setInternalVisible(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (visible) {
       isClosingRef.current = false;
@@ -157,19 +168,24 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
       containerTranslateY.value = 0;
       panStartTranslateX.value = 0;
       panStartTranslateY.value = 0;
-      imageOpacity.value = 0;
-      overlayOpacity.value = reduceMotion ? 1 : withTiming(1, { duration: OPEN_DURATION });
+      // Fade in here — cached images often skip a second onLoad after remount.
+      const openTiming = reduceMotion ? { duration: 0 } : { duration: OPEN_DURATION };
+      imageOpacity.value = withTiming(1, openTiming);
+      overlayOpacity.value = withTiming(1, openTiming);
     } else if (internalVisible) {
       if (reduceMotion) {
         setInternalVisible(false);
       } else {
-        overlayOpacity.value = withTiming(0, { duration: CLOSE_DURATION }, () => {
-          runOnJS(setInternalVisible)(false);
+        overlayOpacity.value = withTiming(0, { duration: CLOSE_DURATION }, (finished) => {
+          if (finished) {
+            runOnJS(finishClose)();
+          }
         });
       }
     }
+    // openKey: force re-open when parent visible was already true (stale close race).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, reduceMotion]);
+  }, [visible, openKey, reduceMotion, finishClose]);
 
   const close = useCallback(() => {
     if (isClosingRef.current) {
@@ -479,11 +495,6 @@ export function ImageViewer({ visible, data, onClose }: ImageViewerProps) {
                   source={{ uri: data.uri }}
                   style={[styles.image, imageOpacityStyle]}
                   resizeMode="contain"
-                  onLoad={() => {
-                    imageOpacity.value = reduceMotion
-                      ? 1
-                      : withTiming(1, { duration: OPEN_DURATION });
-                  }}
                 />
               </Animated.View>
             </Animated.View>

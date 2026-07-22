@@ -42,14 +42,6 @@ function parseImagePayload(
   }
 }
 
-/** Soft corner glows — darkest at corners, no hard oval ring from a center radial. */
-const VIGNETTE_CORNERS = [
-  { key: 'tl', cx: '0%', cy: '0%' },
-  { key: 'tr', cx: '100%', cy: '0%' },
-  { key: 'bl', cx: '0%', cy: '100%' },
-  { key: 'br', cx: '100%', cy: '100%' },
-] as const;
-
 function ImageVignette({ gradientId }: { gradientId: string }) {
   return (
     <Svg
@@ -59,30 +51,20 @@ function ImageVignette({ gradientId }: { gradientId: string }) {
       importantForAccessibility="no-hide-descendants"
     >
       <Defs>
-        {VIGNETTE_CORNERS.map(({ key, cx, cy }) => (
-          <RadialGradient
-            key={key}
-            id={`${gradientId}-${key}`}
-            cx={cx}
-            cy={cy}
-            rx="72%"
-            ry="72%"
-          >
-            <Stop offset="0%" stopColor="#000" stopOpacity={0.42} />
-            <Stop offset="35%" stopColor="#000" stopOpacity={0.18} />
-            <Stop offset="70%" stopColor="#000" stopOpacity={0.05} />
-            <Stop offset="100%" stopColor="#000" stopOpacity={0} />
-          </RadialGradient>
-        ))}
+        {/*
+          Large soft radial: clear center, gentle falloff, darkest at corners
+          (corners are farthest from center). Avoids the hard oval ring of a
+          short-radius gradient and the near-black stack of 4 corner overlays.
+        */}
+        <RadialGradient id={gradientId} cx="50%" cy="50%" rx="92%" ry="92%">
+          <Stop offset="0%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="45%" stopColor="#000" stopOpacity={0} />
+          <Stop offset="72%" stopColor="#000" stopOpacity={0.1} />
+          <Stop offset="88%" stopColor="#000" stopOpacity={0.28} />
+          <Stop offset="100%" stopColor="#000" stopOpacity={0.48} />
+        </RadialGradient>
       </Defs>
-      {VIGNETTE_CORNERS.map(({ key }) => (
-        <Rect
-          key={key}
-          width="100%"
-          height="100%"
-          fill={`url(#${gradientId}-${key})`}
-        />
-      ))}
+      <Rect width="100%" height="100%" fill={`url(#${gradientId})`} />
     </Svg>
   );
 }
