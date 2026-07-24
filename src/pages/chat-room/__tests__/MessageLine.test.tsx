@@ -165,6 +165,18 @@ describe('MessageLine', () => {
     expect(getByText('Reminder text')).toBeTruthy();
   });
 
+  it('should keep time column without top margin so row tops align', () => {
+    const { getByText } = render(
+      <MessageLine message={createMessage()} onLongPress={onLongPress} />,
+    );
+    const time = getByText(/^\[\d{2}:\d{2}:\d{2}\]$/);
+    const flat = Array.isArray(time.props.style)
+      ? Object.assign({}, ...time.props.style.filter(Boolean))
+      : time.props.style;
+    expect(flat.marginTop ?? 0).toBe(0);
+    expect(flat.minWidth).toBe(88);
+  });
+
   it('should append edited marker after text', () => {
     const { getByText } = render(
       <MessageLine

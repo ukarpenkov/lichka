@@ -142,43 +142,29 @@ export function MessageLine({
           {formatLogTime(message.createdAt)}
         </Text>
 
+        {TypeIcon ? (
+          <View style={styles.typeIcon} accessibilityLabel={typeA11y}>
+            <TypeIcon
+              size={14}
+              color={isVoice || isImage ? colors.muted : colors.ink}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.content}>
           {isVoice ? (
-            <View style={styles.mediaBlock}>
-              {TypeIcon ? (
-                <View style={styles.typeIcon} accessibilityLabel={typeA11y}>
-                  <TypeIcon size={14} color={colors.muted} />
-                </View>
-              ) : null}
-              <VoiceMessage message={message} />
-            </View>
+            <VoiceMessage message={message} />
           ) : isImage ? (
-            <View style={styles.textRow}>
-              {TypeIcon ? (
-                <View style={styles.typeIcon} accessibilityLabel={typeA11y}>
-                  <TypeIcon size={14} color={colors.muted} />
-                </View>
-              ) : null}
-              <View style={styles.mediaBody}>
-                <ImageMessage message={message} onPress={onImagePress} />
-              </View>
-            </View>
+            <ImageMessage message={message} onPress={onImagePress} />
           ) : (
-            <View style={styles.textRow}>
-              {TypeIcon ? (
-                <View style={styles.typeIcon} accessibilityLabel={typeA11y}>
-                  <TypeIcon size={14} color={colors.ink} />
-                </View>
+            <Text variant="body" tone="body" style={styles.body}>
+              {message.body}
+              {isEdited ? (
+                <Text variant="mono-meta" tone="muted">
+                  {` (${t.edited})`}
+                </Text>
               ) : null}
-              <Text variant="body" tone="body" style={styles.body}>
-                {message.body}
-                {isEdited ? (
-                  <Text variant="mono-meta" tone="muted">
-                    {` (${t.edited})`}
-                  </Text>
-                ) : null}
-              </Text>
-            </View>
+            </Text>
           )}
           {(isVoice || isImage) && isEdited ? (
             <Text variant="mono-meta" tone="muted" style={styles.editedAlone}>
@@ -194,6 +180,7 @@ export function MessageLine({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    // Top edge of time / type icon / content share one line.
     alignItems: 'flex-start',
     paddingHorizontal: spacing.gutter,
     paddingVertical: spacing.xs,
@@ -201,37 +188,26 @@ const styles = StyleSheet.create({
   },
   time: {
     // Fixed-ish column for wrap indent under text (mono tabular).
+    // lineHeight 16 matches typeIcon box — no extra marginTop.
     minWidth: 88,
-    marginTop: 3,
+    lineHeight: 16,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
+  },
+  typeIcon: {
+    width: 14,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     flex: 1,
     minWidth: 0,
   },
-  textRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  typeIcon: {
-    marginTop: 4,
-    width: 14,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   body: {
-    flex: 1,
     flexShrink: 1,
-  },
-  mediaBlock: {
-    gap: spacing.xs,
-    width: '100%',
-    maxWidth: '100%',
-  },
-  mediaBody: {
-    flex: 1,
-    minWidth: 0,
+    // Keep first-line box top on the same edge as time (16) / icon (16).
+    lineHeight: 20,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
   editedAlone: {
     marginTop: spacing.xxs,
