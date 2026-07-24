@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, Pressable, View, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Check } from '../../shared/ui/pixel';
 
@@ -42,14 +42,10 @@ export function ThemePickerScreen() {
               borderWidth: isActive ? 2 : 1,
             },
           ]}>
-          <Text variant="title-sm" style={{ color: item.text }}>
+          <Text variant="title-sm" style={{ color: item.text, flex: 1 }}>
             {item.name}
           </Text>
-          {isActive && (
-            <View style={styles.check}>
-              <Check size={18} color={item.text} />
-            </View>
-          )}
+          {isActive && <Check size={18} color={item.text} />}
         </Pressable>
       );
     },
@@ -73,14 +69,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
-    position: 'relative',
-  },
-  check: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
   },
 });
