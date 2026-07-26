@@ -7,6 +7,7 @@
 
 - Проанализирован `AndroidManifest.xml`, `android/build.gradle`, зависимости и функциональность приложения.
 - Сопоставлены изменения политики с фактическим поведением Lichka (личный офлайн-журнал, не мессенджер).
+- Уточнено по #42: `USE_EXACT_ALARM` **намеренно оставлен** в manifest — без него ломается full-screen alarm и надёжность уведомлений (см. `docs/reports/2026-07-26-update-spec-42-exact-alarms.md`).
 
 ## Изменённые файлы
 
@@ -45,13 +46,15 @@ Lichka — персональный журнал («Telegram с самим со�
 
 - Privacy Policy URL в Play Console (в репозитории политики нет).
 - Data safety: фото/галерея, микрофон, файлы, опционально Google-аккаунт (Drive backup).
-- Декларации для `SCHEDULE_EXACT_ALARM`, `USE_FULL_SCREEN_INTENT`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
+- Декларации для `SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`, `USE_FULL_SCREEN_INTENT`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (см. #42–#43 в `white-requirements.md`).
 - Release-подпись: в `build.gradle` release всё ещё на debug keystore.
-- В манифесте есть `USE_EXACT_ALARM` — в спецификации проекта (#42) указано **не** использовать его (только `SCHEDULE_EXACT_ALARM`); возможен риск при review.
+
+**`USE_EXACT_ALARM`:** не удалять — требуется для full-screen `AlarmActivity` из `AlarmReceiver` и автоматического grant на Android 13+. Для Play — декларация в Alarms & reminders, не конфликт с правилами от 15.07.2026.
 
 ## Принятые решения
 
 - Оценка основана на текущем состоянии репозитория, без доступа к Play Console.
+- Рекомендация «убрать USE_EXACT_ALARM» отменена после проверки реализации и prod-поведения.
 
 ## Известные ограничения
 

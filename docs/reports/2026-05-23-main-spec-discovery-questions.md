@@ -27,7 +27,7 @@
   - **#38:** настройки — **в SQLite** (`settings` key-value); MMKV/AsyncStorage не в MVP; исключение — snapshot темы в MMKV, если cold start мигает/тормозит
   - **#39:** Kotlin-native **да** — MVP: AlarmActivity + notification channels; FGS для голоса и biometrics — не в v1
   - **#40:** minSdk **API 24 (Android 7.0)**; Google Play — targetSdk 35+ (в проекте 36); minSdk выше не поднимаем без причины
-  - **#42:** exact alarms — **`SCHEDULE_EXACT_ALARM`** (не `USE_EXACT_ALARM`); только тип **`alarm`** через `setAlarmClock()`; reminder/periodic — inexact/WorkManager; текст для Google Play Console + in-app rationale перед первым будильником; fallback при отказе
+  - **#42:** exact alarms — **`SCHEDULE_EXACT_ALARM` + `USE_EXACT_ALARM`** (оба в manifest; без `USE_EXACT_ALARM` ломается full-screen alarm и надёжность уведомлений); `setAlarmClock()` для alarm/reminder/periodic; Android 12 — ручной grant; Play Console + in-app rationale; fallback при отказе
   - **#43:** battery optimization — onboarding **только для `alarm`**, после первого будильника (вместе с #42); технический стек как у Clock (`setAlarmClock`, AlarmActivity, wake lock, full-screen intent); `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` с rationale; не для reminder/periodic
   - **#15:** анимации — везде уместные, максимально плавные, не броские; приоритет perf (без лагов), приятные micro-interactions
   - **#16:** haptic + sound — по умолчанию включены; отключение в настройках
@@ -70,7 +70,7 @@
 - Настройки (#38): **SQLite `settings`** — единый источник правды; MMKV только как опциональный cache темы при проблемах cold start; AsyncStorage не используем
 - Kotlin (#39): нативный код **допустим**; MVP — full-screen alarm + notification channels; foreground service (голос) и biometrics — позже
 - Android minSdk (#40): **API 24 (Android 7.0)**; Play требует targetSdk 35+ — в `android/build.gradle` уже `targetSdkVersion = 36`
-- Exact alarms (#42): **`SCHEDULE_EXACT_ALARM`** для типа `alarm` (`setAlarmClock` → full-screen); не `USE_EXACT_ALARM` (не dedicated clock app); reminder/periodic без exact; Google Play declaration + `canScheduleExactAlarms()` / `ACTION_REQUEST_SCHEDULE_EXACT_ALARM`; fallback при отказе
+- Exact alarms (#42): **`SCHEDULE_EXACT_ALARM` + `USE_EXACT_ALARM`** (оба в manifest); `setAlarmClock()` для alarm/reminder/periodic; full-screen только для `alarm`; Android 12 — `canScheduleExactAlarms()` / `requestScheduleExactAlarm()`; Play declaration; fallback при отказе
 - Battery optimization (#43): onboarding **только для `alarm`**, после первого будильника (flow #42); `setAlarmClock` + AlarmActivity + wake lock + full-screen intent; опционально `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; повтор в настройках «Надёжность будильника»; не для reminder/periodic
 - Анимации: везде уместные, плавные, не броские; perf > декоративность; micro-interactions (сообщения, переходы, голос, sticky dates, shared transitions) — да, если без лагов
 - Haptic + sound: по умолчанию включены; отключение в настройках
