@@ -72,6 +72,19 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Release signing: prefer android/keystore.properties (gitignored), else LICHKA_UPLOAD_* project props
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def releaseStoreFile = keystoreProperties['storeFile'] ?: project.findProperty('LICHKA_UPLOAD_STORE_FILE')
+def releaseStorePassword = keystoreProperties['storePassword'] ?: project.findProperty('LICHKA_UPLOAD_STORE_PASSWORD')
+def releaseKeyAlias = keystoreProperties['keyAlias'] ?: project.findProperty('LICHKA_UPLOAD_KEY_ALIAS')
+def releaseKeyPassword = keystoreProperties['keyPassword'] ?: project.findProperty('LICHKA_UPLOAD_KEY_PASSWORD')
+def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -97,11 +110,11 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('LICHKA_UPLOAD_STORE_FILE')) {
-                storeFile file(LICHKA_UPLOAD_STORE_FILE)
-                storePassword LICHKA_UPLOAD_STORE_PASSWORD
-                keyAlias LICHKA_UPLOAD_KEY_ALIAS
-                keyPassword LICHKA_UPLOAD_KEY_PASSWORD
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
             }
         }
     }
@@ -110,6 +123,13 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
+            if (!hasReleaseSigning) {
+                throw new GradleException(
+                    "Release signing is not configured. Create android/keystore.properties " +
+                    "or set LICHKA_UPLOAD_* in ~/.gradle/gradle.properties " +
+                    "(see docs/release/android-aab-google-play.md)."
+                )
+            }
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
