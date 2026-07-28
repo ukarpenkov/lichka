@@ -69,6 +69,7 @@ import { SearchOverlay } from './SearchOverlay';
 import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
 import { isScrollAtBottom, isScrollAtTop } from './scrollEdge';
+import { resolveChatRoomBackAction } from './chatRoomBack';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
 type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
@@ -119,6 +120,8 @@ export function ChatRoomScreen() {
   const [timelineMode, setTimelineMode] = useState<TimelineMode>(() =>
     resolveTimelineMode(mode),
   );
+  const timelineModeRef = useRef<TimelineMode>(timelineMode);
+  timelineModeRef.current = timelineMode;
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
@@ -217,7 +220,10 @@ export function ChatRoomScreen() {
   }, [chatId]);
 
   useEffect(() => {
-    setTimelineMode(resolveTimelineMode(mode));
+    if (mode === 'future') {
+      timelineModeRef.current = 'future';
+      setTimelineMode('future');
+    }
   }, [mode, focusNonce]);
 
   useFocusEffect(
@@ -267,6 +273,7 @@ export function ChatRoomScreen() {
     historyScrollOffsetRef.current = scrollY.value;
     suppressScrollToBottomRef.current = true;
     Keyboard.dismiss();
+    timelineModeRef.current = 'future';
     setTimelineMode('future');
     loadFuture();
     setAtTop(true);
@@ -274,7 +281,11 @@ export function ChatRoomScreen() {
 
   const exitFuture = useCallback(() => {
     suppressScrollToBottomRef.current = true;
+    timelineModeRef.current = 'history';
     setTimelineMode('history');
+    if (mode === 'future') {
+      navigation.setParams({ mode: 'history' });
+    }
     const offset = historyScrollOffsetRef.current;
     requestAnimationFrame(() => {
       setTimeout(() => {
@@ -284,7 +295,26 @@ export function ChatRoomScreen() {
         }, 100);
       }, 50);
     });
-  }, []);
+  }, [mode, navigation]);
+
+  const handleBack = useCallback(() => {
+    if (resolveChatRoomBackAction(timelineModeRef.current) === 'exit-future') {
+      exitFuture();
+      return;
+    }
+    navigation.goBack();
+  }, [exitFuture, navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (resolveChatRoomBackAction(timelineModeRef.current) !== 'exit-future') {
+        return;
+      }
+      e.preventDefault();
+      exitFuture();
+    });
+    return unsubscribe;
+  }, [navigation, exitFuture]);
 
   const entryPeek = useFuturePeekEntryGesture({
     enabled: timelineMode === 'history' && !keyboardOpen && !searchVisible,
@@ -553,7 +583,7 @@ export function ChatRoomScreen() {
         <View style={{ height: insets.top, backgroundColor: colors.canvas }} />
         <ChatHeader
           chat={chat}
-          onBack={() => navigation.goBack()}
+          onBack={handleBack}
           onTitlePress={() => setEditFormVisible(true)}
           onSearch={() => setSearchVisible(true)}
           modeLabel={isFuture ? t.futureMode : null}

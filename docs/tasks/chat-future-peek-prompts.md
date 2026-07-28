@@ -53,9 +53,9 @@
 | 6. ChatRoom: `timelineMode` + индикатор + скрытие composer | Done |
 | 7. UI списка Future + empty state + CTA | Done |
 | 8. Интеграция entry/exit жестов в ChatRoom | Done |
-| 9. Deep link из Scheduled → Future + highlight | |
-| 10. Back / Android back: сначала выход из Future | |
-| 11. Интеграционные тесты сценариев MVP | |
+| 9. Deep link из Scheduled → Future + highlight | Done |
+| 10. Back / Android back: сначала выход из Future | Done |
+| 11. Интеграционные тесты сценариев MVP | Done |
 
 ---
 
@@ -344,7 +344,7 @@
 
 ## Шаг 9. Deep link из Scheduled → Future + highlight
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Тап по любой scheduled-записи открывает тот же чат **сразу в Future** с фокусом на записи.
@@ -377,7 +377,7 @@
 
 ## Шаг 10. Back / Android back: сначала выход из Future
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Назад из режима Future не должен сразу pop'ать ChatRoom на ChatList.
@@ -407,7 +407,7 @@
 
 ## Шаг 11. Интеграционные тесты сценариев MVP
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Закрепить acceptance из proposal автотестами (без E2E жестов на устройстве — unit/integration с моками).

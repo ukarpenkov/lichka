@@ -3,11 +3,13 @@ import { Modal, View, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import {
   useTheme,
+} from '../config';
+import {
   radii,
   hardShadowOffset,
   hardBorderWidth,
   spacing,
-} from '../config';
+} from '../config/tokens';
 import { Text } from './Text';
 
 export type AlertButton = {
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   cardStack: {
     width: CARD_WIDTH + hardShadowOffset,
@@ -236,7 +238,7 @@ const styles = StyleSheet.create({
     paddingBottom: hardShadowOffset,
   },
   hardShadowLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: hardShadowOffset,
     left: hardShadowOffset,
     right: 0,

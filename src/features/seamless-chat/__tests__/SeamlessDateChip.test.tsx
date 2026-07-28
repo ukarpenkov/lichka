@@ -5,9 +5,13 @@ import { render } from '@testing-library/react-native';
 import { useTheme } from '../../../shared/config';
 import { SeamlessDateChip } from '../SeamlessDateChip';
 
-jest.mock('../../../shared/config', () => ({
-  useTheme: jest.fn(),
-}));
+jest.mock('../../../shared/config', () => {
+  const actual = jest.requireActual('../../../shared/config');
+  return {
+    ...actual,
+    useTheme: jest.fn(),
+  };
+});
 
 const useThemeMock = useTheme as jest.Mock;
 

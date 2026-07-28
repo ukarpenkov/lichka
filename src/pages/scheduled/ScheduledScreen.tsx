@@ -15,6 +15,7 @@ import { useTabVisible } from '../../app/MainTabsContext';
 import { navigateToChat } from '../../app/mainTabsApi';
 
 import { ScheduledItem } from './ScheduledItem';
+import { getScheduledChatNavigation } from './scheduledNavigation';
 
 type ScheduledEntry = {
   message: Message;
@@ -60,18 +61,10 @@ export function ScheduledScreen() {
     }, [loadEntries]),
   );
 
-  const handlePress = useCallback(
-    (entry: ScheduledEntry) => {
-      // reminder/alarm — просто открыть чат (будущие в ленте не показываем).
-      // periodic — скролл + подсветка последнего сработавшего display-сообщения.
-      if (entry.message.type === 'periodic') {
-        navigateToChat(entry.message.chatId, entry.message.id);
-      } else {
-        navigateToChat(entry.message.chatId);
-      }
-    },
-    [],
-  );
+  const handlePress = useCallback((entry: ScheduledEntry) => {
+    const nav = getScheduledChatNavigation(entry.message);
+    navigateToChat(nav.chatId, nav.messageId, nav.options);
+  }, []);
 
   const handleLongPress = useCallback(
     (entry: ScheduledEntry) => {
