@@ -289,7 +289,7 @@ interface Chat {
 
 **Repository functions:**
 - `createChat(title, avatarPath?, options?)` → Chat
-- `getChats()` → Chat[] (sorted by updated_at DESC)
+- `getChats()` → Chat[] (sorted by last delivered message `created_at` DESC; empty chats fall back to `created_at`; future `scheduled_at` and `periodic` templates excluded)
 - `getChatById(id)` → Chat | null
 - `updateChat(id, { title?, avatarPath? })` → Chat | null
 - `deleteChat(id)` → boolean (не удаляет системные)

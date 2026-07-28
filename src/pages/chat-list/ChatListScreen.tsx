@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { FlatList, View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import Animated, { Layout } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MagicWand, Search } from '../../shared/ui/pixel';
@@ -137,9 +138,10 @@ export function ChatListScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={chats}
           keyExtractor={(item) => item.id}
+          itemLayoutAnimation={Layout.springify().damping(22).stiffness(180)}
           renderItem={({ item }) => (
             <ChatListItem
               chat={item}

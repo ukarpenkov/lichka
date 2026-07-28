@@ -32,7 +32,21 @@ export function createChat(
 export function getChats(): Chat[] {
   const db = getDatabase();
   const result = db.executeSync(
-    'SELECT id, title, avatar_path, is_system, created_at, updated_at FROM chats ORDER BY updated_at DESC',
+    `SELECT id, title, avatar_path, is_system, created_at, updated_at
+     FROM chats
+     ORDER BY COALESCE(
+       (
+         SELECT MAX(m.created_at)
+         FROM messages m
+         WHERE m.chat_id = chats.id
+           AND m.type != 'periodic'
+           AND (
+             m.scheduled_at IS NULL
+             OR REPLACE(SUBSTR(m.scheduled_at, 1, 19), 'T', ' ') <= datetime('now')
+           )
+       ),
+       chats.created_at
+     ) DESC`,
   );
 
   return result.rows.map(mapRow);

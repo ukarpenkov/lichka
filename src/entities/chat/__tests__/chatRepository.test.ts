@@ -75,7 +75,7 @@ describe('chatRepository', () => {
   });
 
   describe('getChats', () => {
-    it('should return mapped chats ordered by updated_at DESC', () => {
+    it('should return mapped chats ordered by last delivered message', () => {
       mockExecuteSync.mockReturnValue({
         rows: [
           {
@@ -109,6 +109,18 @@ describe('chatRepository', () => {
         updatedAt: '2026-01-02T00:00:00.000Z',
       });
       expect(chats[1].avatarPath).toBeNull();
+    });
+
+    it('should query chats ordered by last delivered message created_at', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+
+      getChats();
+
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /ORDER BY COALESCE[\s\S]*MAX\(m\.created_at\)[\s\S]*type != 'periodic'[\s\S]*scheduled_at IS NULL[\s\S]*datetime\('now'\)[\s\S]*chats\.created_at[\s\S]*DESC/,
+        ),
+      );
     });
 
     it('should return empty array when no chats', () => {
