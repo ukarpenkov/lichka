@@ -209,8 +209,8 @@ export const ru: LocaleDictionary = {
   futureMode: 'Будущее',
   futureEmptyTitle: 'Здесь пока ничего не запланировано',
   futureScheduleCta: 'Запланировать',
-  futurePeekA11y: 'Потяните вниз, чтобы открыть будущее чата',
-  futureExitA11y: 'Потяните вверх, чтобы вернуться к истории чата',
+  futurePeekA11y: 'Потяните вверх, чтобы открыть будущее чата',
+  futureExitA11y: 'Потяните вниз, чтобы вернуться к истории чата',
 
   // Settings
   settings: 'Настройки',
@@ -362,8 +362,8 @@ export const en: LocaleDictionary = {
   futureMode: 'Future',
   futureEmptyTitle: 'Nothing scheduled yet',
   futureScheduleCta: 'Schedule',
-  futurePeekA11y: "Pull down to peek into this chat's future",
-  futureExitA11y: 'Pull up to return to chat history',
+  futurePeekA11y: "Pull up to peek into this chat's future",
+  futureExitA11y: 'Pull down to return to chat history',
 
   // Settings
   settings: 'Settings',

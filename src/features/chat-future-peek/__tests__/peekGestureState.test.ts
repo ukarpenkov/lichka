@@ -13,26 +13,26 @@ import {
 
 describe('peekGestureState', () => {
   describe('getPullDistance', () => {
-    it('should use positive translationY for enter (pull down)', () => {
-      expect(getPullDistance(40, 'enter')).toBe(40);
-      expect(getPullDistance(-20, 'enter')).toBe(0);
+    it('should use negative translationY for enter (pull up)', () => {
+      expect(getPullDistance(-40, 'enter')).toBe(40);
+      expect(getPullDistance(20, 'enter')).toBe(0);
     });
 
-    it('should use negative translationY for exit (pull up)', () => {
-      expect(getPullDistance(-40, 'exit')).toBe(40);
-      expect(getPullDistance(20, 'exit')).toBe(0);
+    it('should use positive translationY for exit (pull down)', () => {
+      expect(getPullDistance(40, 'exit')).toBe(40);
+      expect(getPullDistance(-20, 'exit')).toBe(0);
     });
   });
 
   describe('getPullVelocity', () => {
-    it('should keep velocityY for enter', () => {
-      expect(getPullVelocity(500, 'enter')).toBe(500);
-      expect(getPullVelocity(-100, 'enter')).toBe(-100);
+    it('should invert velocityY for enter', () => {
+      expect(getPullVelocity(-500, 'enter')).toBe(500);
+      expect(getPullVelocity(100, 'enter')).toBe(-100);
     });
 
-    it('should invert velocityY for exit', () => {
-      expect(getPullVelocity(-500, 'exit')).toBe(500);
-      expect(getPullVelocity(100, 'exit')).toBe(-100);
+    it('should keep velocityY for exit', () => {
+      expect(getPullVelocity(500, 'exit')).toBe(500);
+      expect(getPullVelocity(-100, 'exit')).toBe(-100);
     });
   });
 
@@ -92,9 +92,9 @@ describe('peekGestureState', () => {
       expect(applyRubberBand(400)).toBeLessThanOrEqual(96);
     });
 
-    it('should translate down for enter and up for exit', () => {
-      expect(getRubberBandTranslateY(40, 'enter')).toBeGreaterThan(0);
-      expect(getRubberBandTranslateY(40, 'exit')).toBeLessThan(0);
+    it('should translate up for enter and down for exit', () => {
+      expect(getRubberBandTranslateY(40, 'enter')).toBeLessThan(0);
+      expect(getRubberBandTranslateY(40, 'exit')).toBeGreaterThan(0);
     });
   });
 });

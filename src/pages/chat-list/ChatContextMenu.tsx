@@ -2,7 +2,14 @@ import React from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
 import { Pencil, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
-import { useTheme, useLocale, radii } from '../../shared/config';
+import {
+  useTheme,
+  useLocale,
+  radii,
+  hardShadowOffset,
+  hardBorderWidth,
+  spacing,
+} from '../../shared/config';
 
 export type ChatContextMenuProps = {
   visible: boolean;
@@ -13,35 +20,34 @@ export type ChatContextMenuProps = {
 };
 
 export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose }: ChatContextMenuProps) {
-  const { colors } = useTheme();
+  const { text, background, colors } = useTheme();
   const { t } = useLocale();
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={[styles.backdrop, { backgroundColor: colors.scrim }]} onPress={onClose}>
-        <View style={[styles.menu, { backgroundColor: colors.canvas }]}>
-          <Pressable
-            onPress={() => {
-              onClose();
-              onEdit();
-            }}
-            android_ripple={
-              Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-            }
-            style={({ pressed }) => [
-              styles.item,
-              pressed && Platform.OS !== 'android'
-                ? { backgroundColor: colors.surfaceSoft }
-                : null,
-            ]}>
-            <Pencil size={18} color={colors.ink} />
-            <Text variant="body">{t.edit}</Text>
-          </Pressable>
-          {canDelete ? (
+        <View style={styles.menuShadowWrap}>
+          <View
+            style={[
+              styles.hardShadowLayer,
+              { backgroundColor: text, borderRadius: radii.sm },
+            ]}
+          />
+          <View
+            style={[
+              styles.menu,
+              {
+                backgroundColor: background,
+                borderColor: text,
+                borderWidth: hardBorderWidth,
+                borderRadius: radii.sm,
+              },
+            ]}
+          >
             <Pressable
               onPress={() => {
                 onClose();
-                onDelete();
+                onEdit();
               }}
               android_ripple={
                 Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
@@ -52,17 +58,38 @@ export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose 
                   ? { backgroundColor: colors.surfaceSoft }
                   : null,
               ]}>
-              <Trash2 size={18} color={colors.destructive} />
-              <Text variant="body" style={{ color: colors.destructive }}>
-                {t.delete}
-              </Text>
+              <Pencil size={18} color={colors.ink} />
+              <Text variant="body">{t.edit}</Text>
             </Pressable>
-          ) : null}
+            {canDelete ? (
+              <Pressable
+                onPress={() => {
+                  onClose();
+                  onDelete();
+                }}
+                android_ripple={
+                  Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+                }
+                style={({ pressed }) => [
+                  styles.item,
+                  pressed && Platform.OS !== 'android'
+                    ? { backgroundColor: colors.surfaceSoft }
+                    : null,
+                ]}>
+                <Trash2 size={18} color={colors.destructive} />
+                <Text variant="body" style={{ color: colors.destructive }}>
+                  {t.delete}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
       </Pressable>
     </Modal>
   );
 }
+
+const MENU_WIDTH = 220;
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -70,16 +97,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  menuShadowWrap: {
+    position: 'relative',
+    paddingRight: hardShadowOffset,
+    paddingBottom: hardShadowOffset,
+  },
+  hardShadowLayer: {
+    ...StyleSheet.absoluteFill,
+    top: hardShadowOffset,
+    left: hardShadowOffset,
+    right: 0,
+    bottom: 0,
+  },
   menu: {
-    width: 220,
-    borderRadius: radii.md,
+    width: MENU_WIDTH,
     overflow: 'hidden',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
     gap: 12,
     minHeight: 56,
   },

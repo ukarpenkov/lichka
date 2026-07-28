@@ -25,8 +25,8 @@ export const PEEK_COMMIT_COOLDOWN_MS = 450;
 
 /**
  * Signed pan translation → pull distance in the gesture direction.
- * enter: finger down (positive translationY)
- * exit: finger up (negative translationY)
+ * enter: finger up (negative translationY) — overscroll past bottom into future
+ * exit: finger down (positive translationY) — overscroll past top back to history
  */
 export function getPullDistance(
   translationY: number,
@@ -34,8 +34,8 @@ export function getPullDistance(
 ): number {
   'worklet';
   return direction === 'enter'
-    ? Math.max(0, translationY)
-    : Math.max(0, -translationY);
+    ? Math.max(0, -translationY)
+    : Math.max(0, translationY);
 }
 
 /** Velocity component along the pull direction (positive = toward commit). */
@@ -44,7 +44,7 @@ export function getPullVelocity(
   direction: PeekDirection,
 ): number {
   'worklet';
-  return direction === 'enter' ? velocityY : -velocityY;
+  return direction === 'enter' ? -velocityY : velocityY;
 }
 
 /** Soft rubber-band: dampens pull for visual feedback. */
@@ -115,7 +115,7 @@ export function canActivatePeekGesture(
 
 /**
  * Visual translate for overlay / list rubber-band.
- * enter: positive Y (content pulled down), exit: negative Y.
+ * enter: negative Y (content pulled up), exit: positive Y.
  */
 export function getRubberBandTranslateY(
   pullDistance: number,
@@ -124,5 +124,5 @@ export function getRubberBandTranslateY(
 ): number {
   'worklet';
   const offset = applyRubberBand(pullDistance, max ?? PEEK_RUBBER_BAND_MAX);
-  return direction === 'enter' ? offset : -offset;
+  return direction === 'enter' ? -offset : offset;
 }

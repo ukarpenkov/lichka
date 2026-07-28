@@ -27,18 +27,19 @@ type AlertDialogProps = {
 };
 
 const PRESS_TRANSLATE = 3;
+const BUTTON_MIN_HEIGHT = 44;
 
 function HardShadowButton({
   btn,
   fill,
   shadowColor,
-  stretch,
+  equalWidth,
   onPress,
 }: {
   btn: AlertButton;
   fill: string;
   shadowColor: string;
-  stretch: boolean;
+  equalWidth: boolean;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -54,10 +55,10 @@ function HardShadowButton({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.buttonSlot, stretch && styles.buttonSlotStretch]}
+      style={[styles.buttonSlot, equalWidth ? styles.buttonSlotEqual : styles.buttonSlotFull]}
     >
       {({ pressed }) => (
-        <View style={styles.hardShadowWrap}>
+        <View style={styles.buttonShadowWrap}>
           <View
             style={[
               styles.hardShadowLayer,
@@ -83,8 +84,9 @@ function HardShadowButton({
             ]}
           >
             <Text
-              variant={btn.style === 'cancel' ? 'body' : 'button'}
+              variant="button"
               style={{ color: labelColor, textAlign: 'center' }}
+              numberOfLines={1}
             >
               {btn.text}
             </Text>
@@ -130,7 +132,7 @@ export function AlertDialog({
           entering={ZoomIn.duration(200).springify().damping(18).stiffness(220)}
           style={styles.cardStack}
         >
-          <View style={styles.hardShadowWrap}>
+          <View style={styles.cardShadowWrap}>
             <View
               style={[
                 styles.hardShadowLayer,
@@ -176,7 +178,7 @@ export function AlertDialog({
                       btn={btn}
                       fill={background}
                       shadowColor={text}
-                      stretch={!stacked}
+                      equalWidth={!stacked}
                       onPress={() => handlePress(btn)}
                     />
                   ))}
@@ -204,6 +206,11 @@ const styles = StyleSheet.create({
   cardStack: {
     width: CARD_WIDTH + hardShadowOffset,
   },
+  cardShadowWrap: {
+    position: 'relative',
+    paddingRight: hardShadowOffset,
+    paddingBottom: hardShadowOffset,
+  },
   card: {
     width: CARD_WIDTH,
     paddingTop: spacing.lg,
@@ -220,6 +227,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
@@ -227,12 +235,17 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   buttonSlot: {
-    minHeight: 44,
+    minHeight: BUTTON_MIN_HEIGHT + hardShadowOffset,
   },
-  buttonSlotStretch: {
+  buttonSlotEqual: {
     flex: 1,
   },
-  hardShadowWrap: {
+  buttonSlotFull: {
+    alignSelf: 'stretch',
+  },
+  buttonShadowWrap: {
+    flexGrow: 1,
+    alignSelf: 'stretch',
     position: 'relative',
     paddingRight: hardShadowOffset,
     paddingBottom: hardShadowOffset,
@@ -245,10 +258,11 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   hardShadowFace: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: spacing.sm,
-    minHeight: 44,
+    minHeight: BUTTON_MIN_HEIGHT,
   },
 });

@@ -31,7 +31,7 @@ import {
 export type UseFuturePeekGestureOptions = {
   direction: PeekDirection;
   enabled: boolean;
-  /** atBottom for enter, atTop for exit. */
+  /** atBottom for enter (pull up), atTop for exit (pull down). */
   atEdge: boolean;
   onCommit: () => void;
 };
@@ -106,8 +106,8 @@ export function useFuturePeekGesture({
   const gesture = useMemo(() => {
     const activeOffset =
       direction === 'enter'
-        ? ([PEEK_ACTIVE_OFFSET_Y, 1000] as [number, number])
-        : ([-1000, -PEEK_ACTIVE_OFFSET_Y] as [number, number]);
+        ? ([-1000, -PEEK_ACTIVE_OFFSET_Y] as [number, number])
+        : ([PEEK_ACTIVE_OFFSET_Y, 1000] as [number, number]);
 
     return Gesture.Pan()
       .enabled(gestureEnabled)
