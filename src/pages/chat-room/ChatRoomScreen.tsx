@@ -579,7 +579,7 @@ export function ChatRoomScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.canvas }]}>
-      <View onLayout={handleHeaderLayout}>
+      <View style={styles.headerShell} onLayout={handleHeaderLayout}>
         <View style={{ height: insets.top, backgroundColor: colors.canvas }} />
         <ChatHeader
           chat={chat}
@@ -781,6 +781,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerShell: {
+    zIndex: 30,
+    elevation: 30,
+  },
   stickyDate: {
     position: 'absolute',
     left: 0,
@@ -795,10 +799,13 @@ const styles = StyleSheet.create({
   },
   chatArea: {
     flex: 1,
+    overflow: 'hidden',
   },
   listPane: {
     flex: 1,
+    overflow: 'hidden',
   },
+
   list: {
     flex: 1,
   },

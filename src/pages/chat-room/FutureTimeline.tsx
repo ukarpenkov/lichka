@@ -125,6 +125,13 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={
+          <View style={styles.listHeader} accessibilityElementsHidden>
+            <Text variant="mono-meta" tone="muted">
+              {`── ${t.futureMode} ──`}
+            </Text>
+          </View>
+        }
         style={{ flex: 1, backgroundColor: colors.canvas }}
         contentContainerStyle={styles.listContent}
         onScroll={onScroll}
@@ -147,8 +154,15 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingTop: 4,
+    paddingTop: 0,
     paddingBottom: MESSAGE_LIST_BOTTOM_GAP,
+  },
+  /** Matches sticky future chip / DateSeparator so rows sit below the overlay. */
+  listHeader: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.gutter,
   },
   empty: {
     flex: 1,

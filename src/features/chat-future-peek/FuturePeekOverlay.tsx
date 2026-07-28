@@ -1,5 +1,10 @@
 import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
 import { useTheme } from '../../shared/config';
@@ -14,13 +19,30 @@ export type FuturePeekOverlayProps = {
   accessibilityLabel?: string;
 };
 
+function PeekDownGuide({
+  color,
+  style,
+}: {
+  color: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[styles.guide, style]}>
+      <View style={[styles.line, { backgroundColor: color }]} />
+      <View style={styles.arrowWrap}>
+        <ChevronRight color={color} size={16} />
+      </View>
+    </View>
+  );
+}
+
 export function FuturePeekOverlay({
   direction,
   animatedStyle,
   accessibilityLabel,
 }: FuturePeekOverlayProps) {
   const { text, background } = useTheme();
-  const anchor = direction === 'enter' ? styles.bottom : styles.top;
+  const isEnter = direction === 'enter';
 
   return (
     <Animated.View
@@ -28,19 +50,30 @@ export function FuturePeekOverlay({
       accessible
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.wrap, anchor, animatedStyle]}
+      style={[styles.wrap, animatedStyle]}
     >
-      <View
-        style={[
-          styles.badge,
-          {
-            backgroundColor: withAlpha(background, 0.92),
-            borderColor: withAlpha(text, 0.2),
-          },
-        ]}
-      >
-        <Clock color={text} size={22} />
-        <ChevronRight color={text} size={18} />
+      <View style={styles.column}>
+        {isEnter ? <View style={styles.flex} /> : <View style={styles.topPad} />}
+        <View
+          style={[
+            styles.badge,
+            { backgroundColor: withAlpha(background, 0.92) },
+          ]}
+        >
+          <Clock color={text} size={22} />
+          <ChevronRight color={text} size={18} />
+        </View>
+        {isEnter ? (
+          <>
+            <PeekDownGuide color={text} style={styles.enterGuide} />
+            <View style={styles.enterTail} />
+          </>
+        ) : (
+          <View style={styles.flex}>
+            <PeekDownGuide color={text} />
+            <View style={styles.flex} />
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -48,17 +81,18 @@ export function FuturePeekOverlay({
 
 const styles = StyleSheet.create({
   wrap: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
     zIndex: 20,
   },
-  bottom: {
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xxl,
+  column: {
+    flex: 1,
+    alignItems: 'center',
   },
-  top: {
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xxl,
+  topPad: {
+    height: spacing.xxl,
+  },
+  flex: {
+    flex: 1,
   },
   badge: {
     flexDirection: 'row',
@@ -66,6 +100,25 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderWidth: 2,
+  },
+  guide: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
+  },
+  line: {
+    width: 2,
+    flex: 1,
+  },
+  arrowWrap: {
+    transform: [{ rotate: '90deg' }],
+  },
+  /** ~50% of icons→compose gap (former paddingBottom = xxl). */
+  enterGuide: {
+    flex: 0,
+    height: spacing.xxl / 2,
+  },
+  enterTail: {
+    height: spacing.xxl / 2,
   },
 });

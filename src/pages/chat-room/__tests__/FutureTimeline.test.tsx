@@ -23,6 +23,7 @@ jest.mock('../../../shared/config', () => {
         ...actual.en,
         futureEmptyTitle: 'Nothing scheduled yet',
         futureScheduleCta: 'Schedule',
+        futureMode: 'Future',
         everyNMin: (n: number) => `every ${n} min`,
         tomorrow: 'Tomorrow',
       },
