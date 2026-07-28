@@ -11,6 +11,8 @@ export {
   monoWeight,
   spacing,
   radii,
+  hardShadowOffset,
+  hardBorderWidth,
   typography,
   fixedColors,
   resolveSemanticColors,

@@ -1,7 +1,13 @@
 import React from 'react';
 import { Modal, View, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
-import { useTheme } from '../config';
+import {
+  useTheme,
+  radii,
+  hardShadowOffset,
+  hardBorderWidth,
+  spacing,
+} from '../config';
 import { Text } from './Text';
 
 export type AlertButton = {
@@ -18,6 +24,75 @@ type AlertDialogProps = {
   onClose: () => void;
 };
 
+const PRESS_TRANSLATE = 3;
+
+function HardShadowButton({
+  btn,
+  fill,
+  shadowColor,
+  stretch,
+  onPress,
+}: {
+  btn: AlertButton;
+  fill: string;
+  shadowColor: string;
+  stretch: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  const isDestructive = btn.style === 'destructive';
+  const borderColor = isDestructive ? colors.destructive : shadowColor;
+  const labelColor =
+    btn.style === 'destructive'
+      ? colors.destructive
+      : btn.style === 'cancel'
+        ? colors.muted
+        : colors.ink;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[styles.buttonSlot, stretch && styles.buttonSlotStretch]}
+    >
+      {({ pressed }) => (
+        <View style={styles.hardShadowWrap}>
+          <View
+            style={[
+              styles.hardShadowLayer,
+              {
+                backgroundColor: shadowColor,
+                borderRadius: radii.sm,
+                opacity: pressed ? 0 : 1,
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.hardShadowFace,
+              {
+                backgroundColor: fill,
+                borderColor,
+                borderWidth: hardBorderWidth,
+                borderRadius: radii.sm,
+                transform: pressed
+                  ? [{ translateX: PRESS_TRANSLATE }, { translateY: PRESS_TRANSLATE }]
+                  : undefined,
+              },
+            ]}
+          >
+            <Text
+              variant={btn.style === 'cancel' ? 'body' : 'button'}
+              style={{ color: labelColor, textAlign: 'center' }}
+            >
+              {btn.text}
+            </Text>
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 export function AlertDialog({
   visible,
   title,
@@ -26,6 +101,7 @@ export function AlertDialog({
   onClose,
 }: AlertDialogProps) {
   const { text, background, colors } = useTheme();
+  const stacked = buttons.length >= 3;
 
   const handlePress = (btn: AlertButton) => {
     btn.onPress?.();
@@ -41,74 +117,78 @@ export function AlertDialog({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+        >
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         </Animated.View>
 
         <Animated.View
           entering={ZoomIn.duration(200).springify().damping(18).stiffness(220)}
-          style={[styles.card, { backgroundColor: background }]}
+          style={styles.cardStack}
         >
-          {title ? (
-            <Text variant="title" tone="ink" style={styles.title}>
-              {title}
-            </Text>
-          ) : null}
-
-          {message ? (
-            <Text variant="body-sm" tone="muted" style={styles.message}>
-              {message}
-            </Text>
-          ) : null}
-
-          {buttons.length > 0 ? (
+          <View style={styles.hardShadowWrap}>
             <View
               style={[
-                styles.buttonRow,
-                { borderTopColor: text + '20' },
+                styles.hardShadowLayer,
+                {
+                  backgroundColor: text,
+                  borderRadius: radii.sm,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: background,
+                  borderColor: text,
+                  borderWidth: hardBorderWidth,
+                  borderRadius: radii.sm,
+                },
               ]}
             >
-              {buttons.map((btn, i) => {
-                const isLast = i === buttons.length - 1;
-                return (
-                  <Pressable
-                    key={i}
-                    style={[
-                      styles.button,
-                      !isLast && {
-                        borderRightWidth: StyleSheet.hairlineWidth,
-                        borderRightColor: text + '20',
-                      },
-                      buttons.length >= 3 && styles.buttonTall,
-                    ]}
-                    onPress={() => handlePress(btn)}
-                  >
-                    <Text
-                      variant={btn.style === 'cancel' ? 'body' : 'button'}
-                      style={{
-                        color:
-                          btn.style === 'destructive'
-                            ? colors.destructive
-                            : btn.style === 'cancel'
-                              ? colors.muted
-                              : colors.ink,
-                        textAlign: 'center',
-                      }}
-                    >
-                      {btn.text}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {title ? (
+                <Text variant="title" tone="ink" style={styles.title}>
+                  {title}
+                </Text>
+              ) : null}
+
+              {message ? (
+                <Text variant="body-sm" tone="muted" style={styles.message}>
+                  {message}
+                </Text>
+              ) : null}
+
+              {buttons.length > 0 ? (
+                <View
+                  style={[
+                    styles.buttonRow,
+                    stacked && styles.buttonColumn,
+                  ]}
+                >
+                  {buttons.map((btn, i) => (
+                    <HardShadowButton
+                      key={i}
+                      btn={btn}
+                      fill={background}
+                      shadowColor={text}
+                      stretch={!stacked}
+                      onPress={() => handlePress(btn)}
+                    />
+                  ))}
+                </View>
+              ) : null}
             </View>
-          ) : null}
+          </View>
         </Animated.View>
       </View>
     </Modal>
   );
 }
 
-const CARD_BORDER_RADIUS = 14;
+const CARD_WIDTH = 280;
 
 const styles = StyleSheet.create({
   overlay: {
@@ -118,40 +198,55 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  cardStack: {
+    width: CARD_WIDTH + hardShadowOffset,
   },
   card: {
-    width: 280,
-    borderRadius: CARD_BORDER_RADIUS,
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    paddingBottom: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    width: CARD_WIDTH,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   title: {
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   message: {
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.base,
   },
   buttonRow: {
     flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginHorizontal: -20,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
-  button: {
+  buttonColumn: {
+    flexDirection: 'column',
+  },
+  buttonSlot: {
+    minHeight: 44,
+  },
+  buttonSlotStretch: {
     flex: 1,
+  },
+  hardShadowWrap: {
+    position: 'relative',
+    paddingRight: hardShadowOffset,
+    paddingBottom: hardShadowOffset,
+  },
+  hardShadowLayer: {
+    ...StyleSheet.absoluteFillObject,
+    top: hardShadowOffset,
+    left: hardShadowOffset,
+    right: 0,
+    bottom: 0,
+  },
+  hardShadowFace: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-  },
-  buttonTall: {
     paddingVertical: 12,
+    paddingHorizontal: spacing.sm,
+    minHeight: 44,
   },
 });

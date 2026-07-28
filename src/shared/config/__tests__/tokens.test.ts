@@ -2,6 +2,8 @@ import {
   resolveSemanticColors,
   spacing,
   radii,
+  hardShadowOffset,
+  hardBorderWidth,
   typography,
   listRow,
   pageHeader,
@@ -66,6 +68,11 @@ describe('tokens', () => {
       expect(radii.md).toBe(12);
       expect(radii.lg).toBe(16);
       expect(radii.full).toBe(9999);
+    });
+
+    it('should expose neo-brutal hard shadow and border tokens', () => {
+      expect(hardShadowOffset).toBe(4);
+      expect(hardBorderWidth).toBe(2);
     });
 
     it('should use Press Start 2P for display and JetBrains Mono for UI body', () => {

@@ -51,6 +51,12 @@ export const radii = {
 
 export type Radii = typeof radii;
 
+/** Neo-brutal hard offset shadow (CSS box-shadow: Npx Npx color). */
+export const hardShadowOffset = 4;
+
+/** Neo-brutal solid border width. */
+export const hardBorderWidth = 2;
+
 /**
  * Safe JetBrains Mono weight — pick the face file; do not rely on faux fontWeight.
  * On Android, numeric fontWeight with a custom family often falls back to system sans.
