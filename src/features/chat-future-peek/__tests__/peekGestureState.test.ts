@@ -1,0 +1,100 @@
+import {
+  PEEK_AUTO_COMMIT,
+  PEEK_THRESHOLD,
+  applyRubberBand,
+  canActivatePeekGesture,
+  getPeekPhase,
+  getPullDistance,
+  getPullVelocity,
+  getRubberBandTranslateY,
+  isPastThreshold,
+  shouldCommitPeek,
+} from '../peekGestureState';
+
+describe('peekGestureState', () => {
+  describe('getPullDistance', () => {
+    it('should use positive translationY for enter (pull down)', () => {
+      expect(getPullDistance(40, 'enter')).toBe(40);
+      expect(getPullDistance(-20, 'enter')).toBe(0);
+    });
+
+    it('should use negative translationY for exit (pull up)', () => {
+      expect(getPullDistance(-40, 'exit')).toBe(40);
+      expect(getPullDistance(20, 'exit')).toBe(0);
+    });
+  });
+
+  describe('getPullVelocity', () => {
+    it('should keep velocityY for enter', () => {
+      expect(getPullVelocity(500, 'enter')).toBe(500);
+      expect(getPullVelocity(-100, 'enter')).toBe(-100);
+    });
+
+    it('should invert velocityY for exit', () => {
+      expect(getPullVelocity(-500, 'exit')).toBe(500);
+      expect(getPullVelocity(100, 'exit')).toBe(-100);
+    });
+  });
+
+  describe('getPeekPhase / isPastThreshold', () => {
+    it('should be idle when not pulling', () => {
+      expect(getPeekPhase(0)).toBe('idle');
+      expect(isPastThreshold(0)).toBe(false);
+    });
+
+    it('should be pulling below threshold without arming', () => {
+      expect(getPeekPhase(PEEK_THRESHOLD - 1)).toBe('pulling');
+      expect(isPastThreshold(PEEK_THRESHOLD - 1)).toBe(false);
+    });
+
+    it('should be armed at and above threshold', () => {
+      expect(getPeekPhase(PEEK_THRESHOLD)).toBe('armed');
+      expect(isPastThreshold(PEEK_THRESHOLD)).toBe(true);
+      expect(getPeekPhase(PEEK_THRESHOLD + 20)).toBe('armed');
+    });
+  });
+
+  describe('shouldCommitPeek', () => {
+    it('should commit when past threshold on release', () => {
+      expect(shouldCommitPeek(PEEK_THRESHOLD, 0)).toBe(true);
+    });
+
+    it('should commit at auto-commit distance', () => {
+      expect(shouldCommitPeek(PEEK_AUTO_COMMIT, 0)).toBe(true);
+    });
+
+    it('should not commit below threshold with low velocity', () => {
+      expect(shouldCommitPeek(PEEK_THRESHOLD - 10, 100)).toBe(false);
+    });
+
+    it('should commit with strong velocity after half threshold', () => {
+      expect(shouldCommitPeek(PEEK_THRESHOLD * 0.5, 900)).toBe(true);
+    });
+
+    it('should cancel when released early', () => {
+      expect(shouldCommitPeek(20, 0)).toBe(false);
+    });
+  });
+
+  describe('canActivatePeekGesture', () => {
+    it('should require enabled and atEdge and not busy', () => {
+      expect(canActivatePeekGesture(true, true, false)).toBe(true);
+      expect(canActivatePeekGesture(false, true, false)).toBe(false);
+      expect(canActivatePeekGesture(true, false, false)).toBe(false);
+      expect(canActivatePeekGesture(true, true, true)).toBe(false);
+    });
+  });
+
+  describe('applyRubberBand / getRubberBandTranslateY', () => {
+    it('should dampen and clamp rubber-band offset', () => {
+      expect(applyRubberBand(0)).toBe(0);
+      expect(applyRubberBand(40)).toBeLessThan(40);
+      expect(applyRubberBand(400)).toBeLessThanOrEqual(96);
+    });
+
+    it('should translate down for enter and up for exit', () => {
+      expect(getRubberBandTranslateY(40, 'enter')).toBeGreaterThan(0);
+      expect(getRubberBandTranslateY(40, 'exit')).toBeLessThan(0);
+    });
+  });
+});

@@ -48,8 +48,8 @@
 | 1. Локализация — ключи Future Peek | Done |
 | 2. `getScheduledMessagesByChatId` в entities/message | Done |
 | 3. Навигация: `mode` в params + `navigateToChat` | Done |
-| 4. Feature `chat-future-peek` — overscroll жест (entry) | |
-| 5. Feature — зеркальный exit-жест вверх | |
+| 4. Feature `chat-future-peek` — overscroll жест (entry) | Done |
+| 5. Feature — зеркальный exit-жест вверх | Done |
 | 6. ChatRoom: `timelineMode` + индикатор + скрытие composer | |
 | 7. UI списка Future + empty state + CTA | |
 | 8. Интеграция entry/exit жестов в ChatRoom | |
@@ -172,7 +172,7 @@
 
 ## Шаг 4. Feature `chat-future-peek` — overscroll жест (entry)
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Вынести переиспользуемый жест «длинный pull вниз у низа ленты» с порогом, haptic и overlay-иконкой часов вперёд. Без привязки к смене режима — только колбэк `onCommit`.
@@ -209,7 +209,7 @@
 
 ## Шаг 5. Feature — зеркальный exit-жест вверх
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Симметричный жест выхода из Future: overscroll вверх у верхнего края списка будущего.

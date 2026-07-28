@@ -25,4 +25,21 @@ export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup } from './g
 export { ImageViewer, useImageViewer } from './image-viewer';
 export type { ImageViewerData } from './image-viewer';
 
+export {
+  useFuturePeekGesture,
+  useFuturePeekEntryGesture,
+  useFuturePeekExitGesture,
+  FuturePeekOverlay,
+  PEEK_THRESHOLD,
+  shouldCommitPeek,
+  canActivatePeekGesture,
+} from './chat-future-peek';
+export type {
+  PeekDirection,
+  PeekPhase,
+  FuturePeekGestureApi,
+  UseFuturePeekEntryGestureOptions,
+  UseFuturePeekExitGestureOptions,
+} from './chat-future-peek';
+
 export { getUnreadCounts, markChatAsRead } from './unread-badges';
