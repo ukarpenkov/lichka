@@ -93,6 +93,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
               fontFamily: fonts.regular,
             },
           ]}
+          textAlignVertical="center"
           returnKeyType="search"
           autoCorrect={false}
         />
@@ -158,8 +159,9 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: radii.md,
     paddingHorizontal: 12,
+    paddingVertical: 0,
     fontSize: 16,
-    lineHeight: 20,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
   resultItem: {
     paddingHorizontal: listRow.chat.paddingHorizontal,

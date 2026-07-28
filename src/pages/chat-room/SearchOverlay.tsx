@@ -112,6 +112,7 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
               fontFamily: Platform.OS === 'android' ? 'sans-serif' : undefined,
             },
           ]}
+          textAlignVertical="center"
           returnKeyType="search"
           autoCorrect={false}
         />
@@ -178,8 +179,9 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: radii.md,
     paddingHorizontal: 12,
+    paddingVertical: 0,
     fontSize: 16,
-    lineHeight: 20,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
   resultItem: {
     paddingHorizontal: listRow.chat.paddingHorizontal,
