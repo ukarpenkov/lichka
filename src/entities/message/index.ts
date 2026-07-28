@@ -7,6 +7,7 @@ export {
   updateMessage,
   deleteMessage,
   getScheduledMessages,
+  getScheduledMessagesByChatId,
   getMessagesForChatAtTime,
   disableFiredMessages,
   getPeriodicDisplayMessages,

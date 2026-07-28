@@ -14,6 +14,7 @@ import {
   updateMessage,
   deleteMessage,
   getScheduledMessages,
+  getScheduledMessagesByChatId,
   getMessagesForChatAtTime,
   disableFiredMessages,
   getPeriodicDisplayMessages,
@@ -355,6 +356,77 @@ describe('messageRepository', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
 
       expect(getScheduledMessages()).toEqual([]);
+    });
+  });
+
+  describe('getScheduledMessagesByChatId', () => {
+    it('should return only messages for the given chatId', () => {
+      mockExecuteSync.mockReturnValue({ rows: [sampleReminderRow] });
+
+      const messages = getScheduledMessagesByChatId('chat-1');
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0].chatId).toBe('chat-1');
+      const [sql, params] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain('chat_id = ?');
+      expect(params[0]).toBe('chat-1');
+    });
+
+    it('should query with same filters as getScheduledMessages plus chat_id', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      getScheduledMessagesByChatId('chat-abc');
+
+      const [sql, params] = mockExecuteSync.mock.calls[0];
+      expect(sql).toContain('chat_id = ?');
+      expect(sql).toContain('enabled = 1');
+      expect(sql).toContain("type IN ('reminder', 'alarm', 'periodic')");
+      expect(sql).toContain('scheduled_at > ?');
+      expect(sql).toContain("type = 'periodic'");
+      expect(sql).toContain('ORDER BY scheduled_at ASC');
+      expect(params[0]).toBe('chat-abc');
+      expect(params).toHaveLength(2);
+    });
+
+    it('should exclude disabled, past reminder/alarm, simple and image via SQL filters', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      getScheduledMessagesByChatId('chat-1');
+
+      const sql = mockExecuteSync.mock.calls[0][0];
+      expect(sql).toContain('enabled = 1');
+      expect(sql).toContain("type IN ('reminder', 'alarm', 'periodic')");
+      expect(sql).toContain('scheduled_at > ?');
+      expect(sql).not.toContain('simple');
+      expect(sql).not.toContain('image');
+    });
+
+    it('should include periodic messages for this chat', () => {
+      const periodicRow = {
+        ...sampleDbRow,
+        id: 'msg-periodic',
+        chat_id: 'chat-1',
+        type: 'periodic',
+        body: 'Check in',
+        interval_minutes: 60,
+        enabled: 1,
+        scheduled_at: '2026-01-01T00:00:00.000Z',
+      };
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+
+      const messages = getScheduledMessagesByChatId('chat-1');
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0].type).toBe('periodic');
+      expect(messages[0].chatId).toBe('chat-1');
+    });
+
+    it('should not return messages from another chat', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+
+      const messages = getScheduledMessagesByChatId('chat-other');
+
+      expect(messages).toEqual([]);
+      const [, params] = mockExecuteSync.mock.calls[0];
+      expect(params[0]).toBe('chat-other');
     });
   });
 

@@ -171,6 +171,22 @@ export function getScheduledMessages(): Message[] {
   return result.rows.map(mapRow);
 }
 
+export function getScheduledMessagesByChatId(chatId: string): Message[] {
+  const db = getDatabase();
+  const now = new Date().toISOString();
+  const result = db.executeSync(
+    `SELECT ${SELECT_COLUMNS} FROM messages
+     WHERE chat_id = ?
+       AND enabled = 1
+       AND type IN ('reminder', 'alarm', 'periodic')
+       AND (scheduled_at > ? OR type = 'periodic')
+     ORDER BY scheduled_at ASC`,
+    [chatId, now],
+  );
+
+  return result.rows.map(mapRow);
+}
+
 export function getVisibleMessagesByChatId(chatId: string): Message[] {
   const db = getDatabase();
   const result = db.executeSync(

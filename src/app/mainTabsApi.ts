@@ -5,6 +5,8 @@
  * кастомный SwipeablePager.
  */
 
+import type { ChatRoomMode } from './types';
+
 export type MainTabsApi = {
   /** Переключиться на таб по индексу (0..count-1) с анимацией. */
   switchToTab: (index: number) => void;
@@ -12,10 +14,21 @@ export type MainTabsApi = {
 
 let api: MainTabsApi | null = null;
 
-let pendingChat: { chatId: string; messageId?: string } | null = null;
+type PendingChat = {
+  chatId: string;
+  messageId?: string;
+  mode?: ChatRoomMode;
+};
+
+let pendingChat: PendingChat | null = null;
 
 /** Навигация вложенного стека чатов, устанавливается из ChatListScreen. */
-type ChatRoomParams = { chatId: string; messageId?: string; focusNonce?: number };
+type ChatRoomParams = {
+  chatId: string;
+  messageId?: string;
+  focusNonce?: number;
+  mode?: ChatRoomMode;
+};
 
 type ChatStackNav = {
   navigate: (name: 'ChatRoom', params: ChatRoomParams) => void;
@@ -30,16 +43,19 @@ function flushPending() {
     const p = pendingChat;
     pendingChat = null;
     api.switchToTab(0);
-    openChatRoom(p.chatId, p.messageId);
+    openChatRoom(p.chatId, p.messageId, p.mode);
   }
 }
 
-function openChatRoom(chatId: string, messageId?: string) {
+function openChatRoom(chatId: string, messageId?: string, mode?: ChatRoomMode) {
   if (!chatStackNav) return;
 
   // focusNonce форсирует повторный scroll/highlight при повторном тапе
   // по уведомлению, когда ChatRoom уже открыт с тем же messageId.
   const params: ChatRoomParams = { chatId, messageId, focusNonce: Date.now() };
+  if (mode) {
+    params.mode = mode;
+  }
 
   const current = chatStackNav.getCurrentRoute?.();
   if (
@@ -68,12 +84,17 @@ export function setChatStackNavigation(nav: ChatStackNav | null) {
   flushPending();
 }
 
-export function navigateToChat(chatId: string, messageId?: string) {
+export function navigateToChat(
+  chatId: string,
+  messageId?: string,
+  options?: { mode?: ChatRoomMode },
+) {
+  const mode = options?.mode;
   if (api && chatStackNav) {
     api.switchToTab(0);
-    openChatRoom(chatId, messageId);
+    openChatRoom(chatId, messageId, mode);
   } else {
-    pendingChat = { chatId, messageId };
+    pendingChat = { chatId, messageId, mode };
   }
 }
 
@@ -81,4 +102,11 @@ export function navigateToChat(chatId: string, messageId?: string) {
  *  при готовности NavigationContainer. */
 export function setNavigationReady() {
   flushPending();
+}
+
+/** Сброс модуля для unit-тестов. */
+export function __resetMainTabsApiForTests() {
+  api = null;
+  chatStackNav = null;
+  pendingChat = null;
 }

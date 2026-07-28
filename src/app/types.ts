@@ -3,9 +3,16 @@ export type RootStackParamList = {
   Alarm: { body?: string; chatTitle?: string };
 };
 
+export type ChatRoomMode = 'history' | 'future';
+
 export type ChatStackParamList = {
   ChatList: undefined;
-  ChatRoom: { chatId: string; messageId?: string; focusNonce?: number };
+  ChatRoom: {
+    chatId: string;
+    messageId?: string;
+    focusNonce?: number;
+    mode?: ChatRoomMode;
+  };
 };
 
 export type SettingsStackParamList = {

@@ -52,6 +52,13 @@ export interface LocaleDictionary {
   noScheduled: string;
   everyNMin: (n: number) => string;
 
+  // Future Peek
+  futureMode: string;
+  futureEmptyTitle: string;
+  futureScheduleCta: string;
+  futurePeekA11y: string;
+  futureExitA11y: string;
+
   // Settings
   settings: string;
   sectionTheme: string;
@@ -198,6 +205,13 @@ export const ru: LocaleDictionary = {
   noScheduled: 'Нет запланированных',
   everyNMin: (n) => `каждые ${n} мин`,
 
+  // Future Peek
+  futureMode: 'Будущее',
+  futureEmptyTitle: 'Здесь пока ничего не запланировано',
+  futureScheduleCta: 'Запланировать',
+  futurePeekA11y: 'Потяните вниз, чтобы открыть будущее чата',
+  futureExitA11y: 'Потяните вверх, чтобы вернуться к истории чата',
+
   // Settings
   settings: 'Настройки',
   sectionTheme: 'Тема',
@@ -343,6 +357,13 @@ export const en: LocaleDictionary = {
   scheduled: 'Scheduled',
   noScheduled: 'No scheduled messages',
   everyNMin: (n) => `every ${n} min`,
+
+  // Future Peek
+  futureMode: 'Future',
+  futureEmptyTitle: 'Nothing scheduled yet',
+  futureScheduleCta: 'Schedule',
+  futurePeekA11y: "Pull down to peek into this chat's future",
+  futureExitA11y: 'Pull up to return to chat history',
 
   // Settings
   settings: 'Settings',

@@ -33,6 +33,8 @@ describe('locale', () => {
         'today', 'yesterday', 'tomorrow',
         'chats', 'deleteChat', 'createFirstChat',
         'scheduled', 'noScheduled',
+        'futureMode', 'futureEmptyTitle', 'futureScheduleCta',
+        'futurePeekA11y', 'futureExitA11y',
         'settings', 'sectionTheme', 'sectionSound', 'sectionLanguage',
         'sectionBackup', 'sectionAbout',
         'sound', 'hapticFeedback', 'interfaceLanguage',
