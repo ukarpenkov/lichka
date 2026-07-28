@@ -1,18 +1,31 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Platform, Keyboard, type LayoutChangeEvent, type ViewToken } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  Keyboard,
+  type LayoutChangeEvent,
+  type ViewToken,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   FadeIn,
   FadeOut,
+  runOnJS,
 } from 'react-native-reanimated';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme, useLocale } from '../../shared/config';
+import { useTheme, useLocale, spacing } from '../../shared/config';
 import {
   useKeyboardHeight,
   KEYBOARD_ANDROID_LIFT_FUDGE,
@@ -27,6 +40,8 @@ import {
   deleteMessage,
   getMessageById,
   getPeriodicDisplayMessages,
+  getScheduledMessagesByChatId,
+  disableFiredMessages,
   isPeriodicDisplayId,
   extractTemplateId,
   type Message,
@@ -34,7 +49,13 @@ import {
 import { cancelNotification } from '../../features/notifications';
 import { markChatAsRead } from '../../features/unread-badges';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
-import { ImageViewer, useImageViewer } from '../../features';
+import {
+  ImageViewer,
+  useImageViewer,
+  useFuturePeekEntryGesture,
+  useFuturePeekExitGesture,
+  FuturePeekOverlay,
+} from '../../features';
 import { ChatForm } from '../../widgets/chat-form';
 import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
@@ -45,6 +66,9 @@ import { MessageContextMenu } from './MessageContextMenu';
 import { MessageEditor } from './MessageEditor';
 import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
+import { FutureTimeline } from './FutureTimeline';
+import { resolveTimelineMode, type TimelineMode } from './timelineMode';
+import { isScrollAtBottom, isScrollAtTop } from './scrollEdge';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
 type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
@@ -54,6 +78,7 @@ type ListItem =
   | { kind: 'message'; key: string; message: Message };
 
 const REFRESH_INTERVAL = 30_000;
+const FUTURE_REFRESH_INTERVAL = 15_000;
 
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
@@ -82,15 +107,18 @@ function buildListItems(messages: Message[]): ListItem[] {
 export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
-  const { chatId, messageId, focusNonce } = route.params;
+  const { chatId, messageId, focusNonce, mode } = route.params;
   const { colors } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
-  // Полная высота PagerTabBar: контент иконок + нижний safe-area (home indicator).
   const tabBarHeight = PAGER_TAB_BAR_HEIGHT + insets.bottom;
 
   const [chat, setChat] = useState<Chat | null | undefined>(undefined);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [futureMessages, setFutureMessages] = useState<Message[]>([]);
+  const [timelineMode, setTimelineMode] = useState<TimelineMode>(() =>
+    resolveTimelineMode(mode),
+  );
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
@@ -103,6 +131,9 @@ export function ChatRoomScreen() {
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const [atTop, setAtTop] = useState(true);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const {
     open,
     close,
@@ -113,24 +144,51 @@ export function ChatRoomScreen() {
 
   const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
+  const futureListRef = useRef<FlatList<Message>>(null);
   const scrollToMessageId = useRef(false);
   const scrolledToMessageRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const historyScrollOffsetRef = useRef(0);
+  const suppressScrollToBottomRef = useRef(false);
+  const listMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
   const keyboardHeight = useKeyboardHeight();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const updateHistoryEdges = useCallback(
+    (offsetY: number, contentHeight: number, layoutHeight: number) => {
+      historyScrollOffsetRef.current = offsetY;
+      listMetricsRef.current = { contentHeight, layoutHeight };
+      const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
+      const nextTop = isScrollAtTop(offsetY);
+      setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
+      setAtTop((prev) => (prev === nextTop ? prev : nextTop));
+    },
+    [],
+  );
+
+  const updateFutureEdges = useCallback(
+    (offsetY: number, contentHeight: number, layoutHeight: number) => {
+      listMetricsRef.current = { contentHeight, layoutHeight };
+      const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
+      const nextTop = isScrollAtTop(offsetY);
+      setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
+      setAtTop((prev) => (prev === nextTop ? prev : nextTop));
+    },
+    [],
+  );
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
+      runOnJS(updateHistoryEdges)(
+        event.contentOffset.y,
+        event.contentSize.height,
+        event.layoutMeasurement.height,
+      );
     },
   });
 
-  // Экран чата вложен в кастомный pager (SwipeablePager + PagerTabBar),
-  // поэтому нижний tab bar уже занимает `tabBarHeight` над краем экрана —
-  // вычитаем его из высоты клавиатуры.
-  // KEYBOARD_COMPOSER_GAP — реальный зазор над клавиатурой (не translateY на
-  // композере: transform наезжает на FlatList и ломает отступ до последнего сообщения).
-  // На iOS клавиатуру поднимает система, ручная компенсация не нужна.
   const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
     paddingBottom:
       Platform.OS === 'android'
@@ -153,19 +211,34 @@ export function ChatRoomScreen() {
     setMessages(allMessages);
   }, [chatId]);
 
+  const loadFuture = useCallback(() => {
+    disableFiredMessages();
+    setFutureMessages(getScheduledMessagesByChatId(chatId));
+  }, [chatId]);
+
+  useEffect(() => {
+    setTimelineMode(resolveTimelineMode(mode));
+  }, [mode, focusNonce]);
+
   useFocusEffect(
     useCallback(() => {
       markChatAsRead(chatId);
       loadData();
+      loadFuture();
       timerRef.current = setInterval(loadData, REFRESH_INTERVAL);
+      futureTimerRef.current = setInterval(loadFuture, FUTURE_REFRESH_INTERVAL);
       return () => {
         markChatAsRead(chatId);
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
+        if (futureTimerRef.current) {
+          clearInterval(futureTimerRef.current);
+          futureTimerRef.current = null;
+        }
       };
-    }, [chatId, loadData]),
+    }, [chatId, loadData, loadFuture]),
   );
 
   useEffect(() => {
@@ -179,21 +252,66 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const listItems = useMemo(() => buildListItems(messages), [messages]);
+
+  const enterFuture = useCallback(() => {
+    historyScrollOffsetRef.current = scrollY.value;
+    suppressScrollToBottomRef.current = true;
+    Keyboard.dismiss();
+    setTimelineMode('future');
+    loadFuture();
+    setAtTop(true);
+  }, [loadFuture, scrollY]);
+
+  const exitFuture = useCallback(() => {
+    suppressScrollToBottomRef.current = true;
+    setTimelineMode('history');
+    const offset = historyScrollOffsetRef.current;
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset, animated: false });
+        setTimeout(() => {
+          suppressScrollToBottomRef.current = false;
+        }, 100);
+      }, 50);
+    });
+  }, []);
+
+  const entryPeek = useFuturePeekEntryGesture({
+    enabled: timelineMode === 'history' && !keyboardOpen && !searchVisible,
+    atBottom,
+    onCommit: enterFuture,
+  });
+
+  const exitPeek = useFuturePeekExitGesture({
+    enabled: timelineMode === 'future' && !searchVisible,
+    atTop,
+    onCommit: exitFuture,
+  });
 
   const scrollToBottom = useCallback((animated = false) => {
     if (scrollToMessageId.current) return;
+    if (suppressScrollToBottomRef.current) return;
+    if (timelineMode !== 'history') return;
     flatListRef.current?.scrollToEnd({ animated });
-  }, []);
+  }, [timelineMode]);
 
-  // После появления новых сообщений — доскролл к концу (viewport уже учитывает композер).
   useEffect(() => {
+    if (timelineMode !== 'history') return;
     if (listItems.length === 0) return;
     const timer = setTimeout(() => scrollToBottom(false), 50);
     return () => clearTimeout(timer);
-  }, [listItems, scrollToBottom]);
+  }, [listItems, scrollToBottom, timelineMode]);
 
-  // При открытии клавиатуры chatArea сжимается снизу — доскролливаем после layout.
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
       setTimeout(() => scrollToBottom(true), 100);
@@ -214,7 +332,19 @@ export function ChatRoomScreen() {
     };
   }, []);
 
+  const pulseHighlight = useCallback((targetId: string) => {
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+    }
+    setHighlightedMessageId(targetId);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightTimerRef.current = null;
+    }, 1000);
+  }, []);
+
   useEffect(() => {
+    if (timelineMode !== 'history') return;
     if (!messageId || listItems.length === 0) return;
     if (scrolledToMessageRef.current === messageId) return;
 
@@ -231,15 +361,7 @@ export function ChatRoomScreen() {
     const targetListId = (listItems[index] as { message: Message }).message.id;
     scrolledToMessageRef.current = messageId;
     scrollToMessageId.current = true;
-
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
-    }
-    setHighlightedMessageId(targetListId);
-    highlightTimerRef.current = setTimeout(() => {
-      setHighlightedMessageId(null);
-      highlightTimerRef.current = null;
-    }, 1000);
+    pulseHighlight(targetListId);
 
     const timer = setTimeout(() => {
       flatListRef.current?.scrollToIndex({
@@ -249,7 +371,28 @@ export function ChatRoomScreen() {
       });
     }, 200);
     return () => clearTimeout(timer);
-  }, [messageId, focusNonce, listItems]);
+  }, [messageId, focusNonce, listItems, timelineMode, pulseHighlight]);
+
+  useEffect(() => {
+    if (timelineMode !== 'future') return;
+    if (!messageId || futureMessages.length === 0) return;
+    if (scrolledToMessageRef.current === `future:${messageId}`) return;
+
+    const index = futureMessages.findIndex((m) => m.id === messageId);
+    if (index === -1) return;
+
+    scrolledToMessageRef.current = `future:${messageId}`;
+    pulseHighlight(messageId);
+
+    const timer = setTimeout(() => {
+      futureListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [messageId, focusNonce, futureMessages, timelineMode, pulseHighlight]);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
@@ -271,6 +414,9 @@ export function ChatRoomScreen() {
 
   const handleSearchSelect = useCallback(
     (msgId: string) => {
+      if (timelineMode === 'future') {
+        setTimelineMode('history');
+      }
       let targetId = msgId;
       if (!listItems.some((item) => item.kind === 'message' && item.message.id === msgId)) {
         targetId = `periodic:${msgId}`;
@@ -280,15 +426,7 @@ export function ChatRoomScreen() {
       );
       if (index === -1) return;
       scrollToMessageId.current = true;
-
-      if (highlightTimerRef.current) {
-        clearTimeout(highlightTimerRef.current);
-      }
-      setHighlightedMessageId(targetId);
-      highlightTimerRef.current = setTimeout(() => {
-        setHighlightedMessageId(null);
-        highlightTimerRef.current = null;
-      }, 1000);
+      pulseHighlight(targetId);
 
       setTimeout(() => {
         flatListRef.current?.scrollToIndex({
@@ -298,7 +436,7 @@ export function ChatRoomScreen() {
         });
       }, 200);
     },
-    [listItems],
+    [listItems, pulseHighlight, timelineMode],
   );
 
   const handleDeleteMessage = useCallback(() => {
@@ -318,11 +456,12 @@ export function ChatRoomScreen() {
             deleteMessage(actualId);
             cancelNotification(actualId);
             loadData();
+            loadFuture();
           },
         },
       ],
     });
-  }, [menuMessage, t, loadData]);
+  }, [menuMessage, t, loadData, loadFuture]);
 
   const { saveEdit } = useEditMessage();
 
@@ -346,8 +485,21 @@ export function ChatRoomScreen() {
       saveEdit(editMessage, fields);
       setEditMessage(null);
       loadData();
+      loadFuture();
     },
-    [editMessage, saveEdit, loadData],
+    [editMessage, saveEdit, loadData, loadFuture],
+  );
+
+  const handleScheduleCta = useCallback(() => {
+    exitFuture();
+  }, [exitFuture]);
+
+  const handleFutureScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      updateFutureEdges(contentOffset.y, contentSize.height, layoutMeasurement.height);
+    },
+    [updateFutureEdges],
   );
 
   const renderListItem = useCallback(
@@ -369,7 +521,6 @@ export function ChatRoomScreen() {
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
 
-  // undefined = ещё грузим, null = чат не найден
   if (chat === undefined) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.canvas }]}>
@@ -394,6 +545,8 @@ export function ChatRoomScreen() {
     );
   }
 
+  const isFuture = timelineMode === 'future';
+
   return (
     <View style={[styles.root, { backgroundColor: colors.canvas }]}>
       <View onLayout={handleHeaderLayout}>
@@ -403,6 +556,7 @@ export function ChatRoomScreen() {
           onBack={() => navigation.goBack()}
           onTitlePress={() => setEditFormVisible(true)}
           onSearch={() => setSearchVisible(true)}
+          modeLabel={isFuture ? t.futureMode : null}
         />
       </View>
 
@@ -414,7 +568,24 @@ export function ChatRoomScreen() {
         />
       )}
 
-      {stickyDate && !searchVisible && (
+      {isFuture && !searchVisible && (
+        <Animated.View
+          key="future-mode"
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(150)}
+          style={[
+            styles.stickyDate,
+            { top: headerAreaHeight, backgroundColor: colors.canvas },
+          ]}>
+          <View style={styles.futureChip}>
+            <Text variant="mono-meta" tone="muted">
+              {`── ${t.futureMode} ──`}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
+
+      {!isFuture && stickyDate && !searchVisible && (
         <Animated.View
           key={stickyDate}
           entering={FadeIn.duration(200)}
@@ -428,29 +599,102 @@ export function ChatRoomScreen() {
       )}
 
       <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
-        <AnimatedFlatList
-          ref={flatListRef as any}
-          data={listItems}
-          renderItem={renderListItem}
-          keyExtractor={keyExtractor}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          onViewableItemsChanged={handleViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          onScrollToIndexFailed={(info: any) => {
-            setTimeout(() => {
-              flatListRef.current?.scrollToIndex({
-                index: info.index,
-                animated: false,
-                viewPosition: 0.5,
-              });
-            }, 200);
-          }}
-        />
+        {isFuture ? (
+          <GestureDetector gesture={exitPeek.gesture}>
+            <Animated.View
+              style={[styles.listPane, exitPeek.rubberBandStyle]}
+              accessible
+              accessibilityHint={t.futureExitA11y}
+            >
+              <FutureTimeline
+                ref={futureListRef}
+                messages={futureMessages}
+                highlightedMessageId={highlightedMessageId}
+                onSchedulePress={handleScheduleCta}
+                onLongPressMessage={setMenuMessage}
+                onScroll={handleFutureScroll}
+                onContentSizeChange={(w, h) => {
+                  updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
+                }}
+                onLayout={(height) => {
+                  listMetricsRef.current.layoutHeight = height;
+                  updateFutureEdges(
+                    0,
+                    listMetricsRef.current.contentHeight || height,
+                    height,
+                  );
+                }}
+              />
+              <FuturePeekOverlay
+                direction="exit"
+                animatedStyle={exitPeek.overlayStyle}
+                accessibilityLabel={t.futureExitA11y}
+              />
+            </Animated.View>
+          </GestureDetector>
+        ) : (
+          <GestureDetector gesture={entryPeek.gesture}>
+            <Animated.View
+              style={[styles.listPane, entryPeek.rubberBandStyle]}
+              accessible
+              accessibilityHint={t.futurePeekA11y}
+            >
+              <AnimatedFlatList
+                ref={flatListRef as any}
+                data={listItems}
+                renderItem={renderListItem}
+                keyExtractor={keyExtractor}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+                onViewableItemsChanged={handleViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
+                onContentSizeChange={(_w: number, h: number) => {
+                  listMetricsRef.current.contentHeight = h;
+                  updateHistoryEdges(
+                    historyScrollOffsetRef.current,
+                    h,
+                    listMetricsRef.current.layoutHeight,
+                  );
+                }}
+                onLayout={(e: LayoutChangeEvent) => {
+                  const h = e.nativeEvent.layout.height;
+                  listMetricsRef.current.layoutHeight = h;
+                  updateHistoryEdges(
+                    historyScrollOffsetRef.current,
+                    listMetricsRef.current.contentHeight,
+                    h,
+                  );
+                }}
+                onScrollToIndexFailed={(info: any) => {
+                  setTimeout(() => {
+                    flatListRef.current?.scrollToIndex({
+                      index: info.index,
+                      animated: false,
+                      viewPosition: 0.5,
+                    });
+                  }, 200);
+                }}
+              />
+              <FuturePeekOverlay
+                direction="enter"
+                animatedStyle={entryPeek.overlayStyle}
+                accessibilityLabel={t.futurePeekA11y}
+              />
+            </Animated.View>
+          </GestureDetector>
+        )}
 
-        <MessageComposer chatId={chatId} onSent={loadData} />
+        {!isFuture && (
+          <MessageComposer
+            chatId={chatId}
+            onSent={() => {
+              loadData();
+              loadFuture();
+            }}
+          />
+        )}
       </Animated.View>
 
       <MessageContextMenu
@@ -470,7 +714,10 @@ export function ChatRoomScreen() {
       <ChatForm
         visible={editFormVisible}
         onClose={() => setEditFormVisible(false)}
-        onSaved={loadData}
+        onSaved={() => {
+          loadData();
+          loadFuture();
+        }}
         editChat={chat}
       />
 
@@ -510,7 +757,16 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
+  futureChip: {
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.gutter,
+  },
   chatArea: {
+    flex: 1,
+  },
+  listPane: {
     flex: 1,
   },
   list: {

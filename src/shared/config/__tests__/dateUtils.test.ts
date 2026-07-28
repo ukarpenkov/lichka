@@ -5,6 +5,7 @@ import {
   formatTime,
   formatScheduledAt,
   formatRelativeDate,
+  formatScheduledWhen,
   formatInterval,
   formatShortMonth,
 } from '../dateUtils';
@@ -128,6 +129,30 @@ describe('dateUtils', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       expect(formatRelativeDate(tomorrow.toISOString(), 'en', en)).toBe('Tomorrow');
+    });
+  });
+
+  describe('formatScheduledWhen', () => {
+    it('should format periodic via everyNMin', () => {
+      expect(
+        formatScheduledWhen(
+          { type: 'periodic', scheduledAt: null, intervalMinutes: 15 },
+          'en',
+          en,
+        ),
+      ).toBe('every 15 min');
+    });
+
+    it('should format today reminder as time only', () => {
+      const now = new Date();
+      now.setHours(14, 30, 0, 0);
+      const result = formatScheduledWhen(
+        { type: 'reminder', scheduledAt: now.toISOString(), intervalMinutes: null },
+        'en',
+        en,
+      );
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).not.toContain('Tomorrow');
     });
   });
 

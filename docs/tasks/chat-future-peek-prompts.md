@@ -50,9 +50,9 @@
 | 3. Навигация: `mode` в params + `navigateToChat` | Done |
 | 4. Feature `chat-future-peek` — overscroll жест (entry) | Done |
 | 5. Feature — зеркальный exit-жест вверх | Done |
-| 6. ChatRoom: `timelineMode` + индикатор + скрытие composer | |
-| 7. UI списка Future + empty state + CTA | |
-| 8. Интеграция entry/exit жестов в ChatRoom | |
+| 6. ChatRoom: `timelineMode` + индикатор + скрытие composer | Done |
+| 7. UI списка Future + empty state + CTA | Done |
+| 8. Интеграция entry/exit жестов в ChatRoom | Done |
 | 9. Deep link из Scheduled → Future + highlight | |
 | 10. Back / Android back: сначала выход из Future | |
 | 11. Интеграционные тесты сценариев MVP | |
@@ -241,7 +241,7 @@
 
 ## Шаг 6. ChatRoom: `timelineMode` + индикатор + скрытие composer
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Состояние режима комнаты и явный UI-индикатор «Будущее»; в Future composer скрыт. Список Future пока можно заглушить (пустое место / placeholder) — полноценный список в шаге 7.
@@ -276,7 +276,7 @@
 
 ## Шаг 7. UI списка Future + empty state + CTA
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 В режиме Future показать список scheduled текущего чата или честный empty state с CTA «Запланировать».
@@ -310,7 +310,7 @@
 
 ## Шаг 8. Интеграция entry/exit жестов в ChatRoom
 
-**Статус:**
+**Статус:** Done
 
 ### Задача
 Связать жесты из feature-слайса с `timelineMode`; соблюдать `atBottom` / `atTop` и сохранение позиции истории при выходе.

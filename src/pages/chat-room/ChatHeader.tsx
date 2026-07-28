@@ -11,10 +11,17 @@ type ChatHeaderProps = {
   onBack: () => void;
   onTitlePress: () => void;
   onSearch: () => void;
+  modeLabel?: string | null;
 };
 
 /** In-chat header: back + avatar/title + search. Pixel title, quiet chrome — no hairline. */
-export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderProps) {
+export function ChatHeader({
+  chat,
+  onBack,
+  onTitlePress,
+  onSearch,
+  modeLabel,
+}: ChatHeaderProps) {
   const { colors } = useTheme();
 
   return (
@@ -37,9 +44,16 @@ export function ChatHeader({ chat, onBack, onTitlePress, onSearch }: ChatHeaderP
           avatarPath={chat.avatarPath}
           size={36}
         />
-        <Text variant="display" numberOfLines={1} style={styles.title}>
-          {chat.title}
-        </Text>
+        <View style={styles.titleBlock}>
+          <Text variant="display" numberOfLines={1} style={styles.title}>
+            {chat.title}
+          </Text>
+          {modeLabel ? (
+            <Text variant="mono-meta" tone="muted" numberOfLines={1}>
+              {modeLabel}
+            </Text>
+          ) : null}
+        </View>
       </Pressable>
 
       <IconButton icon={Search} size={24} onPress={onSearch} />
@@ -51,8 +65,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
+    minHeight: 56,
     paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
     gap: 4,
   },
   titleRow: {
@@ -64,8 +79,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 4,
   },
-  title: {
+  titleBlock: {
     flex: 1,
+    flexShrink: 1,
+    justifyContent: 'center',
+  },
+  title: {
     flexShrink: 1,
   },
 });

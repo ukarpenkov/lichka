@@ -5,16 +5,17 @@ import { AlarmClockIcon } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, listRow, radii } from '../../shared/config';
+import { useTheme, useLocale, listRow, radii, formatScheduledWhen } from '../../shared/config';
 import { hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
 
 export type ScheduledItemProps = {
   message: Message;
-  chatTitle: string;
+  chatTitle?: string;
   onPress: () => void;
   onLongPress: () => void;
+  highlighted?: boolean;
 };
 
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
@@ -24,41 +25,18 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
   image: ImageIcon,
 };
 
-export function ScheduledItem({ message, chatTitle, onPress, onLongPress }: ScheduledItemProps) {
+export function ScheduledItem({
+  message,
+  chatTitle,
+  onPress,
+  onLongPress,
+  highlighted = false,
+}: ScheduledItemProps) {
   const { colors } = useTheme();
   const { t, locale } = useLocale();
   const Icon =
     message.type === 'simple' ? null : TYPE_ICON[message.type as Exclude<MessageType, 'simple'>];
-  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
-  const timeText =
-    message.type === 'periodic'
-      ? t.everyNMin(message.intervalMinutes ?? 0)
-      : message.scheduledAt
-        ? (() => {
-            const date = new Date(message.scheduledAt);
-            const now = new Date();
-            const isToday =
-              date.getDate() === now.getDate() &&
-              date.getMonth() === now.getMonth() &&
-              date.getFullYear() === now.getFullYear();
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const isTomorrow =
-              date.getDate() === tomorrow.getDate() &&
-              date.getMonth() === tomorrow.getMonth() &&
-              date.getFullYear() === tomorrow.getFullYear();
-            const time = date.toLocaleTimeString(localeTag, {
-              hour: '2-digit',
-              minute: '2-digit',
-            });
-            if (isToday) return time;
-            if (isTomorrow) return `${t.tomorrow} ${time}`;
-            return date.toLocaleDateString(localeTag, {
-              day: 'numeric',
-              month: 'short',
-            }) + ` ${time}`;
-          })()
-        : '';
+  const timeText = formatScheduledWhen(message, locale, t);
 
   const handleLongPress = () => {
     if (getSettings().hapticEnabled) {
@@ -77,7 +55,10 @@ export function ScheduledItem({ message, chatTitle, onPress, onLongPress }: Sche
         delayLongPress={300}
         scaleTo={1}
         pressStyle={{ backgroundColor: colors.surfaceSoft }}
-        style={styles.row}
+        style={[
+          styles.row,
+          highlighted ? { backgroundColor: colors.surfaceSoft } : null,
+        ]}
         {...(Platform.OS === 'android'
           ? { android_ripple: { color: colors.surfaceSoft } }
           : {})}>
@@ -89,9 +70,13 @@ export function ScheduledItem({ message, chatTitle, onPress, onLongPress }: Sche
             {message.body}
           </Text>
           <View style={styles.meta}>
-            <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
-              {chatTitle}
-            </Text>
+            {chatTitle ? (
+              <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
+                {chatTitle}
+              </Text>
+            ) : (
+              <View style={styles.metaChat} />
+            )}
             <Text variant="body-sm" tone="mutedSoft">
               {timeText}
             </Text>

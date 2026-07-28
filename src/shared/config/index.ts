@@ -45,6 +45,7 @@ export {
   formatTime,
   formatScheduledAt,
   formatRelativeDate,
+  formatScheduledWhen,
   formatInterval,
   formatShortMonth,
 } from './dateUtils';

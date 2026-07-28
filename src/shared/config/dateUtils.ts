@@ -131,6 +131,54 @@ export function formatRelativeDate(iso: string, locale: Locale, t: LocaleDiction
 }
 
 /**
+ * "When" label for scheduled list rows (Scheduled tab / Future timeline).
+ * periodic → everyNMin; one-shot → time / tomorrow+time / short date+time.
+ */
+export function formatScheduledWhen(
+  message: {
+    type: string;
+    scheduledAt: string | null;
+    intervalMinutes: number | null;
+  },
+  locale: Locale,
+  t: LocaleDictionary,
+): string {
+  if (message.type === 'periodic') {
+    return t.everyNMin(message.intervalMinutes ?? 0);
+  }
+  if (!message.scheduledAt) return '';
+
+  const date = new Date(message.scheduledAt);
+  const now = new Date();
+  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
+  const time = date.toLocaleTimeString(localeTag, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const isToday =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+  if (isToday) return time;
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow =
+    date.getDate() === tomorrow.getDate() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getFullYear() === tomorrow.getFullYear();
+  if (isTomorrow) return `${t.tomorrow} ${time}`;
+
+  return (
+    date.toLocaleDateString(localeTag, {
+      day: 'numeric',
+      month: 'short',
+    }) + ` ${time}`
+  );
+}
+
+/**
  * Format interval in minutes to human-readable string.
  * Examples: "5 мин" / "5 min", "2 ч 30 мин" / "2h 30min", "1 дн" / "1d"
  */
