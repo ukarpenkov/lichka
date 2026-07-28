@@ -50,30 +50,32 @@ export function getPullVelocity(
 /** Soft rubber-band: dampens pull for visual feedback. */
 export function applyRubberBand(
   pullDistance: number,
-  max: number = PEEK_RUBBER_BAND_MAX,
+  max?: number,
 ): number {
   'worklet';
+  const maxOffset = max ?? PEEK_RUBBER_BAND_MAX;
   if (pullDistance <= 0) return 0;
   const damped = pullDistance * 0.55;
-  return Math.min(damped, max);
+  return Math.min(damped, maxOffset);
 }
 
 export function getPeekPhase(
   pullDistance: number,
-  threshold: number = PEEK_THRESHOLD,
+  threshold?: number,
 ): PeekPhase {
   'worklet';
+  const armedAt = threshold ?? PEEK_THRESHOLD;
   if (pullDistance <= 0) return 'idle';
-  if (pullDistance < threshold) return 'pulling';
+  if (pullDistance < armedAt) return 'pulling';
   return 'armed';
 }
 
 export function isPastThreshold(
   pullDistance: number,
-  threshold: number = PEEK_THRESHOLD,
+  threshold?: number,
 ): boolean {
   'worklet';
-  return pullDistance >= threshold;
+  return pullDistance >= (threshold ?? PEEK_THRESHOLD);
 }
 
 /**
@@ -118,9 +120,9 @@ export function canActivatePeekGesture(
 export function getRubberBandTranslateY(
   pullDistance: number,
   direction: PeekDirection,
-  max: number = PEEK_RUBBER_BAND_MAX,
+  max?: number,
 ): number {
   'worklet';
-  const offset = applyRubberBand(pullDistance, max);
+  const offset = applyRubberBand(pullDistance, max ?? PEEK_RUBBER_BAND_MAX);
   return direction === 'enter' ? offset : -offset;
 }
