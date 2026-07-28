@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import { Text } from './Text';
-import { useTheme } from '../config';
+import { fonts, useTheme } from '../config';
 import { resolveMediaPath } from '../lib';
 import { PixelIcon, isChatIconAvatar } from './pixel';
 
@@ -91,7 +91,15 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
           backgroundColor: text + '15',
         },
       ]}>
-      <Text style={{ fontSize: size * 0.4, lineHeight: size, color: text }}>
+      <Text
+        style={{
+          fontFamily: fonts.display,
+          fontSize: size * 0.4,
+          lineHeight: size,
+          color: text,
+          // Press Start 2P is wide — tighten glyph ~15%
+          transform: [{ scaleX: 0.85 }],
+        }}>
         {letter}
       </Text>
     </View>

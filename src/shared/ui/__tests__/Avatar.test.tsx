@@ -2,9 +2,13 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Avatar } from '../Avatar';
 
-jest.mock('../../config', () => ({
-  useTheme: () => ({ text: '#39FF14', background: '#000000' }),
-}));
+jest.mock('../../config', () => {
+  const actual = jest.requireActual('../../config');
+  return {
+    ...actual,
+    useTheme: () => ({ text: '#39FF14', background: '#000000' }),
+  };
+});
 
 jest.mock('../pixel', () => {
   const React = require('react');
@@ -36,9 +40,18 @@ describe('Avatar', () => {
     expect(getByText('🔖')).toBeTruthy();
   });
 
-  it('should render title initial when avatar is missing', () => {
-    const { getByText } = render(<Avatar title="Notes" />);
+  it('should render title initial in pixel display font when avatar is missing', () => {
+    const { getByText } = render(<Avatar title="Notes" size={48} />);
 
-    expect(getByText('N')).toBeTruthy();
+    const letter = getByText('N');
+    expect(letter).toBeTruthy();
+    expect(letter.props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fontFamily: 'PressStart2P-Regular',
+          transform: [{ scaleX: 0.85 }],
+        }),
+      ]),
+    );
   });
 });
