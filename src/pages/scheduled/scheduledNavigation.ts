@@ -13,3 +13,10 @@ export function getScheduledChatNavigation(message: {
     options: { mode: 'future' },
   };
 }
+
+/** Reverse: Future timeline row → Scheduled tab focus. */
+export function getFutureToScheduledNavigation(message: { id: string }): {
+  messageId: string;
+} {
+  return { messageId: message.id };
+}

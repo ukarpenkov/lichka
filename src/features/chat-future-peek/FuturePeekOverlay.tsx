@@ -9,9 +9,11 @@ import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
 import { useTheme } from '../../shared/config';
 import { spacing } from '../../shared/config/tokens';
-import { withAlpha } from '../../shared/lib/color';
 import { Clock, ChevronRight } from '../../shared/ui/pixel';
 import type { PeekDirection } from './peekGestureState';
+
+/** Vertical budget from under icons toward compose (enter). Arrow sits at 50%. */
+export const PEEK_ENTER_GUIDE_SPAN = 72;
 
 export type FuturePeekOverlayProps = {
   direction: PeekDirection;
@@ -21,17 +23,26 @@ export type FuturePeekOverlayProps = {
 
 function PeekDownGuide({
   color,
-  style,
+  span,
 }: {
   color: string;
-  style?: StyleProp<ViewStyle>;
+  /** Fixed height; arrow at mid. Omit → fill parent height. */
+  span?: number;
 }) {
   return (
-    <View style={[styles.guide, style]}>
-      <View style={[styles.line, { backgroundColor: color }]} />
-      <View style={styles.arrowWrap}>
-        <ChevronRight color={color} size={16} />
+    <View
+      style={[
+        styles.guideColumn,
+        span != null ? { height: span, flex: 0 } : styles.guideFlex,
+      ]}
+    >
+      <View style={styles.guideHalf}>
+        <View style={[styles.line, { backgroundColor: color }]} />
+        <View style={styles.arrowWrap}>
+          <ChevronRight color={color} size={14} />
+        </View>
       </View>
+      <View style={styles.guideHalf} />
     </View>
   );
 }
@@ -41,67 +52,69 @@ export function FuturePeekOverlay({
   animatedStyle,
   accessibilityLabel,
 }: FuturePeekOverlayProps) {
-  const { text, background } = useTheme();
+  const { text } = useTheme();
   const isEnter = direction === 'enter';
 
   return (
-    <Animated.View
+    <View
       pointerEvents="none"
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={accessibilityLabel}
-      style={[styles.wrap, animatedStyle]}
+      style={[styles.layer, isEnter ? styles.anchorEnter : styles.anchorExit]}
     >
-      <View style={styles.column}>
-        {isEnter ? <View style={styles.flex} /> : <View style={styles.topPad} />}
-        <View
-          style={[
-            styles.badge,
-            { backgroundColor: withAlpha(background, 0.92) },
-          ]}
-        >
+      <Animated.View
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={accessibilityLabel}
+        style={[styles.cluster, animatedStyle]}
+      >
+        <View style={styles.icons}>
           <Clock color={text} size={22} />
           <ChevronRight color={text} size={18} />
         </View>
         {isEnter ? (
-          <>
-            <PeekDownGuide color={text} style={styles.enterGuide} />
-            <View style={styles.enterTail} />
-          </>
+          <PeekDownGuide color={text} span={PEEK_ENTER_GUIDE_SPAN} />
         ) : (
-          <View style={styles.flex}>
+          <View style={styles.exitGuideSlot}>
             <PeekDownGuide color={text} />
-            <View style={styles.flex} />
           </View>
         )}
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  /** Sits above the list rubber-band; must NOT be clipped by listPane. */
+  layer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
-  },
-  column: {
-    flex: 1,
     alignItems: 'center',
   },
-  topPad: {
-    height: spacing.xxl,
+  anchorEnter: {
+    justifyContent: 'flex-end',
   },
-  flex: {
-    flex: 1,
+  anchorExit: {
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xxl,
   },
-  badge: {
+  /** Opacity/scale target — sized to content, not full screen (avoids edge clip). */
+  cluster: {
+    alignItems: 'center',
+  },
+  icons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
-  guide: {
+  guideColumn: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  guideFlex: {
+    flex: 1,
+  },
+  guideHalf: {
     flex: 1,
     alignItems: 'center',
     width: '100%',
@@ -113,12 +126,8 @@ const styles = StyleSheet.create({
   arrowWrap: {
     transform: [{ rotate: '90deg' }],
   },
-  /** ~50% of icons→compose gap (former paddingBottom = xxl). */
-  enterGuide: {
-    flex: 0,
-    height: spacing.xxl / 2,
-  },
-  enterTail: {
-    height: spacing.xxl / 2,
+  exitGuideSlot: {
+    height: 160,
+    width: '100%',
   },
 });

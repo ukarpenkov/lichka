@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 
 import { Screen, Text, PageHeader, AlertDialog, type AlertButton } from '../../shared/ui';
@@ -12,7 +12,12 @@ import {
 import { getChatById } from '../../entities/chat';
 import { cancelNotification } from '../../features/notifications';
 import { useTabVisible } from '../../app/MainTabsContext';
-import { navigateToChat } from '../../app/mainTabsApi';
+import {
+  navigateToChat,
+  setScheduledFocusListener,
+  consumeScheduledFocus,
+  type ScheduledFocusPayload,
+} from '../../app/mainTabsApi';
 
 import { ScheduledItem } from './ScheduledItem';
 import { getScheduledChatNavigation } from './scheduledNavigation';
@@ -23,17 +28,24 @@ type ScheduledEntry = {
 };
 
 const REFRESH_INTERVAL = 15_000;
+const HIGHLIGHT_MS = 1000;
 
 export function ScheduledScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [focusNonce, setFocusNonce] = useState(0);
   const [dialog, setDialog] = useState<{
     title?: string;
     message?: string;
     buttons?: AlertButton[];
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listRef = useRef<FlatList<ScheduledEntry>>(null);
+  const pendingFocusIdRef = useRef<string | null>(null);
+  const appliedFocusNonceRef = useRef<number | null>(null);
 
   const loadEntries = useCallback(() => {
     disableFiredMessages();
@@ -46,7 +58,6 @@ export function ScheduledScreen() {
     setEntries(items);
   }, []);
 
-  // Таб "Запланировано" (индекс 1). Обновляемся при появлении и чистим таймер при уходе.
   useTabVisible(
     1,
     useCallback(() => {
@@ -60,6 +71,55 @@ export function ScheduledScreen() {
       };
     }, [loadEntries]),
   );
+
+  useEffect(() => {
+    const onFocus = (payload: ScheduledFocusPayload) => {
+      pendingFocusIdRef.current = payload.messageId;
+      setFocusNonce(payload.focusNonce);
+    };
+    setScheduledFocusListener(onFocus);
+    return () => setScheduledFocusListener(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const messageId = pendingFocusIdRef.current;
+    if (!messageId || entries.length === 0) return;
+    if (appliedFocusNonceRef.current === focusNonce) return;
+
+    const index = entries.findIndex((e) => e.message.id === messageId);
+    if (index === -1) return;
+
+    appliedFocusNonceRef.current = focusNonce;
+    pendingFocusIdRef.current = null;
+    consumeScheduledFocus();
+
+    if (highlightTimerRef.current) {
+      clearTimeout(highlightTimerRef.current);
+    }
+    setHighlightedMessageId(messageId);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedMessageId(null);
+      highlightTimerRef.current = null;
+    }, HIGHLIGHT_MS);
+
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [entries, focusNonce]);
 
   const handlePress = useCallback((entry: ScheduledEntry) => {
     const nav = getScheduledChatNavigation(entry.message);
@@ -100,6 +160,7 @@ export function ScheduledScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={entries}
           keyExtractor={(item) => item.message.id}
           style={{ backgroundColor: colors.canvas }}
@@ -107,10 +168,20 @@ export function ScheduledScreen() {
             <ScheduledItem
               message={item.message}
               chatTitle={item.chatTitle}
+              highlighted={item.message.id === highlightedMessageId}
               onPress={() => handlePress(item)}
               onLongPress={() => handleLongPress(item)}
             />
           )}
+          onScrollToIndexFailed={(info) => {
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({
+                index: info.index,
+                animated: false,
+                viewPosition: 0.5,
+              });
+            }, 200);
+          }}
         />
       )}
 

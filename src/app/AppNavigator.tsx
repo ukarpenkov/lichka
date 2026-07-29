@@ -25,7 +25,11 @@ import { SPRING_SNAP } from '../shared/lib/animations';
 
 import { SwipeablePager, PagerTabBar } from './SwipeablePager';
 import { MainTabsProvider, useMainTabs } from './MainTabsContext';
-import { setMainTabsApi, setNavigationReady } from './mainTabsApi';
+import {
+  setMainTabsApi,
+  setNavigationReady,
+  popChatStackToTop,
+} from './mainTabsApi';
 
 import type {
   RootStackParamList,
@@ -234,12 +238,17 @@ function MainTabs() {
 
   const handleIndexChange = useCallback(
     (index: number, fromGesture: boolean) => {
+      // Повторный тап по активному табу Чаты → список чатов (из ChatRoom / Future).
+      if (!fromGesture && index === activeIndex && index === CHAT_TAB_INDEX) {
+        popChatStackToTop();
+        return;
+      }
       if (fromGesture) {
         fromGestureRef.current = true;
       }
       setActiveIndex(index);
     },
-    [],
+    [activeIndex],
   );
 
   // Программный переход (тап по иконке / вызов API) — анимируем shared value.

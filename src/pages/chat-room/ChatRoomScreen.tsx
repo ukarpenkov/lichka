@@ -59,6 +59,7 @@ import {
 import { ChatForm } from '../../widgets/chat-form';
 import { MessageComposer } from '../../widgets/message-composer';
 import type { ChatStackParamList } from '../../app/types';
+import { navigateToScheduled } from '../../app/mainTabsApi';
 
 import { ChatHeader } from './ChatHeader';
 import { MessageLine } from './MessageLine';
@@ -524,6 +525,10 @@ export function ChatRoomScreen() {
     exitFuture();
   }, [exitFuture]);
 
+  const handleFutureMessagePress = useCallback((message: Message) => {
+    navigateToScheduled(message.id);
+  }, []);
+
   const handleFutureScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -630,90 +635,95 @@ export function ChatRoomScreen() {
 
       <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
         {isFuture ? (
-          <GestureDetector gesture={exitPeek.gesture}>
-            <Animated.View
-              style={[styles.listPane, exitPeek.rubberBandStyle]}
-              accessible
-              accessibilityHint={t.futureExitA11y}
-            >
-              <FutureTimeline
-                ref={futureListRef}
-                messages={futureMessages}
-                highlightedMessageId={highlightedMessageId}
-                onSchedulePress={handleScheduleCta}
-                onLongPressMessage={setMenuMessage}
-                onScroll={handleFutureScroll}
-                onContentSizeChange={(w, h) => {
-                  updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
-                }}
-                onLayout={(height) => {
-                  listMetricsRef.current.layoutHeight = height;
-                  updateFutureEdges(
-                    0,
-                    listMetricsRef.current.contentHeight || height,
-                    height,
-                  );
-                }}
-              />
-              <FuturePeekOverlay
-                direction="exit"
-                animatedStyle={exitPeek.overlayStyle}
-                accessibilityLabel={t.futureExitA11y}
-              />
-            </Animated.View>
-          </GestureDetector>
+          <View style={styles.listContainer}>
+            <GestureDetector gesture={exitPeek.gesture}>
+              <Animated.View
+                style={[styles.listPane, exitPeek.rubberBandStyle]}
+                accessible
+                accessibilityHint={t.futureExitA11y}
+              >
+                <FutureTimeline
+                  ref={futureListRef}
+                  messages={futureMessages}
+                  highlightedMessageId={highlightedMessageId}
+                  onSchedulePress={handleScheduleCta}
+                  onPressMessage={handleFutureMessagePress}
+                  onLongPressMessage={setMenuMessage}
+                  onScroll={handleFutureScroll}
+                  onContentSizeChange={(w, h) => {
+                    updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
+                  }}
+                  onLayout={(height) => {
+                    listMetricsRef.current.layoutHeight = height;
+                    updateFutureEdges(
+                      0,
+                      listMetricsRef.current.contentHeight || height,
+                      height,
+                    );
+                  }}
+                />
+              </Animated.View>
+            </GestureDetector>
+            <FuturePeekOverlay
+              direction="exit"
+              animatedStyle={exitPeek.overlayStyle}
+              accessibilityLabel={t.futureExitA11y}
+            />
+          </View>
         ) : (
-          <GestureDetector gesture={entryPeek.gesture}>
-            <Animated.View
-              style={[styles.listPane, entryPeek.rubberBandStyle]}
-              accessible
-              accessibilityHint={t.futurePeekA11y}
-            >
-              <AnimatedFlatList
-                ref={flatListRef as any}
-                data={listItems}
-                renderItem={renderListItem}
-                keyExtractor={keyExtractor}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                onViewableItemsChanged={handleViewableItemsChanged}
-                viewabilityConfig={viewabilityConfig}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
-                onContentSizeChange={(_w: number, h: number) => {
-                  listMetricsRef.current.contentHeight = h;
-                  updateHistoryEdges(
-                    historyScrollOffsetRef.current,
-                    h,
-                    listMetricsRef.current.layoutHeight,
-                  );
-                }}
-                onLayout={(e: LayoutChangeEvent) => {
-                  const h = e.nativeEvent.layout.height;
-                  listMetricsRef.current.layoutHeight = h;
-                  updateHistoryEdges(
-                    historyScrollOffsetRef.current,
-                    listMetricsRef.current.contentHeight,
-                    h,
-                  );
-                }}
-                onScrollToIndexFailed={(info: any) => {
-                  setTimeout(() => {
-                    flatListRef.current?.scrollToIndex({
-                      index: info.index,
-                      animated: false,
-                      viewPosition: 0.5,
-                    });
-                  }, 200);
-                }}
-              />
-              <FuturePeekOverlay
-                direction="enter"
-                animatedStyle={entryPeek.overlayStyle}
-                accessibilityLabel={t.futurePeekA11y}
-              />
-            </Animated.View>
-          </GestureDetector>
+          <View style={styles.listContainer}>
+            <GestureDetector gesture={entryPeek.gesture}>
+              <Animated.View
+                style={[styles.listPane, entryPeek.rubberBandStyle]}
+                accessible
+                accessibilityHint={t.futurePeekA11y}
+              >
+                <AnimatedFlatList
+                  ref={flatListRef as any}
+                  data={listItems}
+                  renderItem={renderListItem}
+                  keyExtractor={keyExtractor}
+                  style={styles.list}
+                  contentContainerStyle={styles.listContent}
+                  onViewableItemsChanged={handleViewableItemsChanged}
+                  viewabilityConfig={viewabilityConfig}
+                  onScroll={scrollHandler}
+                  scrollEventThrottle={16}
+                  onContentSizeChange={(_w: number, h: number) => {
+                    listMetricsRef.current.contentHeight = h;
+                    updateHistoryEdges(
+                      historyScrollOffsetRef.current,
+                      h,
+                      listMetricsRef.current.layoutHeight,
+                    );
+                  }}
+                  onLayout={(e: LayoutChangeEvent) => {
+                    const h = e.nativeEvent.layout.height;
+                    listMetricsRef.current.layoutHeight = h;
+                    updateHistoryEdges(
+                      historyScrollOffsetRef.current,
+                      listMetricsRef.current.contentHeight,
+                      h,
+                    );
+                  }}
+                  onScrollToIndexFailed={(info: any) => {
+                    setTimeout(() => {
+                      flatListRef.current?.scrollToIndex({
+                        index: info.index,
+                        animated: false,
+                        viewPosition: 0.5,
+                      });
+                    }, 200);
+                  }}
+                />
+              </Animated.View>
+            </GestureDetector>
+            <FuturePeekOverlay
+              direction="enter"
+              animatedStyle={entryPeek.overlayStyle}
+              accessibilityLabel={t.futurePeekA11y}
+            />
+          </View>
         )}
 
         {!isFuture && (
@@ -800,6 +810,9 @@ const styles = StyleSheet.create({
   chatArea: {
     flex: 1,
     overflow: 'hidden',
+  },
+  listContainer: {
+    flex: 1,
   },
   listPane: {
     flex: 1,

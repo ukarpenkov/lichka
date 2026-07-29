@@ -179,12 +179,15 @@ export function useFuturePeekGesture({
 
   const overlayStyle = useAnimatedStyle(() => {
     const armed = pastThreshold.value === 1;
-    const opacity = armed ? 1 : 0;
-    const scale = armed ? 1 : 0.85;
-    const translateY = getRubberBandTranslateY(pullDistance.value, direction);
+    // Cluster-only motion (overlay lives outside rubber-band clip).
+    // Enter: rise from compose; exit: drop from under header.
+    const hideY = direction === 'enter' ? 18 : -18;
     return {
-      opacity,
-      transform: [{ translateY }, { scale }],
+      opacity: armed ? 1 : 0,
+      transform: [
+        { translateY: armed ? 0 : hideY },
+        { scale: armed ? 1 : 0.92 },
+      ],
     };
   });
 

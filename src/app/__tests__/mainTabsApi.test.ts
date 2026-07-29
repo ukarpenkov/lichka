@@ -1,8 +1,12 @@
 import {
   navigateToChat,
+  navigateToScheduled,
   setMainTabsApi,
   setChatStackNavigation,
+  setScheduledFocusListener,
+  popChatStackToTop,
   __resetMainTabsApiForTests,
+  SCHEDULED_TAB_INDEX,
 } from '../mainTabsApi';
 
 describe('mainTabsApi', () => {
@@ -10,6 +14,7 @@ describe('mainTabsApi', () => {
   const navigate = jest.fn();
   const setParams = jest.fn();
   const getCurrentRoute = jest.fn();
+  const popToTop = jest.fn();
 
   beforeEach(() => {
     __resetMainTabsApiForTests();
@@ -24,7 +29,7 @@ describe('mainTabsApi', () => {
   function readyNav(currentRoute?: { name: string; params?: { chatId?: string } }) {
     getCurrentRoute.mockReturnValue(currentRoute);
     setMainTabsApi({ switchToTab });
-    setChatStackNavigation({ navigate, getCurrentRoute, setParams });
+    setChatStackNavigation({ navigate, getCurrentRoute, setParams, popToTop });
   }
 
   describe('navigateToChat', () => {
@@ -94,6 +99,51 @@ describe('mainTabsApi', () => {
         mode: 'future',
       });
       expect(navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('navigateToScheduled', () => {
+    it('should switch to Scheduled tab and notify focus listener', () => {
+      const onFocus = jest.fn();
+      setMainTabsApi({ switchToTab });
+      setScheduledFocusListener(onFocus);
+
+      navigateToScheduled('msg-42');
+
+      expect(switchToTab).toHaveBeenCalledWith(SCHEDULED_TAB_INDEX);
+      expect(onFocus).toHaveBeenCalledWith({
+        messageId: 'msg-42',
+        focusNonce: 1_700_000_000_000,
+      });
+    });
+
+    it('should deliver pending focus when listener registers after navigate', () => {
+      setMainTabsApi({ switchToTab });
+      navigateToScheduled('msg-pending');
+
+      const onFocus = jest.fn();
+      setScheduledFocusListener(onFocus);
+
+      expect(onFocus).toHaveBeenCalledWith({
+        messageId: 'msg-pending',
+        focusNonce: 1_700_000_000_000,
+      });
+    });
+  });
+
+  describe('popChatStackToTop', () => {
+    it('should pop chat stack to list when navigation is registered', () => {
+      readyNav({ name: 'ChatRoom', params: { chatId: 'chat-1' } });
+
+      popChatStackToTop();
+
+      expect(popToTop).toHaveBeenCalledTimes(1);
+    });
+
+    it('should no-op when chat stack navigation is not registered', () => {
+      popChatStackToTop();
+
+      expect(popToTop).not.toHaveBeenCalled();
     });
   });
 });

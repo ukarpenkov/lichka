@@ -27,5 +27,5 @@ export type {
   FuturePeekGestureApi,
 } from './useFuturePeekGesture';
 
-export { FuturePeekOverlay } from './FuturePeekOverlay';
+export { FuturePeekOverlay, PEEK_ENTER_GUIDE_SPAN } from './FuturePeekOverlay';
 export type { FuturePeekOverlayProps } from './FuturePeekOverlay';

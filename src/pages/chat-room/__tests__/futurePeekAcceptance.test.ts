@@ -12,8 +12,16 @@ import {
 import { resolveTimelineMode } from '../timelineMode';
 import { resolveChatRoomBackAction } from '../chatRoomBack';
 import { isScrollAtBottom, isScrollAtTop } from '../scrollEdge';
-import { getScheduledChatNavigation } from '../../scheduled/scheduledNavigation';
-import { navigateToChat, setMainTabsApi, setChatStackNavigation, __resetMainTabsApiForTests } from '../../../app/mainTabsApi';
+import { getScheduledChatNavigation, getFutureToScheduledNavigation } from '../../scheduled/scheduledNavigation';
+import {
+  navigateToChat,
+  navigateToScheduled,
+  setMainTabsApi,
+  setChatStackNavigation,
+  setScheduledFocusListener,
+  __resetMainTabsApiForTests,
+  SCHEDULED_TAB_INDEX,
+} from '../../../app/mainTabsApi';
 
 describe('Future Peek MVP acceptance', () => {
   describe('1. Peek: atBottom + commit → future', () => {
@@ -77,6 +85,34 @@ describe('Future Peek MVP acceptance', () => {
         messageId: 'm9',
         focusNonce: 42,
         mode: 'future',
+      });
+    });
+  });
+
+  describe('5b. Future navigate → Scheduled + highlight messageId', () => {
+    beforeEach(() => {
+      __resetMainTabsApiForTests();
+      jest.spyOn(Date, 'now').mockReturnValue(42);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+      __resetMainTabsApiForTests();
+    });
+
+    it('should switch to Scheduled tab with focus payload', () => {
+      const switchToTab = jest.fn();
+      const onFocus = jest.fn();
+      setMainTabsApi({ switchToTab });
+      setScheduledFocusListener(onFocus);
+
+      const nav = getFutureToScheduledNavigation({ id: 'm9' });
+      navigateToScheduled(nav.messageId);
+
+      expect(switchToTab).toHaveBeenCalledWith(SCHEDULED_TAB_INDEX);
+      expect(onFocus).toHaveBeenCalledWith({
+        messageId: 'm9',
+        focusNonce: 42,
       });
     });
   });

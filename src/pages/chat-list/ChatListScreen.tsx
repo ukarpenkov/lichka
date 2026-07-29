@@ -79,6 +79,12 @@ export function ChatListScreen() {
           merge: true,
         });
       },
+      popToTop: () => {
+        const state = navigation.getState();
+        if ((state?.index ?? 0) > 0) {
+          navigation.popToTop();
+        }
+      },
     });
     return () => setChatStackNavigation(null);
   }, [navigation]);

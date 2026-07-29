@@ -62,6 +62,7 @@ describe('FutureTimeline', () => {
         messages={[]}
         highlightedMessageId={null}
         onSchedulePress={onSchedulePress}
+        onPressMessage={jest.fn()}
         onLongPressMessage={jest.fn()}
       />,
     );
@@ -76,11 +77,13 @@ describe('FutureTimeline', () => {
       baseMessage({ id: 'a', body: 'First' }),
       baseMessage({ id: 'b', body: 'Second', type: 'periodic', intervalMinutes: 60, scheduledAt: null }),
     ];
+    const onPressMessage = jest.fn();
     const { getByText } = render(
       <FutureTimeline
         messages={messages}
         highlightedMessageId="b"
         onSchedulePress={jest.fn()}
+        onPressMessage={onPressMessage}
         onLongPressMessage={jest.fn()}
       />,
     );
@@ -88,5 +91,22 @@ describe('FutureTimeline', () => {
     expect(getByText('First')).toBeTruthy();
     expect(getByText('Second')).toBeTruthy();
     expect(getByText('every 60 min')).toBeTruthy();
+  });
+
+  it('should call onPressMessage when a future row is pressed', () => {
+    const onPressMessage = jest.fn();
+    const messages = [baseMessage({ id: 'a', body: 'First' })];
+    const { getByText } = render(
+      <FutureTimeline
+        messages={messages}
+        highlightedMessageId={null}
+        onSchedulePress={jest.fn()}
+        onPressMessage={onPressMessage}
+        onLongPressMessage={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(getByText('First'));
+    expect(onPressMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'a' }));
   });
 });

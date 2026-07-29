@@ -7,6 +7,9 @@
 
 import type { ChatRoomMode } from './types';
 
+/** Scheduled tab index in SwipeablePager (Chats=0, Scheduled=1, Settings=2). */
+export const SCHEDULED_TAB_INDEX = 1;
+
 export type MainTabsApi = {
   /** Переключиться на таб по индексу (0..count-1) с анимацией. */
   switchToTab: (index: number) => void;
@@ -22,6 +25,15 @@ type PendingChat = {
 
 let pendingChat: PendingChat | null = null;
 
+export type ScheduledFocusPayload = {
+  messageId: string;
+  focusNonce: number;
+};
+
+let pendingScheduledFocus: ScheduledFocusPayload | null = null;
+type ScheduledFocusListener = (payload: ScheduledFocusPayload) => void;
+let scheduledFocusListener: ScheduledFocusListener | null = null;
+
 /** Навигация вложенного стека чатов, устанавливается из ChatListScreen. */
 type ChatRoomParams = {
   chatId: string;
@@ -34,6 +46,7 @@ type ChatStackNav = {
   navigate: (name: 'ChatRoom', params: ChatRoomParams) => void;
   getCurrentRoute?: () => { name: string; params?: { chatId?: string; messageId?: string } } | undefined;
   setParams?: (params: ChatRoomParams) => void;
+  popToTop?: () => void;
 };
 
 let chatStackNav: ChatStackNav | null = null;
@@ -44,6 +57,10 @@ function flushPending() {
     pendingChat = null;
     api.switchToTab(0);
     openChatRoom(p.chatId, p.messageId, p.mode);
+  }
+  if (api && pendingScheduledFocus) {
+    api.switchToTab(SCHEDULED_TAB_INDEX);
+    scheduledFocusListener?.(pendingScheduledFocus);
   }
 }
 
@@ -84,6 +101,11 @@ export function setChatStackNavigation(nav: ChatStackNav | null) {
   flushPending();
 }
 
+/** Повторный тап по активному табу Чаты → корень стека (список чатов). */
+export function popChatStackToTop() {
+  chatStackNav?.popToTop?.();
+}
+
 export function navigateToChat(
   chatId: string,
   messageId?: string,
@@ -98,6 +120,33 @@ export function navigateToChat(
   }
 }
 
+/** Future timeline → Scheduled tab + scroll/highlight row. */
+export function navigateToScheduled(messageId: string) {
+  const payload: ScheduledFocusPayload = {
+    messageId,
+    focusNonce: Date.now(),
+  };
+  pendingScheduledFocus = payload;
+  if (api) {
+    api.switchToTab(SCHEDULED_TAB_INDEX);
+    scheduledFocusListener?.(payload);
+  }
+}
+
+/** ScheduledScreen подписывается, чтобы скроллить/подсветить строку. */
+export function setScheduledFocusListener(listener: ScheduledFocusListener | null) {
+  scheduledFocusListener = listener;
+  if (listener && pendingScheduledFocus) {
+    listener(pendingScheduledFocus);
+  }
+}
+
+export function consumeScheduledFocus(): ScheduledFocusPayload | null {
+  const payload = pendingScheduledFocus;
+  pendingScheduledFocus = null;
+  return payload;
+}
+
 /** Оставлено для совместимости: вызывается из AppNavigator
  *  при готовности NavigationContainer. */
 export function setNavigationReady() {
@@ -109,4 +158,6 @@ export function __resetMainTabsApiForTests() {
   api = null;
   chatStackNav = null;
   pendingChat = null;
+  pendingScheduledFocus = null;
+  scheduledFocusListener = null;
 }

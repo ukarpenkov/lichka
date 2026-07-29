@@ -1,21 +1,27 @@
-import { getScheduledChatNavigation } from '../scheduledNavigation';
+import { getScheduledChatNavigation, getFutureToScheduledNavigation } from '../scheduledNavigation';
 
-describe('getScheduledChatNavigation', () => {
+describe('scheduledNavigation', () => {
   it('should open any scheduled type in future mode with messageId', () => {
     expect(
-      getScheduledChatNavigation({ chatId: 'chat-1', id: 'msg-reminder' }),
+      getScheduledChatNavigation({ chatId: 'c1', id: 'msg-reminder' }),
     ).toEqual({
-      chatId: 'chat-1',
+      chatId: 'c1',
       messageId: 'msg-reminder',
       options: { mode: 'future' },
     });
 
     expect(
-      getScheduledChatNavigation({ chatId: 'chat-2', id: 'msg-periodic' }),
+      getScheduledChatNavigation({ chatId: 'c2', id: 'msg-periodic' }),
     ).toEqual({
-      chatId: 'chat-2',
+      chatId: 'c2',
       messageId: 'msg-periodic',
       options: { mode: 'future' },
+    });
+  });
+
+  it('should map future row tap to scheduled focus messageId', () => {
+    expect(getFutureToScheduledNavigation({ id: 'msg-9' })).toEqual({
+      messageId: 'msg-9',
     });
   });
 });

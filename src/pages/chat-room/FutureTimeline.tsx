@@ -13,6 +13,7 @@ export type FutureTimelineProps = {
   messages: Message[];
   highlightedMessageId: string | null;
   onSchedulePress: () => void;
+  onPressMessage: (message: Message) => void;
   onLongPressMessage: (message: Message) => void;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   onContentSizeChange?: (w: number, h: number) => void;
@@ -29,10 +30,12 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
 function FutureMessageRow({
   message,
   highlighted,
+  onPress,
   onLongPress,
 }: {
   message: Message;
   highlighted: boolean;
+  onPress: () => void;
   onLongPress: () => void;
 }) {
   const { colors } = useTheme();
@@ -53,6 +56,7 @@ function FutureMessageRow({
       entering={FadeInUp.springify().damping(20).stiffness(200)}
       layout={Layout.springify().damping(22).stiffness(180)}>
       <AnimatedPressable
+        onPress={onPress}
         onLongPress={handleLongPress}
         delayLongPress={300}
         scaleTo={1}
@@ -83,6 +87,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
       messages,
       highlightedMessageId,
       onSchedulePress,
+      onPressMessage,
       onLongPressMessage,
       onScroll,
       onContentSizeChange,
@@ -98,10 +103,11 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
         <FutureMessageRow
           message={item}
           highlighted={item.id === highlightedMessageId}
+          onPress={() => onPressMessage(item)}
           onLongPress={() => onLongPressMessage(item)}
         />
       ),
-      [highlightedMessageId, onLongPressMessage],
+      [highlightedMessageId, onPressMessage, onLongPressMessage],
     );
 
     if (messages.length === 0) {
