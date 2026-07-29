@@ -184,7 +184,7 @@ export function AlarmScreen() {
           onPress={handleSnooze}>
           <Clock color={colors.muted} size={18} />
           <Text variant="button" tone="muted" style={styles.actionLabel}>
-            Отложить · 5 мин
+            Отложить · 15 мин
           </Text>
         </AnimatedPressable>
       </View>

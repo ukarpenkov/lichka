@@ -136,7 +136,7 @@
                 android:paddingVertical="8dp"
                 android:paddingHorizontal="12dp"
                 android:gravity="center"
-                android:text="Отложить · 5 мин"
+                android:text="Отложить · 15 мин"
                 android:textSize="15sp"
                 android:drawableStart="@drawable/ic_snooze"
                 android:drawablePadding="8dp"

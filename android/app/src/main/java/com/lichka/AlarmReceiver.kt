@@ -16,10 +16,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val isAlarm = intent.getBooleanExtra(AlarmScheduler.EXTRA_IS_ALARM, false)
         val triggerTime = intent.getLongExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, 0)
 
-        if (intent.action == NotificationHelper.snoozeAction) {
-            handleSnooze(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
-        } else {
-            handleAlarm(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
+        when (intent.action) {
+            NotificationHelper.snoozeAction ->
+                handleSnooze(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
+            NotificationHelper.markReadAction ->
+                handleMarkRead(context, messageId, intervalMinutes, isAlarm)
+            else ->
+                handleAlarm(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
         }
     }
 
@@ -100,6 +103,21 @@ class AlarmReceiver : BroadcastReceiver() {
             AlarmScheduler.scheduleReminder(
                 context, messageId, chatId, body, chatTitle, snoozeTrigger,
             )
+        }
+    }
+
+    private fun handleMarkRead(
+        context: Context,
+        messageId: String,
+        intervalMinutes: Int,
+        isAlarm: Boolean,
+    ) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(messageId.hashCode())
+
+        // One-shot / alarm: снять pending. Periodic: следующий fire уже запланирован — не трогаем.
+        if (isAlarm || intervalMinutes == 0) {
+            AlarmScheduler.cancel(context, messageId)
         }
     }
 }

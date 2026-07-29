@@ -9,7 +9,8 @@ import androidx.core.app.NotificationCompat
 object NotificationHelper {
 
     private const val ACTION_SNOOZE = "com.lichka.ACTION_SNOOZE"
-    private const val SNOOZE_MINUTES = 5
+    private const val ACTION_MARK_READ = "com.lichka.ACTION_MARK_READ"
+    private const val SNOOZE_MINUTES = 15
 
     fun buildAlarmNotification(
         context: Context,
@@ -36,30 +37,26 @@ object NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        val snoozeIntent =
-            Intent(context, AlarmReceiver::class.java).apply {
-                action = ACTION_SNOOZE
-                putExtra(AlarmScheduler.EXTRA_MESSAGE_ID, messageId)
-                putExtra(AlarmScheduler.EXTRA_CHAT_ID, chatId)
-                putExtra(AlarmScheduler.EXTRA_BODY, body)
-                putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
-                putExtra(AlarmScheduler.EXTRA_IS_ALARM, true)
-                putExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, triggerTime)
-            }
-        val snoozePendingIntent =
-            PendingIntent.getBroadcast(
-                context,
-                messageId.hashCode() + 1,
-                snoozeIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-        val snoozeAction =
-            NotificationCompat.Action.Builder(
-                    android.R.drawable.ic_lock_idle_alarm,
-                    "Snooze ($SNOOZE_MINUTES мин)",
-                    snoozePendingIntent,
-                )
-                .build()
+        val snoozeAction = buildSnoozeAction(
+            context,
+            messageId,
+            chatId,
+            body,
+            chatTitle,
+            intervalMinutes = 0,
+            isAlarm = true,
+            triggerTime = triggerTime,
+        )
+        val markReadAction = buildMarkReadAction(
+            context,
+            messageId,
+            chatId,
+            body,
+            chatTitle,
+            intervalMinutes = 0,
+            isAlarm = true,
+            triggerTime = triggerTime,
+        )
 
         return NotificationCompat.Builder(context, NotificationModule.CHANNEL_ALARMS)
             .setSmallIcon(R.drawable.ic_stat_notification)
@@ -70,6 +67,7 @@ object NotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setFullScreenIntent(alarmPendingIntent, true)
             .setContentIntent(alarmPendingIntent)
+            .addAction(markReadAction)
             .addAction(snoozeAction)
             .build()
     }
@@ -96,6 +94,48 @@ object NotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
+        val snoozeAction = buildSnoozeAction(
+            context,
+            messageId,
+            chatId,
+            body,
+            chatTitle,
+            intervalMinutes = intervalMinutes,
+            isAlarm = false,
+            triggerTime = 0,
+        )
+        val markReadAction = buildMarkReadAction(
+            context,
+            messageId,
+            chatId,
+            body,
+            chatTitle,
+            intervalMinutes = intervalMinutes,
+            isAlarm = false,
+            triggerTime = 0,
+        )
+
+        return NotificationCompat.Builder(context, NotificationModule.CHANNEL_REMINDERS)
+            .setSmallIcon(R.drawable.ic_stat_notification)
+            .setContentTitle(chatTitle)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setContentIntent(contentPendingIntent)
+            .addAction(markReadAction)
+            .addAction(snoozeAction)
+            .build()
+    }
+
+    private fun buildSnoozeAction(
+        context: Context,
+        messageId: String,
+        chatId: String,
+        body: String,
+        chatTitle: String,
+        intervalMinutes: Int,
+        isAlarm: Boolean,
+        triggerTime: Long,
+    ): NotificationCompat.Action {
         val snoozeIntent =
             Intent(context, AlarmReceiver::class.java).apply {
                 action = ACTION_SNOOZE
@@ -104,6 +144,8 @@ object NotificationHelper {
                 putExtra(AlarmScheduler.EXTRA_BODY, body)
                 putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
                 putExtra(AlarmScheduler.EXTRA_INTERVAL_MINUTES, intervalMinutes)
+                putExtra(AlarmScheduler.EXTRA_IS_ALARM, isAlarm)
+                putExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, triggerTime)
             }
         val snoozePendingIntent =
             PendingIntent.getBroadcast(
@@ -112,25 +154,52 @@ object NotificationHelper {
                 snoozeIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-        val snoozeAction =
-            NotificationCompat.Action.Builder(
-                    android.R.drawable.ic_lock_idle_alarm,
-                    "Snooze ($SNOOZE_MINUTES мин)",
-                    snoozePendingIntent,
-                )
-                .build()
+        return NotificationCompat.Action.Builder(
+                android.R.drawable.ic_lock_idle_alarm,
+                "Snooze ($SNOOZE_MINUTES мин)",
+                snoozePendingIntent,
+            )
+            .build()
+    }
 
-        return NotificationCompat.Builder(context, NotificationModule.CHANNEL_REMINDERS)
-            .setSmallIcon(R.drawable.ic_stat_notification)
-            .setContentTitle(chatTitle)
-            .setContentText(body)
-            .setAutoCancel(true)
-            .setContentIntent(contentPendingIntent)
-            .addAction(snoozeAction)
+    private fun buildMarkReadAction(
+        context: Context,
+        messageId: String,
+        chatId: String,
+        body: String,
+        chatTitle: String,
+        intervalMinutes: Int,
+        isAlarm: Boolean,
+        triggerTime: Long,
+    ): NotificationCompat.Action {
+        val markReadIntent =
+            Intent(context, AlarmReceiver::class.java).apply {
+                action = ACTION_MARK_READ
+                putExtra(AlarmScheduler.EXTRA_MESSAGE_ID, messageId)
+                putExtra(AlarmScheduler.EXTRA_CHAT_ID, chatId)
+                putExtra(AlarmScheduler.EXTRA_BODY, body)
+                putExtra(AlarmScheduler.EXTRA_CHAT_TITLE, chatTitle)
+                putExtra(AlarmScheduler.EXTRA_INTERVAL_MINUTES, intervalMinutes)
+                putExtra(AlarmScheduler.EXTRA_IS_ALARM, isAlarm)
+                putExtra(AlarmScheduler.EXTRA_TRIGGER_TIME, triggerTime)
+            }
+        val markReadPendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                messageId.hashCode() + 2,
+                markReadIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        return NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "Прочитано",
+                markReadPendingIntent,
+            )
             .build()
     }
 
     fun snoozeMinutes(): Int = SNOOZE_MINUTES
 
     const val snoozeAction: String = ACTION_SNOOZE
+    const val markReadAction: String = ACTION_MARK_READ
 }
