@@ -5,7 +5,7 @@ import {
   type ScheduledWidgetSnapshotItem,
 } from '../../shared/lib/scheduledWidget';
 
-export const SCHEDULED_WIDGET_SNAPSHOT_LIMIT = 10;
+export const SCHEDULED_WIDGET_SNAPSHOT_LIMIT = 25;
 
 export function buildScheduledWidgetSnapshot(
   limit: number = SCHEDULED_WIDGET_SNAPSHOT_LIMIT,

@@ -6,12 +6,14 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
+import android.net.Uri
 import android.os.Bundle
-import android.view.View
 import android.widget.RemoteViews
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class ScheduledWidgetProvider : AppWidgetProvider() {
 
@@ -35,62 +37,9 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        private const val SMALL_MAX = 1
-        private const val MEDIUM_MAX = 4
-        private const val LARGE_MAX = 10
-
-        private val ROW_IDS =
-            intArrayOf(
-                R.id.widget_row_0,
-                R.id.widget_row_1,
-                R.id.widget_row_2,
-                R.id.widget_row_3,
-                R.id.widget_row_4,
-                R.id.widget_row_5,
-                R.id.widget_row_6,
-                R.id.widget_row_7,
-                R.id.widget_row_8,
-                R.id.widget_row_9,
-            )
-        private val BODY_IDS =
-            intArrayOf(
-                R.id.widget_row_body_0,
-                R.id.widget_row_body_1,
-                R.id.widget_row_body_2,
-                R.id.widget_row_body_3,
-                R.id.widget_row_body_4,
-                R.id.widget_row_body_5,
-                R.id.widget_row_body_6,
-                R.id.widget_row_body_7,
-                R.id.widget_row_body_8,
-                R.id.widget_row_body_9,
-            )
-        private val META_IDS =
-            intArrayOf(
-                R.id.widget_row_meta_0,
-                R.id.widget_row_meta_1,
-                R.id.widget_row_meta_2,
-                R.id.widget_row_meta_3,
-                R.id.widget_row_meta_4,
-                R.id.widget_row_meta_5,
-                R.id.widget_row_meta_6,
-                R.id.widget_row_meta_7,
-                R.id.widget_row_meta_8,
-                R.id.widget_row_meta_9,
-            )
-        private val ICON_IDS =
-            intArrayOf(
-                R.id.widget_row_icon_0,
-                R.id.widget_row_icon_1,
-                R.id.widget_row_icon_2,
-                R.id.widget_row_icon_3,
-                R.id.widget_row_icon_4,
-                R.id.widget_row_icon_5,
-                R.id.widget_row_icon_6,
-                R.id.widget_row_icon_7,
-                R.id.widget_row_icon_8,
-                R.id.widget_row_icon_9,
-            )
+        private const val HARD_SHADOW_DP = 4f
+        private const val HARD_BORDER_DP = 2f
+        private const val CORNER_RADIUS_DP = 16f
 
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
@@ -100,6 +49,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             for (id in ids) {
                 updateWidget(context, manager, id)
             }
+            manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list)
         }
 
         private fun updateWidget(
@@ -108,15 +58,30 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
         ) {
             val options = manager.getAppWidgetOptions(appWidgetId)
-            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 110)
-            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40)
-            val maxItems = maxItemsForSize(minWidth, minHeight)
-
             val views = RemoteViews(context.packageName, R.layout.widget_scheduled)
-            val items = ScheduledWidgetStorage.loadAll(context)
-            val visible = items.take(maxItems)
 
+            val canvasColor =
+                parseColorOr(ThemeModule.getBackground(context), Color.parseColor("#FAFAFA"))
+            val inkColor = parseColorOr(ThemeModule.getText(context), Color.BLACK)
+            val mutedColor = withAlpha(inkColor, 0.6f)
+
+            applyThemePlate(context, views, options, canvasColor, inkColor)
+            views.setTextColor(R.id.widget_title, inkColor)
+            views.setTextColor(R.id.widget_empty, mutedColor)
             views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_scheduled_title))
+            views.setTextViewText(
+                R.id.widget_empty,
+                context.getString(R.string.widget_scheduled_empty),
+            )
+
+            val serviceIntent =
+                Intent(context, ScheduledWidgetService::class.java).apply {
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+                }
+            views.setRemoteAdapter(R.id.widget_list, serviceIntent)
+            views.setEmptyView(R.id.widget_list, R.id.widget_empty)
+
             views.setOnClickPendingIntent(
                 R.id.widget_title,
                 openScheduledPendingIntent(context, appWidgetId, null, 1000 + appWidgetId),
@@ -125,73 +90,117 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                 R.id.widget_root,
                 openScheduledPendingIntent(context, appWidgetId, null, 2000 + appWidgetId),
             )
+            views.setOnClickPendingIntent(
+                R.id.widget_empty,
+                openScheduledPendingIntent(context, appWidgetId, null, 2500 + appWidgetId),
+            )
 
-            if (visible.isEmpty()) {
-                views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
-                views.setViewVisibility(R.id.widget_list, View.GONE)
-                views.setTextViewText(
-                    R.id.widget_empty,
-                    context.getString(R.string.widget_scheduled_empty),
-                )
-            } else {
-                views.setViewVisibility(R.id.widget_empty, View.GONE)
-                views.setViewVisibility(R.id.widget_list, View.VISIBLE)
-            }
-
-            for (i in ROW_IDS.indices) {
-                if (i < visible.size) {
-                    val item = visible[i]
-                    views.setViewVisibility(ROW_IDS[i], View.VISIBLE)
-                    val body =
-                        if (item.body.isNotBlank()) {
-                            item.body
-                        } else {
-                            context.getString(R.string.widget_scheduled_untitled)
-                        }
-                    views.setTextViewText(BODY_IDS[i], body)
-                    views.setTextViewText(META_IDS[i], formatMeta(item))
-                    views.setImageViewResource(ICON_IDS[i], iconForType(item.type))
-                    views.setOnClickPendingIntent(
-                        ROW_IDS[i],
-                        openScheduledPendingIntent(
-                            context,
-                            appWidgetId,
-                            item.messageId,
-                            3000 + appWidgetId * 20 + i,
-                        ),
-                    )
-                } else {
-                    views.setViewVisibility(ROW_IDS[i], View.GONE)
+            val templateIntent =
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(WidgetModule.EXTRA_OPEN_TARGET, WidgetModule.OPEN_TARGET_SCHEDULED)
                 }
-            }
+            val templatePendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    4000 + appWidgetId,
+                    templateIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+                )
+            views.setPendingIntentTemplate(R.id.widget_list, templatePendingIntent)
 
             manager.updateAppWidget(appWidgetId, views)
+            manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
         }
 
-        private fun maxItemsForSize(minWidthDp: Int, minHeightDp: Int): Int {
-            return when {
-                minHeightDp < 100 -> SMALL_MAX
-                minHeightDp < 220 && minWidthDp < 250 -> MEDIUM_MAX
-                minHeightDp < 220 -> MEDIUM_MAX
-                else -> LARGE_MAX
+        private fun applyThemePlate(
+            context: Context,
+            views: RemoteViews,
+            options: Bundle,
+            canvasColor: Int,
+            inkColor: Int,
+        ) {
+            val density = context.resources.displayMetrics.density
+            val widthDp =
+                options.getInt(
+                    AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180),
+                )
+            val heightDp =
+                options.getInt(
+                    AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110),
+                )
+            val widthPx = (widthDp * density).toInt().coerceAtLeast(120)
+            val heightPx = (heightDp * density).toInt().coerceAtLeast(80)
+            views.setImageViewBitmap(
+                R.id.widget_plate,
+                createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor),
+            )
+        }
+
+        private fun createNeoBrutalPlate(
+            width: Int,
+            height: Int,
+            density: Float,
+            canvasColor: Int,
+            inkColor: Int,
+        ): Bitmap {
+            val offset = (HARD_SHADOW_DP * density).toInt().coerceAtLeast(1)
+            val stroke = (HARD_BORDER_DP * density).toInt().coerceAtLeast(1)
+            val radius = CORNER_RADIUS_DP * density
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+            paint.style = Paint.Style.FILL
+            paint.color = inkColor
+            canvas.drawRoundRect(
+                RectF(offset.toFloat(), offset.toFloat(), width.toFloat(), height.toFloat()),
+                radius,
+                radius,
+                paint,
+            )
+
+            paint.color = canvasColor
+            canvas.drawRoundRect(
+                RectF(0f, 0f, (width - offset).toFloat(), (height - offset).toFloat()),
+                radius,
+                radius,
+                paint,
+            )
+
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = stroke.toFloat()
+            paint.color = inkColor
+            val inset = stroke / 2f
+            canvas.drawRoundRect(
+                RectF(
+                    inset,
+                    inset,
+                    width - offset - inset,
+                    height - offset - inset,
+                ),
+                radius,
+                radius,
+                paint,
+            )
+
+            return bitmap
+        }
+
+        private fun parseColorOr(hex: String, fallback: Int): Int {
+            return try {
+                Color.parseColor(hex)
+            } catch (_: Exception) {
+                fallback
             }
         }
 
-        private fun iconForType(type: String): Int {
-            return when (type) {
-                "alarm" -> R.drawable.ic_widget_alarm
-                "periodic" -> R.drawable.ic_widget_repeat
-                else -> R.drawable.ic_widget_bell
-            }
-        }
-
-        private fun formatMeta(item: ScheduledWidgetStorage.Item): String {
-            val title = item.chatTitle.ifBlank { "—" }
-            if (item.scheduledAtMillis <= 0L) return title
-            val time =
-                SimpleDateFormat("dd.MM HH:mm", Locale.getDefault())
-                    .format(Date(item.scheduledAtMillis))
-            return "$title · $time"
+        private fun withAlpha(color: Int, alpha: Float): Int {
+            val a = (255 * alpha).toInt().coerceIn(0, 255)
+            return Color.argb(a, Color.red(color), Color.green(color), Color.blue(color))
         }
 
         private fun openScheduledPendingIntent(

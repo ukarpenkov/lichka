@@ -51,6 +51,10 @@
               android:name="android.appwidget.provider"
               android:resource="@xml/widget_scheduled_info" />
       </receiver>
+      <service
+          android:name=".ScheduledWidgetService"
+          android:exported="false"
+          android:permission="android.permission.BIND_REMOTEVIEWS" />
       <activity
           android:name=".AlarmActivity"
           android:showWhenLocked="true"

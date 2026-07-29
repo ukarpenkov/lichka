@@ -18,6 +18,7 @@ class ThemeModule(reactContext: ReactApplicationContext) :
             .putString(KEY_BACKGROUND, background)
             .putString(KEY_TEXT, text)
             .apply()
+        ScheduledWidgetProvider.refreshAll(reactApplicationContext)
     }
 
     companion object {

@@ -35,13 +35,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const result = db.executeSync(
       `SELECT value FROM settings WHERE key = '${SETTINGS_KEY}'`,
     );
-    if (result.rows.length > 0) {
-      const id = result.rows[0].value as string;
-      const theme = getTheme(id);
-      setPreset(theme);
-      if (Platform.OS === 'android' && NativeModules.ThemeModule) {
-        NativeModules.ThemeModule.setTheme(theme.background, theme.text);
-      }
+    const theme =
+      result.rows.length > 0
+        ? getTheme(result.rows[0].value as string)
+        : DEFAULT_LIGHT;
+    setPreset(theme);
+    if (Platform.OS === 'android' && NativeModules.ThemeModule) {
+      NativeModules.ThemeModule.setTheme(theme.background, theme.text);
     }
   }, []);
 
