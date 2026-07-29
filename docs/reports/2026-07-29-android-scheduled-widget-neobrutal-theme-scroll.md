@@ -1,16 +1,17 @@
-# Android Scheduled Widget — neo-brutal края, тема, скролл
+# Android Scheduled Widget — neo-brutal края, тема, скролл, шрифты
 
 **Дата:** 2026-07-29  
-**Промпт/задача:** Привести home screen виджет «Запланировано» к pixel/neo-brutal языку (края), цветам темы приложения и прокрутке списка при малой высоте виджета.
+**Промпт/задача:** Привести home screen виджет «Запланировано» к pixel/neo-brutal языку (края), цветам темы приложения, прокрутке списка при малой высоте, типографике приложения и скрытому scrollbar.
 
 ## Что сделано
 
 - Края виджета в neo-brutal / pixel стиле: hard offset-тень 4dp + обводка 2dp solid ink, радиус **16dp** (больше, чем у AlertDialog `radii.sm` = 8).
 - Цвета виджета берутся из темы приложения (`ThemeModule`: `background` / `text`) — пластина, тексты, иконки; при смене темы виджет обновляется.
 - Список внутри виджета стал прокручиваемым (`ListView` + `RemoteViewsService`): при низкой высоте и большом числе пунктов можно листать прямо в виджете.
+- Scrollbar при листании **скрыт** (`android:scrollbars="none"`).
 - Лимит snapshot увеличен с 10 до **25**.
 - При старте без сохранённой темы в native пушится light-дефолт, чтобы виджет совпадал с приложением.
-- Типографика виджета: заголовок «Запланировано» — **Press Start 2P** (pixel); empty / строки списка — **JetBrains Mono** (как body в приложении).
+- Типографика виджета: заголовок «Запланировано» — **Press Start 2P** (pixel, 10sp); empty / строки списка — **JetBrains Mono** (как body в приложении).
 
 ## Изменённые файлы
 
@@ -18,10 +19,10 @@
 - `android/app/src/main/res/font/press_start_2p_regular.ttf` — pixel display для заголовка виджета
 - `android/app/src/main/res/font/jetbrains_mono_regular.ttf` — mono для body/meta/empty
 - `android/app/src/main/res/drawable/bg_widget_scheduled.xml` — layer-list: hard shadow + face с border (fallback до runtime bitmap)
-- `android/app/src/main/res/layout/widget_scheduled.xml` — FrameLayout + plate ImageView + `ListView`; fontFamily заголовка/empty
+- `android/app/src/main/res/layout/widget_scheduled.xml` — FrameLayout + plate + `ListView`; fontFamily; `scrollbars="none"`
 - `android/app/src/main/res/layout/widget_scheduled_row.xml` — layout строки списка + JetBrains Mono
 - `android/app/src/main/java/com/lichka/ScheduledWidgetProvider.kt` — тема → plate/тексты; remote adapter; scroll notify
-- `android/app/src/main/java/com/lichka/ScheduledWidgetService.kt` — `RemoteViewsService` + Factory (новый)
+- `android/app/src/main/java/com/lichka/ScheduledWidgetService.kt` — `RemoteViewsService` + Factory
 - `android/app/src/main/java/com/lichka/ThemeModule.kt` — `setTheme` вызывает `ScheduledWidgetProvider.refreshAll`
 - `android/app/src/main/AndroidManifest.xml` — регистрация `ScheduledWidgetService` (`BIND_REMOTEVIEWS`)
 
@@ -39,6 +40,7 @@
 - Радиус пластины 16dp сознательно больше AlertDialog (8), чтобы виджет читался мягче на лаунчере.
 - Заголовок pixel при **10sp** (не 14): Press Start 2P широкий, иначе «Запланировано» не влезает в узкий виджет; bold убран (у pixel нет weight).
 - Шрифты продублированы в `res/font/` (RemoteViews не берёт Typeface из assets через setTypeface).
+- Scrollbar скрыт: жест листания остаётся, визуальный шум на лаунчере убран.
 
 ## Известные ограничения
 
@@ -57,5 +59,6 @@
   - [ ] Смена темы в настройках → виджет перекрашивается (фон, текст, иконки, тень)
   - [ ] Neo-brutal края видны (обводка + offset-тень, радиус ~16)
   - [ ] Много запланированных + низкий виджет → вертикальный скролл списка
+  - [ ] При скролле scrollbar не виден
   - [ ] Тап по строке → «Запланировано» с highlight; тап по заголовку/пустому → таб без highlight
   - [ ] Заголовок — Press Start 2P; строки и empty — JetBrains Mono
