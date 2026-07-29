@@ -4,7 +4,12 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 
 object NotificationHelper {
 
@@ -60,6 +65,7 @@ object NotificationHelper {
 
         return NotificationCompat.Builder(context, NotificationModule.CHANNEL_ALARMS)
             .setSmallIcon(R.drawable.ic_stat_notification)
+            .setLargeIcon(appLargeIcon(context))
             .setContentTitle(chatTitle)
             .setContentText(body)
             .setOngoing(true)
@@ -117,6 +123,7 @@ object NotificationHelper {
 
         return NotificationCompat.Builder(context, NotificationModule.CHANNEL_REMINDERS)
             .setSmallIcon(R.drawable.ic_stat_notification)
+            .setLargeIcon(appLargeIcon(context))
             .setContentTitle(chatTitle)
             .setContentText(body)
             .setAutoCancel(true)
@@ -124,6 +131,27 @@ object NotificationHelper {
             .addAction(markReadAction)
             .addAction(snoozeAction)
             .build()
+    }
+
+    private fun appLargeIcon(context: Context): Bitmap {
+        val drawable =
+            ContextCompat.getDrawable(context, R.mipmap.ic_launcher_round)
+                ?: ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+                ?: context.packageManager.getApplicationIcon(context.applicationInfo)
+        return drawableToBitmap(drawable)
+    }
+
+    private fun drawableToBitmap(drawable: Drawable): Bitmap {
+        if (drawable is BitmapDrawable && drawable.bitmap != null) {
+            return drawable.bitmap
+        }
+        val width = drawable.intrinsicWidth.coerceAtLeast(1)
+        val height = drawable.intrinsicHeight.coerceAtLeast(1)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
     }
 
     private fun buildSnoozeAction(
