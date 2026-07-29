@@ -71,8 +71,7 @@ export function formatDateLabel(iso: string, locale: Locale, t: LocaleDictionary
 }
 
 /**
- * Format time as HH:MM (locale-neutral, always 24h for consistency).
- * Use toLocaleTimeString for locale-aware 12/24h if needed.
+ * Format time as HH:MM (always 24h, no AM/PM).
  */
 export function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -82,8 +81,7 @@ export function formatTime(iso: string): string {
 }
 
 /**
- * Format scheduled date+time for display.
- * Uses toLocaleDateString/toLocaleTimeString with the given locale.
+ * Format scheduled date+time for display (always 24h time).
  */
 export function formatScheduledAt(iso: string, locale: Locale): string {
   const d = new Date(iso);
@@ -150,11 +148,7 @@ export function formatScheduledWhen(
 
   const date = new Date(message.scheduledAt);
   const now = new Date();
-  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
-  const time = date.toLocaleTimeString(localeTag, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const time = formatTime(message.scheduledAt);
 
   const isToday =
     date.getDate() === now.getDate() &&
@@ -170,6 +164,7 @@ export function formatScheduledWhen(
     date.getFullYear() === tomorrow.getFullYear();
   if (isTomorrow) return `${t.tomorrow} ${time}`;
 
+  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
   return (
     date.toLocaleDateString(localeTag, {
       day: 'numeric',

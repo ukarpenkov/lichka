@@ -143,16 +143,29 @@ describe('dateUtils', () => {
       ).toBe('every 15 min');
     });
 
-    it('should format today reminder as time only', () => {
+    it('should format today reminder as 24h time only', () => {
       const now = new Date();
-      now.setHours(14, 30, 0, 0);
+      now.setHours(17, 55, 0, 0);
       const result = formatScheduledWhen(
         { type: 'reminder', scheduledAt: now.toISOString(), intervalMinutes: null },
         'en',
         en,
       );
-      expect(result.length).toBeGreaterThan(0);
-      expect(result).not.toContain('Tomorrow');
+      expect(result).toBe('17:55');
+      expect(result).not.toMatch(/AM|PM/i);
+    });
+
+    it('should format tomorrow reminder with 24h time', () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(22, 0, 0, 0);
+      const result = formatScheduledWhen(
+        { type: 'reminder', scheduledAt: tomorrow.toISOString(), intervalMinutes: null },
+        'en',
+        en,
+      );
+      expect(result).toBe(`${en.tomorrow} 22:00`);
+      expect(result).not.toMatch(/AM|PM/i);
     });
   });
 
