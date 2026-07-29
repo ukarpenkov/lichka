@@ -27,17 +27,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="@font/press_start_2p_regular"
             android:maxLines="1"
             android:text="@string/widget_scheduled_title"
             android:textColor="@color/widget_ink"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="10sp" />
 
         <TextView
             android:id="@+id/widget_empty"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:fontFamily="@font/jetbrains_mono_regular"
             android:gravity="center"
             android:text="@string/widget_scheduled_empty"
             android:textColor="@color/widget_ink_muted"
