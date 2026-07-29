@@ -125,6 +125,17 @@ describe('Future Peek MVP acceptance', () => {
     });
   });
 
+  describe('6b. Keyboard open → entry still activatable', () => {
+    it('should allow peek when at bottom even if keyboard is open', () => {
+      const atBottom = true;
+      const keyboardOpen = true;
+      const searchVisible = false;
+      const enabled = atBottom && !searchVisible;
+      expect(keyboardOpen).toBe(true);
+      expect(canActivatePeekGesture(enabled, atBottom, false)).toBe(true);
+    });
+  });
+
   describe('7. Pull below threshold → no commit', () => {
     it('should cancel when released before threshold', () => {
       const pull = getPullDistance(-(PEEK_THRESHOLD - 20), 'enter');

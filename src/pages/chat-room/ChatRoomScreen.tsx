@@ -137,7 +137,6 @@ export function ChatRoomScreen() {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [atTop, setAtTop] = useState(true);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const {
     open,
     close,
@@ -259,15 +258,6 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation]);
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
   const enterFuture = useCallback(() => {
@@ -318,7 +308,7 @@ export function ChatRoomScreen() {
   }, [navigation, exitFuture]);
 
   const entryPeek = useFuturePeekEntryGesture({
-    enabled: timelineMode === 'history' && !keyboardOpen && !searchVisible,
+    enabled: timelineMode === 'history' && !searchVisible,
     atBottom,
     onCommit: enterFuture,
   });
