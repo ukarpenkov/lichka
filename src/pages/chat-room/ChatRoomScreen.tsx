@@ -47,6 +47,7 @@ import {
   type Message,
 } from '../../entities/message';
 import { cancelNotification } from '../../features/notifications';
+import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { markChatAsRead } from '../../features/unread-badges';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
 import {
@@ -223,6 +224,7 @@ export function ChatRoomScreen() {
   const loadFuture = useCallback(() => {
     disableFiredMessages();
     setFutureMessages(getScheduledMessagesByChatId(chatId));
+    syncScheduledWidgetSnapshot();
   }, [chatId]);
 
   useEffect(() => {

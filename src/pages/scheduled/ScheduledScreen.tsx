@@ -11,6 +11,7 @@ import {
 } from '../../entities/message';
 import { getChatById } from '../../entities/chat';
 import { cancelNotification } from '../../features/notifications';
+import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { useTabVisible } from '../../app/MainTabsContext';
 import {
   navigateToChat,
@@ -56,6 +57,7 @@ export function ScheduledScreen() {
       items.push({ message: msg, chatTitle: chat?.title ?? '—' });
     }
     setEntries(items);
+    syncScheduledWidgetSnapshot();
   }, []);
 
   useTabVisible(

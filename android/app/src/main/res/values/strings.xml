@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Lichka</string>
+    <string name="widget_scheduled_title">Запланировано</string>
+    <string name="widget_scheduled_empty">Нет запланированных</string>
+    <string name="widget_scheduled_untitled">Напоминание</string>
+    <string name="widget_scheduled_description">Ближайшие напоминания и будильники</string>
 </resources>

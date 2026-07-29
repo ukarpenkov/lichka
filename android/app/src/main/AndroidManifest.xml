@@ -40,6 +40,17 @@
               <action android:name="android.intent.action.BOOT_COMPLETED" />
           </intent-filter>
       </receiver>
+      <receiver
+          android:name=".ScheduledWidgetProvider"
+          android:exported="true"
+          android:label="@string/widget_scheduled_title">
+          <intent-filter>
+              <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+          </intent-filter>
+          <meta-data
+              android:name="android.appwidget.provider"
+              android:resource="@xml/widget_scheduled_info" />
+      </receiver>
       <activity
           android:name=".AlarmActivity"
           android:showWhenLocked="true"

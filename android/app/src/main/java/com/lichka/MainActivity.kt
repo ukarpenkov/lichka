@@ -17,6 +17,7 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(null)
     NotificationModule.captureNotificationOpen(intent)
+    WidgetModule.captureWidgetOpen(intent)
   }
 
   /**
@@ -36,15 +37,27 @@ class MainActivity : ReactActivity() {
     super.onNewIntent(intent)
     setIntent(intent)
     NotificationModule.captureNotificationOpen(intent)
+    WidgetModule.captureWidgetOpen(intent)
+    val reactHost = (application as MainApplication).reactHost
+    val reactContext = reactHost?.currentReactContext
+
     val chatId = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_ID)
     if (chatId != null) {
       val messageId = intent.getStringExtra(AlarmScheduler.EXTRA_MESSAGE_ID)
-      val reactHost = (application as MainApplication).reactHost
-      val reactContext = reactHost?.currentReactContext
       if (reactContext != null) {
         val module =
             reactContext.getNativeModule(NotificationModule::class.java) as? NotificationModule
         module?.emitNotificationOpen(chatId, messageId)
+      }
+    }
+
+    val openTarget = intent.getStringExtra(WidgetModule.EXTRA_OPEN_TARGET)
+    if (openTarget != null) {
+      val messageId = intent.getStringExtra(WidgetModule.EXTRA_MESSAGE_ID)
+      if (reactContext != null) {
+        val module =
+            reactContext.getNativeModule(WidgetModule::class.java) as? WidgetModule
+        module?.emitWidgetOpen(openTarget, messageId)
       }
     }
   }

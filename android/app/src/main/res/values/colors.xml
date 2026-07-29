@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_canvas">#FAFAFA</color>
+    <color name="widget_ink">#000000</color>
+    <color name="widget_ink_muted">#99000000</color>
+</resources>

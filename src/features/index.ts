@@ -42,4 +42,12 @@ export type {
   UseFuturePeekExitGestureOptions,
 } from './chat-future-peek';
 
+export {
+  syncScheduledWidgetSnapshot,
+  buildScheduledWidgetSnapshot,
+  useWidgetNavigation,
+  handleWidgetOpen,
+  SCHEDULED_WIDGET_SNAPSHOT_LIMIT,
+} from './scheduled-widget';
+
 export { getUnreadCounts, markChatAsRead } from './unread-badges';

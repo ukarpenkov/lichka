@@ -33,6 +33,7 @@ export type ScheduledFocusPayload = {
 let pendingScheduledFocus: ScheduledFocusPayload | null = null;
 type ScheduledFocusListener = (payload: ScheduledFocusPayload) => void;
 let scheduledFocusListener: ScheduledFocusListener | null = null;
+let pendingOpenScheduledTab = false;
 
 /** Навигация вложенного стека чатов, устанавливается из ChatListScreen. */
 type ChatRoomParams = {
@@ -59,8 +60,12 @@ function flushPending() {
     openChatRoom(p.chatId, p.messageId, p.mode);
   }
   if (api && pendingScheduledFocus) {
+    pendingOpenScheduledTab = false;
     api.switchToTab(SCHEDULED_TAB_INDEX);
     scheduledFocusListener?.(pendingScheduledFocus);
+  } else if (api && pendingOpenScheduledTab) {
+    pendingOpenScheduledTab = false;
+    api.switchToTab(SCHEDULED_TAB_INDEX);
   }
 }
 
@@ -127,9 +132,24 @@ export function navigateToScheduled(messageId: string) {
     focusNonce: Date.now(),
   };
   pendingScheduledFocus = payload;
+  pendingOpenScheduledTab = false;
   if (api) {
     api.switchToTab(SCHEDULED_TAB_INDEX);
     scheduledFocusListener?.(payload);
+  }
+}
+
+/** Widget / deep link → Scheduled tab; optional row focus. */
+export function openScheduledTab(messageId?: string) {
+  if (messageId) {
+    navigateToScheduled(messageId);
+    return;
+  }
+  pendingScheduledFocus = null;
+  if (api) {
+    api.switchToTab(SCHEDULED_TAB_INDEX);
+  } else {
+    pendingOpenScheduledTab = true;
   }
 }
 
@@ -160,4 +180,5 @@ export function __resetMainTabsApiForTests() {
   pendingChat = null;
   pendingScheduledFocus = null;
   scheduledFocusListener = null;
+  pendingOpenScheduledTab = false;
 }

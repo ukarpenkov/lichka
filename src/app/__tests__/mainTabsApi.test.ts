@@ -1,6 +1,7 @@
 import {
   navigateToChat,
   navigateToScheduled,
+  openScheduledTab,
   setMainTabsApi,
   setChatStackNavigation,
   setScheduledFocusListener,
@@ -126,6 +127,33 @@ describe('mainTabsApi', () => {
 
       expect(onFocus).toHaveBeenCalledWith({
         messageId: 'msg-pending',
+        focusNonce: 1_700_000_000_000,
+      });
+    });
+  });
+
+  describe('openScheduledTab', () => {
+    it('should switch to Scheduled tab without focus when no messageId', () => {
+      const onFocus = jest.fn();
+      setMainTabsApi({ switchToTab });
+      setScheduledFocusListener(onFocus);
+
+      openScheduledTab();
+
+      expect(switchToTab).toHaveBeenCalledWith(SCHEDULED_TAB_INDEX);
+      expect(onFocus).not.toHaveBeenCalled();
+    });
+
+    it('should focus row when messageId is provided', () => {
+      const onFocus = jest.fn();
+      setMainTabsApi({ switchToTab });
+      setScheduledFocusListener(onFocus);
+
+      openScheduledTab('msg-widget');
+
+      expect(switchToTab).toHaveBeenCalledWith(SCHEDULED_TAB_INDEX);
+      expect(onFocus).toHaveBeenCalledWith({
+        messageId: 'msg-widget',
         focusNonce: 1_700_000_000_000,
       });
     });

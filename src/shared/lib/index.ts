@@ -26,6 +26,13 @@ export {
   CHANNEL_REMINDERS,
   CHANNEL_ALARMS,
 } from './notificationChannels';
+export {
+  updateScheduledWidgetSnapshot,
+  getInitialWidgetOpenTarget,
+  getInitialWidgetMessageId,
+  consumeInitialWidgetOpen,
+  type ScheduledWidgetSnapshotItem,
+} from './scheduledWidget';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { playSendSound, playReminderSound } from './sounds';
 export {
