@@ -59,6 +59,11 @@ export const CHAT_AVATAR_ICONS: readonly string[] = [
   'internet-network-wifi-monitor',
   'content-files-notepad',
   'coding-apps-websites-programming-hold-code',
+  'weather-cresent-moon-stars',
+  'food-drink-coffee-cup',
+  'pet-animals-turtle',
+  'entertainment-events-hobbies-horror-ghost',
+  'content-files-favorite-book',
 ] as const;
 
 /** True when avatar_path is a Streamline Pixel icon id (not a file path / emoji). */
