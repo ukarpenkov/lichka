@@ -39,6 +39,13 @@ function formatImportResult(t: LocaleDictionary, r: ImportSummary): string {
   return parts.length > 0 ? parts.join('\n') : t.noNewData;
 }
 
+function importErrorMessage(t: LocaleDictionary, e: unknown): string {
+  if (e instanceof Error && e.message === 'NOT_A_BACKUP') {
+    return t.notBackupFile;
+  }
+  return t.importFailed;
+}
+
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { colors } = useTheme();
@@ -104,11 +111,16 @@ export function SettingsScreen() {
           setDialog({ title: t.importComplete, message, buttons: [{ text: t.done }] });
         }, 300);
         setSettings(getSettings());
-      } catch (e: any) {
-        if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
-        const message = e?.message === 'NOT_A_BACKUP' ? t.notBackupFile : t.importFailed;
+      } catch (e: unknown) {
+        if (e && typeof e === 'object' && 'code' in e && e.code === 'DOCUMENT_PICKER_CANCELED') {
+          return;
+        }
         setTimeout(() => {
-          setDialog({ title: t.error, message, buttons: [{ text: t.done }] });
+          setDialog({
+            title: t.error,
+            message: importErrorMessage(t, e),
+            buttons: [{ text: t.done }],
+          });
         }, 300);
       }
     },
@@ -227,17 +239,31 @@ export function SettingsScreen() {
                     {
                       text: t.merge,
                       onPress: () => {
-                        const result = importFromJSON(json, 'merge');
-                        const parts: string[] = [];
-                        if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
-                        if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
-                        if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
-                        if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
-                        if (result.settingsImported) parts.push(t.settingsImported);
-                        setTimeout(() => {
-                          setDialog({ title: t.restoreComplete, message: parts.length > 0 ? parts.join('\n') : t.noNewData, buttons: [{ text: t.done }] });
-                        }, 300);
-                        setSettings(getSettings());
+                        try {
+                          const result = importFromJSON(json, 'merge');
+                          const parts: string[] = [];
+                          if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
+                          if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
+                          if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
+                          if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
+                          if (result.settingsImported) parts.push(t.settingsImported);
+                          setTimeout(() => {
+                            setDialog({
+                              title: t.restoreComplete,
+                              message: parts.length > 0 ? parts.join('\n') : t.noNewData,
+                              buttons: [{ text: t.done }],
+                            });
+                          }, 300);
+                          setSettings(getSettings());
+                        } catch (e: unknown) {
+                          setTimeout(() => {
+                            setDialog({
+                              title: t.error,
+                              message: importErrorMessage(t, e),
+                              buttons: [{ text: t.done }],
+                            });
+                          }, 300);
+                        }
                       },
                     },
                     {
@@ -254,15 +280,25 @@ export function SettingsScreen() {
                                 text: t.replace,
                                 style: 'destructive',
                                 onPress: () => {
-                                  const result = importFromJSON(json, 'replace');
-                                  setTimeout(() => {
-                                    setDialog({
-                                      title: t.restoreComplete,
-                                      message: `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`,
-                                      buttons: [{ text: t.done }],
-                                    });
-                                  }, 300);
-                                  setSettings(getSettings());
+                                  try {
+                                    const result = importFromJSON(json, 'replace');
+                                    setTimeout(() => {
+                                      setDialog({
+                                        title: t.restoreComplete,
+                                        message: `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`,
+                                        buttons: [{ text: t.done }],
+                                      });
+                                    }, 300);
+                                    setSettings(getSettings());
+                                  } catch (e: unknown) {
+                                    setTimeout(() => {
+                                      setDialog({
+                                        title: t.error,
+                                        message: importErrorMessage(t, e),
+                                        buttons: [{ text: t.done }],
+                                      });
+                                    }, 300);
+                                  }
                                 },
                               },
                             ],
