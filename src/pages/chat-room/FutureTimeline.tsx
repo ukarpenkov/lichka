@@ -16,6 +16,7 @@ export type FutureTimelineProps = {
   onPressMessage: (message: Message) => void;
   onLongPressMessage: (message: Message) => void;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  scrollEnabled?: boolean;
   onContentSizeChange?: (w: number, h: number) => void;
   onLayout?: (height: number) => void;
 };
@@ -90,6 +91,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
       onPressMessage,
       onLongPressMessage,
       onScroll,
+      scrollEnabled = true,
       onContentSizeChange,
       onLayout,
     },
@@ -131,6 +133,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        scrollEnabled={scrollEnabled}
         ListHeaderComponent={
           <View style={styles.listHeader} accessibilityElementsHidden>
             <Text variant="mono-meta" tone="muted">

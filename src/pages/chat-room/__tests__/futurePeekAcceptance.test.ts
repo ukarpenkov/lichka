@@ -11,7 +11,7 @@ import {
 } from '../../../features/chat-future-peek';
 import { resolveTimelineMode } from '../timelineMode';
 import { resolveChatRoomBackAction } from '../chatRoomBack';
-import { isScrollAtBottom, isScrollAtTop } from '../scrollEdge';
+import { isScrollAtBottom, isScrollAtTop, canListScroll } from '../scrollEdge';
 import { getScheduledChatNavigation, getFutureToScheduledNavigation } from '../../scheduled/scheduledNavigation';
 import {
   navigateToChat,
@@ -34,6 +34,15 @@ describe('Future Peek MVP acceptance', () => {
       expect(isPastThreshold(pull)).toBe(true);
       expect(shouldCommitPeek(pull, 0)).toBe(true);
       expect(resolveTimelineMode('future')).toBe('future');
+    });
+
+    it('should allow entry from empty history (short content at bottom, scroll disabled)', () => {
+      const contentHeight = 0;
+      const layoutHeight = 640;
+      const atBottom = isScrollAtBottom(0, contentHeight, layoutHeight);
+      expect(atBottom).toBe(true);
+      expect(canListScroll(contentHeight, layoutHeight)).toBe(false);
+      expect(canActivatePeekGesture(true, atBottom, false)).toBe(true);
     });
   });
 

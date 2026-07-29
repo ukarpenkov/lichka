@@ -1,4 +1,9 @@
-import { isScrollAtBottom, isScrollAtTop, SCROLL_EDGE_EPSILON } from '../scrollEdge';
+import {
+  canListScroll,
+  isScrollAtBottom,
+  isScrollAtTop,
+  SCROLL_EDGE_EPSILON,
+} from '../scrollEdge';
 
 describe('scrollEdge', () => {
   it('should treat short content as at bottom', () => {
@@ -14,5 +19,17 @@ describe('scrollEdge', () => {
     expect(isScrollAtTop(0)).toBe(true);
     expect(isScrollAtTop(SCROLL_EDGE_EPSILON)).toBe(true);
     expect(isScrollAtTop(SCROLL_EDGE_EPSILON + 1)).toBe(false);
+  });
+
+  it('should treat empty and short lists as not scrollable', () => {
+    expect(canListScroll(0, 400)).toBe(false);
+    expect(canListScroll(100, 400)).toBe(false);
+    expect(canListScroll(0, 0)).toBe(false);
+  });
+
+  it('should treat overflowing content as scrollable', () => {
+    expect(canListScroll(500, 200)).toBe(true);
+    expect(canListScroll(200 + SCROLL_EDGE_EPSILON + 1, 200)).toBe(true);
+    expect(canListScroll(200 + SCROLL_EDGE_EPSILON, 200)).toBe(false);
   });
 });

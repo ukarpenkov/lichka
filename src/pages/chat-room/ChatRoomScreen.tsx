@@ -69,7 +69,7 @@ import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
 import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
-import { isScrollAtBottom, isScrollAtTop } from './scrollEdge';
+import { canListScroll, isScrollAtBottom, isScrollAtTop } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
@@ -137,6 +137,8 @@ export function ChatRoomScreen() {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [atTop, setAtTop] = useState(true);
+  const [historyCanScroll, setHistoryCanScroll] = useState(false);
+  const [futureCanScroll, setFutureCanScroll] = useState(false);
   const {
     open,
     close,
@@ -164,8 +166,10 @@ export function ChatRoomScreen() {
       listMetricsRef.current = { contentHeight, layoutHeight };
       const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
       const nextTop = isScrollAtTop(offsetY);
+      const nextCanScroll = canListScroll(contentHeight, layoutHeight);
       setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
       setAtTop((prev) => (prev === nextTop ? prev : nextTop));
+      setHistoryCanScroll((prev) => (prev === nextCanScroll ? prev : nextCanScroll));
     },
     [],
   );
@@ -175,8 +179,10 @@ export function ChatRoomScreen() {
       listMetricsRef.current = { contentHeight, layoutHeight };
       const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
       const nextTop = isScrollAtTop(offsetY);
+      const nextCanScroll = canListScroll(contentHeight, layoutHeight);
       setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
       setAtTop((prev) => (prev === nextTop ? prev : nextTop));
+      setFutureCanScroll((prev) => (prev === nextCanScroll ? prev : nextCanScroll));
     },
     [],
   );
@@ -640,6 +646,7 @@ export function ChatRoomScreen() {
                   onPressMessage={handleFutureMessagePress}
                   onLongPressMessage={setMenuMessage}
                   onScroll={handleFutureScroll}
+                  scrollEnabled={futureCanScroll}
                   onContentSizeChange={(w, h) => {
                     updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
                   }}
@@ -675,6 +682,7 @@ export function ChatRoomScreen() {
                   keyExtractor={keyExtractor}
                   style={styles.list}
                   contentContainerStyle={styles.listContent}
+                  scrollEnabled={historyCanScroll}
                   onViewableItemsChanged={handleViewableItemsChanged}
                   viewabilityConfig={viewabilityConfig}
                   onScroll={scrollHandler}
