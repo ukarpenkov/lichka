@@ -40,7 +40,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
     if (visible) {
       if (value && PRESETS.some((p) => p.value === value)) {
         setSelected(value);
-        setCustomText('');
+        setCustomText(String(value));
       } else if (value) {
         setSelected(null);
         setCustomText(String(value));
@@ -53,7 +53,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
 
   const handlePresetPress = useCallback((minutes: number) => {
     setSelected(minutes);
-    setCustomText('');
+    setCustomText(String(minutes));
   }, []);
 
   const handleCustomChange = useCallback((text: string) => {
