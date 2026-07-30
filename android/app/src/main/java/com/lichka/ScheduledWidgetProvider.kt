@@ -158,9 +158,14 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val radius = CORNER_RADIUS_DP * density
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            // FILL-only (no STROKE): AA soft edge of a black fill+orange stroke used to bleed
+            // into the hard-shadow strip as black crescent arcs at the corners.
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
-            paint.style = Paint.Style.FILL
+            val faceRight = (width - offset).toFloat()
+            val faceBottom = (height - offset).toFloat()
+
+            // 1) Hard shadow (ink), offset bottom-right
             paint.color = inkColor
             canvas.drawRoundRect(
                 RectF(offset.toFloat(), offset.toFloat(), width.toFloat(), height.toFloat()),
@@ -169,27 +174,26 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                 paint,
             )
 
-            paint.color = canvasColor
+            // 2) Outer plate in ink — solid border color under the face
             canvas.drawRoundRect(
-                RectF(0f, 0f, (width - offset).toFloat(), (height - offset).toFloat()),
+                RectF(0f, 0f, faceRight, faceBottom),
                 radius,
                 radius,
                 paint,
             )
 
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = stroke.toFloat()
-            paint.color = inkColor
-            val inset = stroke / 2f
+            // 3) Inner canvas inset by border (smaller radius keeps concentric corners)
+            val innerRadius = (radius - stroke).coerceAtLeast(0f)
+            paint.color = canvasColor
             canvas.drawRoundRect(
                 RectF(
-                    inset,
-                    inset,
-                    width - offset - inset,
-                    height - offset - inset,
+                    stroke.toFloat(),
+                    stroke.toFloat(),
+                    faceRight - stroke,
+                    faceBottom - stroke,
                 ),
-                radius,
-                radius,
+                innerRadius,
+                innerRadius,
                 paint,
             )
 
