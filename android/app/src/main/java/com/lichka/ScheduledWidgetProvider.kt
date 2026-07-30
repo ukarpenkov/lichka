@@ -40,6 +40,8 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         private const val HARD_SHADOW_DP = 4f
         private const val HARD_BORDER_DP = 2f
         private const val CORNER_RADIUS_DP = 16f
+        const val EXTRA_THEME_BACKGROUND = "com.lichka.widget.THEME_BACKGROUND"
+        const val EXTRA_THEME_INK = "com.lichka.widget.THEME_INK"
 
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
@@ -77,6 +79,10 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val serviceIntent =
                 Intent(context, ScheduledWidgetService::class.java).apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                    // Theme extras change the intent URI so the adapter reconnects on theme switch
+                    // instead of reusing a stale RemoteViewsFactory.
+                    putExtra(EXTRA_THEME_BACKGROUND, canvasColor)
+                    putExtra(EXTRA_THEME_INK, inkColor)
                     data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
                 }
             views.setRemoteAdapter(R.id.widget_list, serviceIntent)

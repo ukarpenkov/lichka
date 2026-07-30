@@ -12,12 +12,14 @@ class ThemeModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun setTheme(background: String, text: String) {
+        // commit() — синхронно: иначе refreshAll может прочитать старые цвета
+        // (фон/бордер/title остаются от прошлой темы, а list уже берёт новые).
         reactApplicationContext
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_BACKGROUND, background)
             .putString(KEY_TEXT, text)
-            .apply()
+            .commit()
         ScheduledWidgetProvider.refreshAll(reactApplicationContext)
     }
 

@@ -5,22 +5,29 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class ScheduledWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return ScheduledWidgetRemoteViewsFactory(applicationContext)
+        val inkColor =
+            intent.getIntExtra(
+                ScheduledWidgetProvider.EXTRA_THEME_INK,
+                parseColorOr(ThemeModule.getText(applicationContext), Color.BLACK),
+            )
+        return ScheduledWidgetRemoteViewsFactory(applicationContext, inkColor)
     }
 }
 
 class ScheduledWidgetRemoteViewsFactory(
     private val context: Context,
+    private val inkColor: Int,
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
@@ -44,7 +51,6 @@ class ScheduledWidgetRemoteViewsFactory(
         }
 
         val item = items[position]
-        val inkColor = parseColorOr(ThemeModule.getText(context), Color.BLACK)
         val mutedColor = withAlpha(inkColor, 0.6f)
 
         val body =
@@ -104,7 +110,7 @@ class ScheduledWidgetRemoteViewsFactory(
         val size = (18f * density).toInt().coerceAtLeast(1)
         val drawable = ContextCompat.getDrawable(context, resId)?.mutate()
             ?: return Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        DrawableCompat.setTint(drawable, color)
+        drawable.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, size, size)
@@ -112,16 +118,16 @@ class ScheduledWidgetRemoteViewsFactory(
         return bitmap
     }
 
-    private fun parseColorOr(hex: String, fallback: Int): Int {
-        return try {
-            Color.parseColor(hex)
-        } catch (_: Exception) {
-            fallback
-        }
-    }
-
     private fun withAlpha(color: Int, alpha: Float): Int {
         val a = (255 * alpha).toInt().coerceIn(0, 255)
         return Color.argb(a, Color.red(color), Color.green(color), Color.blue(color))
+    }
+}
+
+private fun parseColorOr(hex: String, fallback: Int): Int {
+    return try {
+        Color.parseColor(hex)
+    } catch (_: Exception) {
+        fallback
     }
 }
