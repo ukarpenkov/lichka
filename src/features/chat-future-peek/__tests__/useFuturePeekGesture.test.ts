@@ -27,7 +27,7 @@ describe('future peek gesture wrappers', () => {
     expect(shouldCommitPeek(10, 0)).toBe(false);
   });
 
-  it('should export entry and exit hooks', () => {
+  it('should export entry and exit hooks with native scroll composition', () => {
     expect(typeof useFuturePeekEntryGesture).toBe('function');
     expect(typeof useFuturePeekExitGesture).toBe('function');
   });

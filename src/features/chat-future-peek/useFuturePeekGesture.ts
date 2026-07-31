@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   runOnJS,
@@ -38,6 +38,8 @@ export type UseFuturePeekGestureOptions = {
 
 export type FuturePeekGestureApi = {
   gesture: ReturnType<typeof Gesture.Pan>;
+  /** Attach to nested FlatList/ScrollView so pan can run anywhere at the edge. */
+  nativeGesture: ReturnType<typeof Gesture.Native>;
   pullDistance: SharedValue<number>;
   pastThreshold: SharedValue<number>;
   phase: SharedValue<PeekPhase>;
@@ -62,11 +64,16 @@ export function useFuturePeekGesture({
   const pastThreshold = useSharedValue(0);
   const phase = useSharedValue<PeekPhase>('idle');
   const busySV = useSharedValue(0);
+  const atEdgeSV = useSharedValue(atEdge ? 1 : 0);
   const thresholdFiredSV = useSharedValue(0);
   const [busy, setBusy] = useState(false);
 
   const onCommitRef = useRef(onCommit);
   onCommitRef.current = onCommit;
+
+  useEffect(() => {
+    atEdgeSV.value = atEdge ? 1 : 0;
+  }, [atEdge, atEdgeSV]);
 
   const clearBusy = useCallback(() => {
     busySV.value = 0;
@@ -103,73 +110,94 @@ export function useFuturePeekGesture({
 
   const gestureEnabled = canActivatePeekGesture(enabled, atEdge, busy);
 
+  const nativeGesture = useMemo(() => Gesture.Native(), []);
+
   const gesture = useMemo(() => {
     const activeOffset =
       direction === 'enter'
         ? ([-1000, -PEEK_ACTIVE_OFFSET_Y] as [number, number])
         : ([PEEK_ACTIVE_OFFSET_Y, 1000] as [number, number]);
 
-    return Gesture.Pan()
-      .enabled(gestureEnabled)
-      .activeOffsetY(activeOffset)
-      .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X])
-      .onBegin(() => {
-        if (busySV.value === 1) return;
-        thresholdFiredSV.value = 0;
-        pastThreshold.value = 0;
-        phase.value = 'idle';
-      })
-      .onUpdate((event) => {
-        if (busySV.value === 1) return;
-
-        const distance = getPullDistance(event.translationY, direction);
-        pullDistance.value = distance;
-        phase.value = getPeekPhase(distance, PEEK_THRESHOLD);
-
-        if (isPastThreshold(distance, PEEK_THRESHOLD)) {
-          pastThreshold.value = 1;
-          if (thresholdFiredSV.value === 0) {
-            thresholdFiredSV.value = 1;
-            runOnJS(triggerThresholdHaptic)();
+    return (
+      Gesture.Pan()
+        .enabled(gestureEnabled)
+        .activeOffsetY(activeOffset)
+        .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X])
+        // Nested FlatList must not exclusively own the touch — peek should
+        // activate from anywhere on the list once atEdge is true.
+        .simultaneousWithExternalGesture(nativeGesture)
+        // After pan activates (correct direction past activeOffset), stop scroll fight.
+        .blocksExternalGesture(nativeGesture)
+        .onBegin(() => {
+          if (busySV.value === 1 || atEdgeSV.value !== 1) return;
+          thresholdFiredSV.value = 0;
+          pastThreshold.value = 0;
+          phase.value = 'idle';
+        })
+        .onUpdate((event) => {
+          if (busySV.value === 1 || atEdgeSV.value !== 1) {
+            pullDistance.value = 0;
+            pastThreshold.value = 0;
+            phase.value = 'idle';
+            return;
           }
-        } else {
-          pastThreshold.value = 0;
-        }
 
-        if (distance >= PEEK_AUTO_COMMIT) {
-          busySV.value = 1;
-          pullDistance.value = withSpring(0, SPRING_SNAP);
-          pastThreshold.value = 0;
-          phase.value = 'idle';
-          thresholdFiredSV.value = 0;
-          runOnJS(handleCommit)();
-        }
-      })
-      .onEnd((event) => {
-        if (busySV.value === 1) {
-          pullDistance.value = withSpring(0, SPRING_SNAP);
-          return;
-        }
+          const distance = getPullDistance(event.translationY, direction);
+          pullDistance.value = distance;
+          phase.value = getPeekPhase(distance, PEEK_THRESHOLD);
 
-        const distance = getPullDistance(event.translationY, direction);
-        const velocity = getPullVelocity(event.velocityY, direction);
+          if (isPastThreshold(distance, PEEK_THRESHOLD)) {
+            pastThreshold.value = 1;
+            if (thresholdFiredSV.value === 0) {
+              thresholdFiredSV.value = 1;
+              runOnJS(triggerThresholdHaptic)();
+            }
+          } else {
+            pastThreshold.value = 0;
+          }
 
-        if (shouldCommitPeek(distance, velocity)) {
-          busySV.value = 1;
-          pullDistance.value = withSpring(0, SPRING_SNAP);
-          pastThreshold.value = 0;
-          phase.value = 'idle';
-          thresholdFiredSV.value = 0;
-          runOnJS(handleCommit)();
-        } else {
-          runOnJS(snapBack)();
-        }
-      });
+          if (distance >= PEEK_AUTO_COMMIT) {
+            busySV.value = 1;
+            pullDistance.value = withSpring(0, SPRING_SNAP);
+            pastThreshold.value = 0;
+            phase.value = 'idle';
+            thresholdFiredSV.value = 0;
+            runOnJS(handleCommit)();
+          }
+        })
+        .onEnd((event) => {
+          if (busySV.value === 1) {
+            pullDistance.value = withSpring(0, SPRING_SNAP);
+            return;
+          }
+
+          if (atEdgeSV.value !== 1) {
+            runOnJS(snapBack)();
+            return;
+          }
+
+          const distance = getPullDistance(event.translationY, direction);
+          const velocity = getPullVelocity(event.velocityY, direction);
+
+          if (shouldCommitPeek(distance, velocity)) {
+            busySV.value = 1;
+            pullDistance.value = withSpring(0, SPRING_SNAP);
+            pastThreshold.value = 0;
+            phase.value = 'idle';
+            thresholdFiredSV.value = 0;
+            runOnJS(handleCommit)();
+          } else {
+            runOnJS(snapBack)();
+          }
+        })
+    );
   }, [
+    atEdgeSV,
     busySV,
     direction,
     gestureEnabled,
     handleCommit,
+    nativeGesture,
     pastThreshold,
     phase,
     pullDistance,
@@ -201,6 +229,7 @@ export function useFuturePeekGesture({
 
   return {
     gesture,
+    nativeGesture,
     pullDistance,
     pastThreshold,
     phase,

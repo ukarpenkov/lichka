@@ -1,5 +1,6 @@
-import React, { forwardRef, useCallback } from 'react';
-import { FlatList, View, StyleSheet, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import React, { forwardRef, useCallback, type ReactElement } from 'react';
+import { View, StyleSheet, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { FlatList, GestureDetector, type ComposedGesture, type GestureType } from 'react-native-gesture-handler';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { AlarmClockIcon, Text, Button, AnimatedPressable } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
@@ -19,6 +20,8 @@ export type FutureTimelineProps = {
   scrollEnabled?: boolean;
   onContentSizeChange?: (w: number, h: number) => void;
   onLayout?: (height: number) => void;
+  /** Native scroll gesture for simultaneous Future peek exit pan. */
+  nativeScrollGesture?: ComposedGesture | GestureType;
 };
 
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
@@ -82,6 +85,14 @@ function FutureMessageRow({
   );
 }
 
+function wrapNativeScroll(
+  gesture: FutureTimelineProps['nativeScrollGesture'],
+  child: ReactElement,
+): ReactElement {
+  if (!gesture) return child;
+  return <GestureDetector gesture={gesture}>{child}</GestureDetector>;
+}
+
 export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>(
   function FutureTimeline(
     {
@@ -94,6 +105,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
       scrollEnabled = true,
       onContentSizeChange,
       onLayout,
+      nativeScrollGesture,
     },
     ref,
   ) {
@@ -113,7 +125,8 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
     );
 
     if (messages.length === 0) {
-      return (
+      return wrapNativeScroll(
+        nativeScrollGesture,
         <View
           style={styles.empty}
           onLayout={(e) => onLayout?.(e.nativeEvent.layout.height)}
@@ -123,11 +136,12 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
             {t.futureEmptyTitle}
           </Text>
           <Button title={t.futureScheduleCta} onPress={onSchedulePress} testID="future-schedule-cta" />
-        </View>
+        </View>,
       );
     }
 
-    return (
+    return wrapNativeScroll(
+      nativeScrollGesture,
       <FlatList
         ref={ref}
         data={messages}
@@ -156,7 +170,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
             });
           }, 200);
         }}
-      />
+      />,
     );
   },
 );

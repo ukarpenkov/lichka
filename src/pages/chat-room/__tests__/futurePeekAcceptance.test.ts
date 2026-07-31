@@ -11,7 +11,7 @@ import {
 } from '../../../features/chat-future-peek';
 import { resolveTimelineMode } from '../timelineMode';
 import { resolveChatRoomBackAction } from '../chatRoomBack';
-import { isScrollAtBottom, isScrollAtTop, canListScroll } from '../scrollEdge';
+import { isScrollAtBottom, isScrollAtTop, canListScroll, shouldStickToBottomOnLayoutShrink } from '../scrollEdge';
 import { getScheduledChatNavigation, getFutureToScheduledNavigation } from '../../scheduled/scheduledNavigation';
 import {
   navigateToChat,
@@ -142,6 +142,22 @@ describe('Future Peek MVP acceptance', () => {
       const enabled = atBottom && !searchVisible;
       expect(keyboardOpen).toBe(true);
       expect(canActivatePeekGesture(enabled, atBottom, false)).toBe(true);
+    });
+
+    it('should stick to bottom when keyboard shrinks viewport so peek stays armed', () => {
+      const wasAtBottom = isScrollAtBottom(400, 600, 200);
+      expect(wasAtBottom).toBe(true);
+      expect(shouldStickToBottomOnLayoutShrink(wasAtBottom, 200, 80)).toBe(true);
+      expect(canActivatePeekGesture(true, true, false)).toBe(true);
+    });
+  });
+
+  describe('6c. At bottom → peek from anywhere on list (not only bottom strip)', () => {
+    it('should arm entry whenever atBottom regardless of touch Y on list', () => {
+      // Gate is edge-based; Native+Pan composition lets the gesture start on any list row.
+      const atBottom = isScrollAtBottom(400, 600, 200);
+      expect(atBottom).toBe(true);
+      expect(canActivatePeekGesture(true, atBottom, false)).toBe(true);
     });
   });
 

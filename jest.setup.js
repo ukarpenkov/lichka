@@ -1,30 +1,42 @@
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
+  const { FlatList, View } = require('react-native');
+
+  const chainable = () => {
+    const self = {};
+    const methods = [
+      'enabled',
+      'activeOffsetX',
+      'activeOffsetY',
+      'failOffsetX',
+      'failOffsetY',
+      'simultaneousWithExternalGesture',
+      'blocksExternalGesture',
+      'onBegin',
+      'onStart',
+      'onUpdate',
+      'onEnd',
+      'onFinalize',
+      'onTouchesDown',
+      'onTouchesUp',
+      'onTouchesMove',
+    ];
+    for (const method of methods) {
+      self[method] = () => self;
+    }
+    return self;
+  };
+
   return {
-    GestureHandlerRootView: ({ children }) => React.createElement('View', null, children),
+    GestureHandlerRootView: ({ children }) => React.createElement(View, null, children),
     Gesture: {
-      Pan: () => {
-        const self = {
-          activeOffsetX() { return self; },
-          onUpdate() { return self; },
-          onEnd() { return self; },
-        };
-        return self;
-      },
+      Pan: () => chainable(),
+      Native: () => chainable(),
       LongPress: () => ({}),
-      Manual: () => {
-        const self = {
-          onTouchesDown() { return self; },
-          onTouchesUp() { return self; },
-          onTouchesMove() { return self; },
-          onStart() { return self; },
-          onEnd() { return self; },
-          onFinalize() { return self; },
-        };
-        return self;
-      },
+      Manual: () => chainable(),
     },
     GestureDetector: ({ children }) => children,
+    FlatList,
     State: {},
   };
 });

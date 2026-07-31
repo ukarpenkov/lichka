@@ -30,3 +30,18 @@ export function canListScroll(
   if (layoutHeight <= 0) return false;
   return contentHeight > layoutHeight + epsilon;
 }
+
+/**
+ * When the viewport shrinks (keyboard / composer lift) while the user was at
+ * the bottom, offset is stale until scrollToEnd — keep treating as at-bottom
+ * so Future peek stays armed over the whole visible list.
+ */
+export function shouldStickToBottomOnLayoutShrink(
+  wasAtBottom: boolean,
+  previousLayoutHeight: number,
+  nextLayoutHeight: number,
+): boolean {
+  if (!wasAtBottom) return false;
+  if (previousLayoutHeight <= 0 || nextLayoutHeight <= 0) return wasAtBottom;
+  return nextLayoutHeight < previousLayoutHeight;
+}

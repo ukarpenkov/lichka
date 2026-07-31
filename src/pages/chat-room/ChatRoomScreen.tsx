@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Platform,
@@ -19,7 +18,7 @@ import Animated, {
   FadeOut,
   runOnJS,
 } from 'react-native-reanimated';
-import { GestureDetector } from 'react-native-gesture-handler';
+import { FlatList, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -70,7 +69,12 @@ import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
 import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
-import { canListScroll, isScrollAtBottom, isScrollAtTop } from './scrollEdge';
+import {
+  canListScroll,
+  isScrollAtBottom,
+  isScrollAtTop,
+  shouldStickToBottomOnLayoutShrink,
+} from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
@@ -343,6 +347,8 @@ export function ChatRoomScreen() {
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      // Keep peek armed while layout shrinks; then pin to end.
+      setAtBottom(true);
       setTimeout(() => scrollToBottom(true), 100);
     });
     return () => showSub.remove();
@@ -649,6 +655,7 @@ export function ChatRoomScreen() {
                   onLongPressMessage={setMenuMessage}
                   onScroll={handleFutureScroll}
                   scrollEnabled={futureCanScroll}
+                  nativeScrollGesture={exitPeek.nativeGesture}
                   onContentSizeChange={(w, h) => {
                     updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
                   }}
@@ -677,45 +684,67 @@ export function ChatRoomScreen() {
                 accessible
                 accessibilityHint={t.futurePeekA11y}
               >
-                <AnimatedFlatList
-                  ref={flatListRef as any}
-                  data={listItems}
-                  renderItem={renderListItem}
-                  keyExtractor={keyExtractor}
-                  style={styles.list}
-                  contentContainerStyle={styles.listContent}
-                  scrollEnabled={historyCanScroll}
-                  onViewableItemsChanged={handleViewableItemsChanged}
-                  viewabilityConfig={viewabilityConfig}
-                  onScroll={scrollHandler}
-                  scrollEventThrottle={16}
-                  onContentSizeChange={(_w: number, h: number) => {
-                    listMetricsRef.current.contentHeight = h;
-                    updateHistoryEdges(
-                      historyScrollOffsetRef.current,
-                      h,
-                      listMetricsRef.current.layoutHeight,
-                    );
-                  }}
-                  onLayout={(e: LayoutChangeEvent) => {
-                    const h = e.nativeEvent.layout.height;
-                    listMetricsRef.current.layoutHeight = h;
-                    updateHistoryEdges(
-                      historyScrollOffsetRef.current,
-                      listMetricsRef.current.contentHeight,
-                      h,
-                    );
-                  }}
-                  onScrollToIndexFailed={(info: any) => {
-                    setTimeout(() => {
-                      flatListRef.current?.scrollToIndex({
-                        index: info.index,
-                        animated: false,
-                        viewPosition: 0.5,
-                      });
-                    }, 200);
-                  }}
-                />
+                <GestureDetector gesture={entryPeek.nativeGesture}>
+                  <AnimatedFlatList
+                    ref={flatListRef as any}
+                    data={listItems}
+                    renderItem={renderListItem}
+                    keyExtractor={keyExtractor}
+                    style={styles.list}
+                    contentContainerStyle={styles.listContent}
+                    scrollEnabled={historyCanScroll}
+                    onViewableItemsChanged={handleViewableItemsChanged}
+                    viewabilityConfig={viewabilityConfig}
+                    onScroll={scrollHandler}
+                    scrollEventThrottle={16}
+                    onContentSizeChange={(_w: number, h: number) => {
+                      listMetricsRef.current.contentHeight = h;
+                      updateHistoryEdges(
+                        historyScrollOffsetRef.current,
+                        h,
+                        listMetricsRef.current.layoutHeight,
+                      );
+                    }}
+                    onLayout={(e: LayoutChangeEvent) => {
+                      const h = e.nativeEvent.layout.height;
+                      const prevLayout = listMetricsRef.current.layoutHeight;
+                      const wasAtBottom = isScrollAtBottom(
+                        historyScrollOffsetRef.current,
+                        listMetricsRef.current.contentHeight,
+                        prevLayout || h,
+                      );
+                      listMetricsRef.current.layoutHeight = h;
+
+                      if (
+                        shouldStickToBottomOnLayoutShrink(wasAtBottom, prevLayout, h)
+                      ) {
+                        setAtBottom(true);
+                        flatListRef.current?.scrollToEnd({ animated: false });
+                        updateHistoryEdges(
+                          Math.max(0, listMetricsRef.current.contentHeight - h),
+                          listMetricsRef.current.contentHeight,
+                          h,
+                        );
+                        return;
+                      }
+
+                      updateHistoryEdges(
+                        historyScrollOffsetRef.current,
+                        listMetricsRef.current.contentHeight,
+                        h,
+                      );
+                    }}
+                    onScrollToIndexFailed={(info: any) => {
+                      setTimeout(() => {
+                        flatListRef.current?.scrollToIndex({
+                          index: info.index,
+                          animated: false,
+                          viewPosition: 0.5,
+                        });
+                      }, 200);
+                    }}
+                  />
+                </GestureDetector>
               </Animated.View>
             </GestureDetector>
             <FuturePeekOverlay

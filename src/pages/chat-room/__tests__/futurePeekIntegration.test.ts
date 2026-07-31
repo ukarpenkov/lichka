@@ -1,5 +1,9 @@
 import { canActivatePeekGesture } from '../../../features/chat-future-peek';
-import { canListScroll, isScrollAtBottom } from '../scrollEdge';
+import {
+  canListScroll,
+  isScrollAtBottom,
+  shouldStickToBottomOnLayoutShrink,
+} from '../scrollEdge';
 
 describe('future peek gesture integration gates', () => {
   it('should enable entry only when history at bottom and not busy', () => {
@@ -16,6 +20,15 @@ describe('future peek gesture integration gates', () => {
     const enabled = historyAtBottom && !searchVisible;
     expect(keyboardOpen).toBe(true);
     expect(canActivatePeekGesture(enabled, historyAtBottom, false)).toBe(true);
+  });
+
+  it('should keep at-bottom armed when keyboard shrinks the list viewport', () => {
+    const wasAtBottom = isScrollAtBottom(500, 700, 200);
+    expect(wasAtBottom).toBe(true);
+    // Stale offset after layout shrink would look mid-list without stickiness.
+    expect(isScrollAtBottom(500, 700, 120)).toBe(false);
+    expect(shouldStickToBottomOnLayoutShrink(wasAtBottom, 200, 120)).toBe(true);
+    expect(canActivatePeekGesture(true, true, false)).toBe(true);
   });
 
   it('should enable exit only when future at top', () => {

@@ -2,6 +2,7 @@ import {
   canListScroll,
   isScrollAtBottom,
   isScrollAtTop,
+  shouldStickToBottomOnLayoutShrink,
   SCROLL_EDGE_EPSILON,
 } from '../scrollEdge';
 
@@ -31,5 +32,11 @@ describe('scrollEdge', () => {
     expect(canListScroll(500, 200)).toBe(true);
     expect(canListScroll(200 + SCROLL_EDGE_EPSILON + 1, 200)).toBe(true);
     expect(canListScroll(200 + SCROLL_EDGE_EPSILON, 200)).toBe(false);
+  });
+
+  it('should stick to bottom when viewport shrinks after being at bottom', () => {
+    expect(shouldStickToBottomOnLayoutShrink(true, 700, 400)).toBe(true);
+    expect(shouldStickToBottomOnLayoutShrink(true, 400, 700)).toBe(false);
+    expect(shouldStickToBottomOnLayoutShrink(false, 700, 400)).toBe(false);
   });
 });
