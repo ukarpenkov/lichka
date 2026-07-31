@@ -188,6 +188,8 @@ export function AlarmScreen() {
           </Text>
         </AnimatedPressable>
       </View>
+
+      <View style={styles.bottomSpacer} />
     </Screen>
   );
 }
@@ -247,11 +249,16 @@ const styles = StyleSheet.create({
   },
   alarmLabel: {
     textAlign: 'center',
+    fontSize: 20,
+    lineHeight: 30,
   },
   actions: {
     alignItems: 'center',
     gap: spacing.xl,
     paddingBottom: spacing.lg,
+  },
+  bottomSpacer: {
+    height: '25%',
   },
   textAction: {
     flexDirection: 'row',
