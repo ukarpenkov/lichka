@@ -27,15 +27,20 @@ class ScheduledWidgetService : RemoteViewsService() {
 
 class ScheduledWidgetRemoteViewsFactory(
     private val context: Context,
-    private val inkColor: Int,
+    private val inkColorFromIntent: Int,
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
+    private var inkColor: Int = inkColorFromIntent
 
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
         items = ScheduledWidgetStorage.loadAll(context)
+        // Re-read theme on every notify: some launchers reuse the factory after a theme switch
+        // and only call onDataSetChanged, keeping a stale constructor ink color.
+        inkColor =
+            parseColorOr(ThemeModule.getText(context), inkColorFromIntent)
     }
 
     override fun onDestroy() {

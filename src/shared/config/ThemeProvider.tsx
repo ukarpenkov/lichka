@@ -1,10 +1,16 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { NativeModules, Platform } from 'react-native';
+import { AppState, NativeModules, Platform, type AppStateStatus } from 'react-native';
 import { getDatabase } from '../db';
 import { getTheme, DEFAULT_LIGHT, type ThemePreset } from './theme';
 import { resolveSemanticColors, type SemanticColors } from './tokens';
 
 const SETTINGS_KEY = 'theme_preset_id';
+
+function pushAndroidWidgetTheme(background: string, text: string): void {
+  if (Platform.OS === 'android' && NativeModules.ThemeModule) {
+    NativeModules.ThemeModule.setTheme(background, text);
+  }
+}
 
 interface ThemeContextValue {
   preset: ThemePreset;
@@ -40,10 +46,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ? getTheme(result.rows[0].value as string)
         : DEFAULT_LIGHT;
     setPreset(theme);
-    if (Platform.OS === 'android' && NativeModules.ThemeModule) {
-      NativeModules.ThemeModule.setTheme(theme.background, theme.text);
-    }
+    pushAndroidWidgetTheme(theme.background, theme.text);
   }, []);
+
+  // Re-push on background so the home-screen widget catches the latest theme even if the
+  // previous native refresh was deferred or dropped while the app was still foregrounded.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onChange = (state: AppStateStatus) => {
+      if (state === 'background' || state === 'inactive') {
+        pushAndroidWidgetTheme(preset.background, preset.text);
+      }
+    };
+    const sub = AppState.addEventListener('change', onChange);
+    return () => {
+      sub.remove();
+    };
+  }, [preset.background, preset.text]);
 
   const setTheme = useCallback((id: string) => {
     const next = getTheme(id);
@@ -53,9 +72,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
       [SETTINGS_KEY, id],
     );
-    if (Platform.OS === 'android' && NativeModules.ThemeModule) {
-      NativeModules.ThemeModule.setTheme(next.background, next.text);
-    }
+    pushAndroidWidgetTheme(next.background, next.text);
   }, []);
 
   const colors = useMemo(

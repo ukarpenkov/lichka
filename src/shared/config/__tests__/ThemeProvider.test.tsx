@@ -1,9 +1,11 @@
 import React from 'react';
+import { AppState, NativeModules, Platform } from 'react-native';
 import { renderHook, act } from '@testing-library/react-native';
 import { ThemeProvider, useTheme } from '../ThemeProvider';
 import { DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
 
 const mockExecuteSync = jest.fn();
+const mockSetTheme = jest.fn();
 
 jest.mock('../../db', () => ({
   getDatabase: () => ({
@@ -16,9 +18,32 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('ThemeProvider', () => {
+  const originalOS = Platform.OS;
+  let appStateHandler: ((state: string) => void) | undefined;
+  let addSpy: jest.SpyInstance;
+
   beforeEach(() => {
     mockExecuteSync.mockReset();
     mockExecuteSync.mockReturnValue({ rows: [] });
+    mockSetTheme.mockReset();
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+    NativeModules.ThemeModule = { setTheme: mockSetTheme };
+    appStateHandler = undefined;
+    addSpy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((
+      type: string,
+      handler: (state: string) => void,
+    ) => {
+      if (type === 'change') {
+        appStateHandler = handler;
+      }
+      return { remove: jest.fn() };
+    }) as typeof AppState.addEventListener);
+  });
+
+  afterEach(() => {
+    addSpy.mockRestore();
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOS });
+    delete NativeModules.ThemeModule;
   });
 
   it('should provide DEFAULT_LIGHT when no saved theme', () => {
@@ -94,6 +119,33 @@ describe('ThemeProvider', () => {
       'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
       ['theme_preset_id', 'mint'],
     );
+  });
+
+  it('should push theme colors to ThemeModule on setTheme', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    const cyan = getTheme('cyan');
+
+    act(() => {
+      result.current.setTheme('cyan');
+    });
+
+    expect(mockSetTheme).toHaveBeenCalledWith(cyan.background, cyan.text);
+  });
+
+  it('should re-push theme to ThemeModule when app goes to background', () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    const amber = getTheme('amber');
+
+    act(() => {
+      result.current.setTheme('amber');
+    });
+    mockSetTheme.mockClear();
+
+    act(() => {
+      appStateHandler?.('background');
+    });
+
+    expect(mockSetTheme).toHaveBeenCalledWith(amber.background, amber.text);
   });
 
   it('should switch theme multiple times', () => {
