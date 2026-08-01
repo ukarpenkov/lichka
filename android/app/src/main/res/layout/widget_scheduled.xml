@@ -1,48 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Neo-brutal plate as three shape ImageViews (not a stretched bitmap).
-  Shape cornerRadius stays circular when the widget is resized; bitmaps with
-  fitXY were turning corners elliptical and thickening the side borders.
+  Plate is a single ImageView; colors come from a Canvas bitmap in ScheduledWidgetProvider
+  (not ImageView tint — tint sticks across theme switches on many launchers).
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Hard shadow (ink), offset bottom-right -->
     <ImageView
-        android:id="@+id/widget_plate_shadow"
+        android:id="@+id/widget_plate"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="4dp"
-        android:layout_marginTop="4dp"
         android:contentDescription="@null"
         android:scaleType="fitXY"
-        android:src="@drawable/widget_plate_round" />
-
-    <!-- Outer plate (ink) = border color -->
-    <ImageView
-        android:id="@+id/widget_plate_border"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginRight="4dp"
-        android:layout_marginBottom="4dp"
-        android:contentDescription="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_plate_round" />
-
-    <!-- Inner canvas inset by 2dp border (margins: left/top 2, right/bottom 2+4 shadow) -->
-    <ImageView
-        android:id="@+id/widget_plate_face"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginLeft="2dp"
-        android:layout_marginTop="2dp"
-        android:layout_marginRight="6dp"
-        android:layout_marginBottom="6dp"
-        android:contentDescription="@null"
-        android:scaleType="fitXY"
-        android:src="@drawable/widget_plate_round_inner" />
+        android:src="@drawable/bg_widget_scheduled" />
 
     <LinearLayout
         android:id="@+id/widget_content"

@@ -2,11 +2,13 @@ package com.lichka
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.os.Build
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import androidx.core.content.ContextCompat
@@ -16,31 +18,22 @@ import java.util.Locale
 
 class ScheduledWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        val inkColor =
-            intent.getIntExtra(
-                ScheduledWidgetProvider.EXTRA_THEME_INK,
-                parseColorOr(ThemeModule.getText(applicationContext), Color.BLACK),
-            )
-        return ScheduledWidgetRemoteViewsFactory(applicationContext, inkColor)
+        return ScheduledWidgetRemoteViewsFactory(applicationContext)
     }
 }
 
 class ScheduledWidgetRemoteViewsFactory(
     private val context: Context,
-    private val inkColorFromIntent: Int,
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
-    private var inkColor: Int = inkColorFromIntent
+    private var inkColor: Int = Color.BLACK
 
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
         items = ScheduledWidgetStorage.loadAll(context)
-        // Re-read theme on every notify: some launchers reuse the factory after a theme switch
-        // and only call onDataSetChanged, keeping a stale constructor ink color.
-        inkColor =
-            parseColorOr(ThemeModule.getText(context), inkColorFromIntent)
+        inkColor = currentInkColor()
     }
 
     override fun onDestroy() {
@@ -55,9 +48,13 @@ class ScheduledWidgetRemoteViewsFactory(
             return views
         }
 
-        val item = items[position]
-        val mutedColor = withAlpha(inkColor, 0.6f)
+        // Always read theme here: some hosts call getViewAt without a fresh onDataSetChanged
+        // after setRemoteAdapter, leaving a stale cached inkColor.
+        val ink = currentInkColor()
+        inkColor = ink
+        val mutedColor = withAlpha(ink, 0.6f)
 
+        val item = items[position]
         val body =
             if (item.body.isNotBlank()) {
                 item.body
@@ -67,11 +64,16 @@ class ScheduledWidgetRemoteViewsFactory(
 
         views.setTextViewText(R.id.widget_row_body, body)
         views.setTextViewText(R.id.widget_row_meta, formatMeta(item))
-        views.setTextColor(R.id.widget_row_body, inkColor)
+        views.setTextColor(R.id.widget_row_body, ink)
         views.setTextColor(R.id.widget_row_meta, mutedColor)
+
+        // Clear any leftover ImageView tint, then set a pre-colored bitmap.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            views.setColorStateList(R.id.widget_row_icon, "setImageTintList", null as ColorStateList?)
+        }
         views.setImageViewBitmap(
             R.id.widget_row_icon,
-            tintedIconBitmap(context, iconForType(item.type), inkColor),
+            tintedIconBitmap(context, iconForType(item.type), ink),
         )
 
         val fillInIntent =
@@ -88,10 +90,17 @@ class ScheduledWidgetRemoteViewsFactory(
 
     override fun getViewTypeCount(): Int = 1
 
-    override fun getItemId(position: Int): Long =
-        items.getOrNull(position)?.messageId?.hashCode()?.toLong() ?: position.toLong()
+    /** Include ink so theme switches invalidate stable row identities and force rebind. */
+    override fun getItemId(position: Int): Long {
+        val messageHash =
+            items.getOrNull(position)?.messageId?.hashCode()?.toLong() ?: position.toLong()
+        return messageHash * 31L + (inkColor.toLong() and 0xffffffffL)
+    }
 
     override fun hasStableIds(): Boolean = true
+
+    private fun currentInkColor(): Int =
+        parseColorOr(ThemeModule.getText(context), Color.BLACK)
 
     private fun iconForType(type: String): Int {
         return when (type) {

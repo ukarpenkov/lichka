@@ -6,17 +6,17 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
+import android.graphics.Paint
+import android.graphics.RectF
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
 import android.widget.RemoteViews
-import androidx.core.content.ContextCompat
 
 class ScheduledWidgetProvider : AppWidgetProvider() {
 
@@ -42,6 +42,10 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
     companion object {
         const val EXTRA_THEME_BACKGROUND = "com.lichka.widget.THEME_BACKGROUND"
         const val EXTRA_THEME_INK = "com.lichka.widget.THEME_INK"
+
+        private const val HARD_SHADOW_DP = 4f
+        private const val HARD_BORDER_DP = 2f
+        private const val CORNER_RADIUS_DP = 16f
 
         fun refreshAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
@@ -120,12 +124,11 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         }
 
         /**
-         * Paint themed plate layers as bitmaps from shape drawables.
+         * Neo-brutal plate as one Canvas bitmap (fill-only round rects).
          *
-         * ImageView tint / colorFilter via RemoteViews often sticks on the previous color when the
-         * launcher reapplies an update (theme switch looks like a no-op). Fresh bitmaps always show
-         * the new theme. Shapes are drawn at the current widget size so cornerRadius stays circular
-         * (fitXY 1:1); onAppWidgetOptionsChanged regenerates after resize.
+         * Do not theme via ImageView tint/colorFilter: launchers often keep the previous tint on
+         * reapply, so background/shadow stay on the old theme while setTextColor updates.
+         * Size from current widget bounds (SIZES / MIN_*), not MAX_* — avoids elliptical corners.
          */
         private fun applyThemePlate(
             context: Context,
@@ -137,57 +140,70 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         ) {
             val (widthPx, heightPx) = widgetSizePx(context, manager, appWidgetId)
             val density = context.resources.displayMetrics.density
-            val shadow = (4f * density).toInt().coerceAtLeast(1)
-            // Face margins: 2dp border + 4dp shadow on the trailing edges → 8dp total inset.
-            val faceShrink = (8f * density).toInt().coerceAtLeast(1)
-
-            setTintedShapeBitmap(
-                context,
-                views,
-                R.id.widget_plate_shadow,
-                R.drawable.widget_plate_round,
-                inkColor,
-                (widthPx - shadow).coerceAtLeast(1),
-                (heightPx - shadow).coerceAtLeast(1),
-            )
-            setTintedShapeBitmap(
-                context,
-                views,
-                R.id.widget_plate_border,
-                R.drawable.widget_plate_round,
-                inkColor,
-                (widthPx - shadow).coerceAtLeast(1),
-                (heightPx - shadow).coerceAtLeast(1),
-            )
-            setTintedShapeBitmap(
-                context,
-                views,
-                R.id.widget_plate_face,
-                R.drawable.widget_plate_round_inner,
-                canvasColor,
-                (widthPx - faceShrink).coerceAtLeast(1),
-                (heightPx - faceShrink).coerceAtLeast(1),
+            // Drop any tint left from older builds that used setImageTintList on plate layers.
+            clearImageTint(views, R.id.widget_plate)
+            views.setImageViewBitmap(
+                R.id.widget_plate,
+                createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor),
             )
         }
 
-        private fun setTintedShapeBitmap(
-            context: Context,
-            views: RemoteViews,
-            viewId: Int,
-            drawableRes: Int,
-            color: Int,
-            widthPx: Int,
-            heightPx: Int,
-        ) {
-            val drawable =
-                ContextCompat.getDrawable(context, drawableRes)?.mutate()
-                    ?: return
-            drawable.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
-            val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        private fun clearImageTint(views: RemoteViews, viewId: Int) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                views.setColorStateList(viewId, "setImageTintList", null as ColorStateList?)
+            }
+        }
+
+        private fun createNeoBrutalPlate(
+            width: Int,
+            height: Int,
+            density: Float,
+            canvasColor: Int,
+            inkColor: Int,
+        ): Bitmap {
+            val offset = (HARD_SHADOW_DP * density).toInt().coerceAtLeast(1)
+            val stroke = (HARD_BORDER_DP * density).toInt().coerceAtLeast(1)
+            val radius = CORNER_RADIUS_DP * density
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, widthPx, heightPx)
-            drawable.draw(canvas)
-            views.setImageViewBitmap(viewId, bitmap)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+
+            val faceRight = (width - offset).toFloat()
+            val faceBottom = (height - offset).toFloat()
+
+            // 1) Hard shadow (ink), offset bottom-right
+            paint.color = inkColor
+            canvas.drawRoundRect(
+                RectF(offset.toFloat(), offset.toFloat(), width.toFloat(), height.toFloat()),
+                radius,
+                radius,
+                paint,
+            )
+
+            // 2) Outer plate in ink — solid border color under the face
+            canvas.drawRoundRect(
+                RectF(0f, 0f, faceRight, faceBottom),
+                radius,
+                radius,
+                paint,
+            )
+
+            // 3) Inner canvas inset by border
+            val innerRadius = (radius - stroke).coerceAtLeast(0f)
+            paint.color = canvasColor
+            canvas.drawRoundRect(
+                RectF(
+                    stroke.toFloat(),
+                    stroke.toFloat(),
+                    faceRight - stroke,
+                    faceBottom - stroke,
+                ),
+                innerRadius,
+                innerRadius,
+                paint,
+            )
+
+            return bitmap
         }
 
         private fun widgetSizePx(
@@ -216,17 +232,9 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                     )
                 }
             }
-            // MIN_* is the current size on most launchers; MAX_* previously caused fitXY stretch.
-            val widthDp =
-                options.getInt(
-                    AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,
-                    180,
-                )
-            val heightDp =
-                options.getInt(
-                    AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
-                    110,
-                )
+            // Prefer MIN_* (current size). MAX_* made fitXY stretch corners into ellipses.
+            val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
+            val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110)
             return Pair(
                 (widthDp * density).toInt().coerceAtLeast(120),
                 (heightDp * density).toInt().coerceAtLeast(80),

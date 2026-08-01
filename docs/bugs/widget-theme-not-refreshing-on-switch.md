@@ -25,11 +25,13 @@
 
 ## Причина
 
-1. Пластина виджета после фикса углов красилась через `RemoteViews` `setImageTintList` / `setColorFilter` на shape `ImageView`. На части лаунчеров при `updateAppWidget` tint/colorFilter **не переприменяются** к уже созданным view (reapply), поэтому пластина визуально «залипает» на старом цвете.
-2. `RemoteViewsFactory` списка брал `inkColor` только в конструкторе; если хост не пересоздал factory после смены extras, строки списка тоже оставались в старом ink.
+1. Тема через `ImageView` `setImageTintList` / `setColorFilter` на shape: при `updateAppWidget` лаунчер **переприменяет** `setTextColor`, но **оставляет старый tint** на ImageView. Итог: шрифт новый, фон / box-shadow / иконки — старые.
+2. Bitmap «поверх» tint не помогает: tint продолжает краситься SRC_IN поверх новых пикселей.
+3. `RemoteViewsFactory` мог не перебиндить строки (stable ids без учёта цвета темы).
 
 ## Решение
 
-- Красить plate через свежие bitmap из shape-drawable на текущий размер виджета (`setImageViewBitmap`) — пиксели меняются при каждой смене темы; размер из `OPTION_APPWIDGET_SIZES` / `MIN_*`, регенерация в `onAppWidgetOptionsChanged`.
-- В `onDataSetChanged` factory заново читать ink из `ThemeModule`.
-- В `ThemeProvider` дополнительно пушить тему в `ThemeModule` при уходе приложения в `background` / `inactive` (страховочный путь под тест-кейс со сворачиванием).
+- Пластина снова рисуется **Canvas bitmap** (`createNeoBrutalPlate`) в один `widget_plate` — цвета в пикселях, без `setImageTintList` / `setColorFilter` (tint на ImageView залипал при reapply лаунчера: текст обновлялся, фон/shadow нет).
+- Размер bitmap из `OPTION_APPWIDGET_SIZES` / `MIN_*` (не `MAX_*`), чтобы углы не уезжали в эллипс.
+- Список: ink читается из `ThemeModule` в `getViewAt`; `getItemId` включает ink, чтобы смена темы инвалидировала stable ids и пересобрала иконки.
+- `ThemeProvider` дополнительно пушит тему при `background` / `inactive`.
