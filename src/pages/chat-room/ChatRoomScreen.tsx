@@ -18,7 +18,7 @@ import Animated, {
   FadeOut,
   runOnJS,
 } from 'react-native-reanimated';
-import { FlatList, GestureDetector } from 'react-native-gesture-handler';
+import { FlatList, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -71,6 +71,8 @@ import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
 import {
   canListScroll,
+  getListPointerEvents,
+  getNonScrollableListContentStyle,
   isScrollAtBottom,
   isScrollAtTop,
   shouldAttachNativeScrollGesture,
@@ -91,6 +93,19 @@ const FUTURE_REFRESH_INTERVAL = 15_000;
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
 ) as any;
+
+function wrapComposerNativeScroll(
+  armed: boolean,
+  gesture: ReturnType<typeof Gesture.Native>,
+  child: React.ReactElement,
+): React.ReactElement {
+  if (!armed) return child;
+  return (
+    <GestureDetector gesture={gesture}>
+      <View pointerEvents="box-none">{child}</View>
+    </GestureDetector>
+  );
+}
 
 function wrapHistoryNativeScroll(
   canScroll: boolean,
@@ -329,10 +344,16 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation, exitFuture]);
 
+  const composerNativeGesture = useMemo(() => Gesture.Native(), []);
+
+  const entryPeekArmed =
+    timelineMode === 'history' && !searchVisible && atBottom;
+
   const entryPeek = useFuturePeekEntryGesture({
     enabled: timelineMode === 'history' && !searchVisible,
     atBottom,
     onCommit: enterFuture,
+    composerNativeGesture,
   });
 
   const exitPeek = useFuturePeekExitGesture({
@@ -647,140 +668,153 @@ export function ChatRoomScreen() {
         </Animated.View>
       )}
 
-      <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
-        {isFuture ? (
-          <View style={styles.listContainer}>
-            <GestureDetector gesture={exitPeek.gesture}>
-              <Animated.View
-                style={[styles.listPane, exitPeek.rubberBandStyle]}
-                accessible
-                accessibilityHint={t.futureExitA11y}
-              >
-                <FutureTimeline
-                  ref={futureListRef}
-                  messages={futureMessages}
-                  highlightedMessageId={highlightedMessageId}
-                  onSchedulePress={handleScheduleCta}
-                  onPressMessage={handleFutureMessagePress}
-                  onLongPressMessage={setMenuMessage}
-                  onScroll={handleFutureScroll}
-                  scrollEnabled={futureCanScroll}
-                  nativeScrollGesture={
-                    shouldAttachNativeScrollGesture(futureCanScroll)
-                      ? exitPeek.nativeGesture
-                      : undefined
-                  }
-                  onContentSizeChange={(w, h) => {
-                    updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
-                  }}
-                  onLayout={(height) => {
-                    listMetricsRef.current.layoutHeight = height;
-                    updateFutureEdges(
-                      0,
-                      listMetricsRef.current.contentHeight || height,
-                      height,
-                    );
-                  }}
-                />
-              </Animated.View>
-            </GestureDetector>
-            <FuturePeekOverlay
-              direction="exit"
-              animatedStyle={exitPeek.overlayStyle}
-              accessibilityLabel={t.futureExitA11y}
-            />
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            <GestureDetector gesture={entryPeek.gesture}>
-              <Animated.View
-                style={[styles.listPane, entryPeek.rubberBandStyle]}
-                accessible
-                accessibilityHint={t.futurePeekA11y}
-              >
-                {wrapHistoryNativeScroll(
-                  historyCanScroll,
-                  entryPeek.nativeGesture,
-                  <AnimatedFlatList
-                    ref={flatListRef as any}
-                    data={listItems}
-                    renderItem={renderListItem}
-                    keyExtractor={keyExtractor}
-                    style={styles.list}
-                    contentContainerStyle={styles.listContent}
-                    scrollEnabled={historyCanScroll}
-                    onViewableItemsChanged={handleViewableItemsChanged}
-                    viewabilityConfig={viewabilityConfig}
-                    onScroll={scrollHandler}
-                    scrollEventThrottle={16}
-                    onContentSizeChange={(_w: number, h: number) => {
-                      listMetricsRef.current.contentHeight = h;
-                      updateHistoryEdges(
-                        historyScrollOffsetRef.current,
-                        h,
-                        listMetricsRef.current.layoutHeight,
+      {isFuture ? (
+        <GestureDetector gesture={exitPeek.gesture}>
+          <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
+            <View style={styles.peekHost}>
+              <View style={styles.listContainer}>
+                <Animated.View
+                  style={[styles.listPane, exitPeek.rubberBandStyle]}
+                  accessible
+                  accessibilityHint={t.futureExitA11y}
+                >
+                  <FutureTimeline
+                    ref={futureListRef}
+                    messages={futureMessages}
+                    highlightedMessageId={highlightedMessageId}
+                    onSchedulePress={handleScheduleCta}
+                    onPressMessage={handleFutureMessagePress}
+                    onLongPressMessage={setMenuMessage}
+                    onScroll={handleFutureScroll}
+                    scrollEnabled={futureCanScroll}
+                    listPointerEvents={getListPointerEvents(futureCanScroll)}
+                    nativeScrollGesture={
+                      shouldAttachNativeScrollGesture(futureCanScroll)
+                        ? exitPeek.nativeGesture
+                        : undefined
+                    }
+                    onContentSizeChange={(w, h) => {
+                      updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
+                    }}
+                    onLayout={(height) => {
+                      listMetricsRef.current.layoutHeight = height;
+                      updateFutureEdges(
+                        0,
+                        listMetricsRef.current.contentHeight || height,
+                        height,
                       );
                     }}
-                    onLayout={(e: LayoutChangeEvent) => {
-                      const h = e.nativeEvent.layout.height;
-                      const prevLayout = listMetricsRef.current.layoutHeight;
-                      const wasAtBottom = isScrollAtBottom(
-                        historyScrollOffsetRef.current,
-                        listMetricsRef.current.contentHeight,
-                        prevLayout || h,
-                      );
-                      listMetricsRef.current.layoutHeight = h;
-
-                      if (
-                        shouldStickToBottomOnLayoutShrink(wasAtBottom, prevLayout, h)
-                      ) {
-                        setAtBottom(true);
-                        flatListRef.current?.scrollToEnd({ animated: false });
+                  />
+                </Animated.View>
+                <FuturePeekOverlay
+                  direction="exit"
+                  animatedStyle={exitPeek.overlayStyle}
+                  accessibilityLabel={t.futureExitA11y}
+                />
+              </View>
+            </View>
+          </Animated.View>
+        </GestureDetector>
+      ) : (
+        <GestureDetector gesture={entryPeek.gesture}>
+          <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
+            <View style={styles.peekHost}>
+              <View style={styles.listContainer}>
+                <Animated.View
+                  style={[styles.listPane, entryPeek.rubberBandStyle]}
+                  accessible
+                  accessibilityHint={t.futurePeekA11y}
+                >
+                  {wrapHistoryNativeScroll(
+                    historyCanScroll,
+                    entryPeek.nativeGesture,
+                    <AnimatedFlatList
+                      ref={flatListRef as any}
+                      data={listItems}
+                      renderItem={renderListItem}
+                      keyExtractor={keyExtractor}
+                      style={styles.list}
+                      contentContainerStyle={
+                        historyCanScroll
+                          ? styles.listContent
+                          : [styles.listContent, getNonScrollableListContentStyle()]
+                      }
+                      scrollEnabled={historyCanScroll}
+                      pointerEvents={getListPointerEvents(historyCanScroll)}
+                      onViewableItemsChanged={handleViewableItemsChanged}
+                      viewabilityConfig={viewabilityConfig}
+                      onScroll={scrollHandler}
+                      scrollEventThrottle={16}
+                      onContentSizeChange={(_w: number, h: number) => {
+                        listMetricsRef.current.contentHeight = h;
                         updateHistoryEdges(
-                          Math.max(0, listMetricsRef.current.contentHeight - h),
+                          historyScrollOffsetRef.current,
+                          h,
+                          listMetricsRef.current.layoutHeight,
+                        );
+                      }}
+                      onLayout={(e: LayoutChangeEvent) => {
+                        const h = e.nativeEvent.layout.height;
+                        const prevLayout = listMetricsRef.current.layoutHeight;
+                        const wasAtBottom = isScrollAtBottom(
+                          historyScrollOffsetRef.current,
+                          listMetricsRef.current.contentHeight,
+                          prevLayout || h,
+                        );
+                        listMetricsRef.current.layoutHeight = h;
+
+                        if (
+                          shouldStickToBottomOnLayoutShrink(wasAtBottom, prevLayout, h)
+                        ) {
+                          setAtBottom(true);
+                          flatListRef.current?.scrollToEnd({ animated: false });
+                          updateHistoryEdges(
+                            Math.max(0, listMetricsRef.current.contentHeight - h),
+                            listMetricsRef.current.contentHeight,
+                            h,
+                          );
+                          return;
+                        }
+
+                        updateHistoryEdges(
+                          historyScrollOffsetRef.current,
                           listMetricsRef.current.contentHeight,
                           h,
                         );
-                        return;
-                      }
-
-                      updateHistoryEdges(
-                        historyScrollOffsetRef.current,
-                        listMetricsRef.current.contentHeight,
-                        h,
-                      );
-                    }}
-                    onScrollToIndexFailed={(info: any) => {
-                      setTimeout(() => {
-                        flatListRef.current?.scrollToIndex({
-                          index: info.index,
-                          animated: false,
-                          viewPosition: 0.5,
-                        });
-                      }, 200);
-                    }}
-                  />,
-                )}
-              </Animated.View>
-            </GestureDetector>
-            <FuturePeekOverlay
-              direction="enter"
-              animatedStyle={entryPeek.overlayStyle}
-              accessibilityLabel={t.futurePeekA11y}
-            />
-          </View>
-        )}
-
-        {!isFuture && (
-          <MessageComposer
-            chatId={chatId}
-            onSent={() => {
-              loadData();
-              loadFuture();
-            }}
-          />
-        )}
-      </Animated.View>
+                      }}
+                      onScrollToIndexFailed={(info: any) => {
+                        setTimeout(() => {
+                          flatListRef.current?.scrollToIndex({
+                            index: info.index,
+                            animated: false,
+                            viewPosition: 0.5,
+                          });
+                        }, 200);
+                      }}
+                    />,
+                  )}
+                </Animated.View>
+                <FuturePeekOverlay
+                  direction="enter"
+                  animatedStyle={entryPeek.overlayStyle}
+                  accessibilityLabel={t.futurePeekA11y}
+                />
+              </View>
+              {wrapComposerNativeScroll(
+                entryPeekArmed,
+                composerNativeGesture,
+                <MessageComposer
+                  chatId={chatId}
+                  onSent={() => {
+                    loadData();
+                    loadFuture();
+                  }}
+                />,
+              )}
+            </View>
+          </Animated.View>
+        </GestureDetector>
+      )}
 
       <MessageContextMenu
         visible={menuMessage !== null}
@@ -855,6 +889,9 @@ const styles = StyleSheet.create({
   chatArea: {
     flex: 1,
     overflow: 'hidden',
+  },
+  peekHost: {
+    flex: 1,
   },
   listContainer: {
     flex: 1,

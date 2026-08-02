@@ -42,6 +42,21 @@ export function shouldAttachNativeScrollGesture(canScroll: boolean): boolean {
   return canScroll;
 }
 
+/** FlatList/ScrollView: let empty viewport pass touches to the outer peek pan. */
+export function getListPointerEvents(
+  canScroll: boolean,
+): 'auto' | 'box-none' {
+  return canScroll ? 'auto' : 'box-none';
+}
+
+/** Content container: fill viewport but don't steal touches outside message rows. */
+export function getNonScrollableListContentStyle(): {
+  flexGrow: number;
+  pointerEvents: 'box-none';
+} {
+  return { flexGrow: 1, pointerEvents: 'box-none' };
+}
+
 /**
  * When the viewport shrinks (keyboard / composer lift) while the user was at
  * the bottom, offset is stale until scrollToEnd — keep treating as at-bottom

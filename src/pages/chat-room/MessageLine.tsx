@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
+import { StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
+import { Pressable as GesturePressable } from 'react-native-gesture-handler';
 import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
 import { useTheme, useLocale, spacing } from '../../shared/config';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
@@ -120,7 +121,7 @@ export function MessageLine({
       entering={FadeInUp.springify().damping(18).stiffness(220)}
       exiting={FadeOutDown.duration(200)}
       layout={Layout.springify().damping(20).stiffness(200)}>
-      <Pressable
+      <GesturePressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         onLongPress={handleLongPress}
@@ -172,7 +173,7 @@ export function MessageLine({
             </Text>
           ) : null}
         </View>
-      </Pressable>
+      </GesturePressable>
     </Animated.View>
   );
 }

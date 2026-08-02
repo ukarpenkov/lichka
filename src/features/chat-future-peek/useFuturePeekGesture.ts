@@ -28,13 +28,30 @@ import {
   type PeekPhase,
 } from './peekGestureState';
 
+type NativeGesture = ReturnType<typeof Gesture.Native>;
+
 export type UseFuturePeekGestureOptions = {
   direction: PeekDirection;
   enabled: boolean;
   /** atBottom for enter (pull up), atTop for exit (pull down). */
   atEdge: boolean;
   onCommit: () => void;
+  /** Nested Native handlers (composer TextInput, etc.) for simultaneous peek pan. */
+  extraNativeGestures?: NativeGesture[];
 };
+
+function composePeekPanWithNativeGestures(
+  pan: ReturnType<typeof Gesture.Pan>,
+  natives: NativeGesture[],
+): ReturnType<typeof Gesture.Pan> {
+  return natives.reduce(
+    (composed, native) =>
+      composed
+        .simultaneousWithExternalGesture(native)
+        .blocksExternalGesture(native),
+    pan,
+  );
+}
 
 export type FuturePeekGestureApi = {
   gesture: ReturnType<typeof Gesture.Pan>;
@@ -63,6 +80,7 @@ export function useFuturePeekGesture({
   enabled,
   atEdge,
   onCommit,
+  extraNativeGestures = [],
 }: UseFuturePeekGestureOptions): FuturePeekGestureApi {
   const pullDistance = useSharedValue(0);
   const pastThreshold = useSharedValue(0);
@@ -115,6 +133,10 @@ export function useFuturePeekGesture({
   const gestureEnabled = canActivatePeekGesture(enabled, atEdge, busy);
 
   const nativeGesture = useMemo(() => Gesture.Native(), []);
+  const composedNativeGestures = useMemo(
+    () => [nativeGesture, ...extraNativeGestures],
+    [nativeGesture, extraNativeGestures],
+  );
 
   const gesture = useMemo(() => {
     const activeOffset =
@@ -122,16 +144,12 @@ export function useFuturePeekGesture({
         ? ([-1000, -PEEK_ACTIVE_OFFSET_Y] as [number, number])
         : ([PEEK_ACTIVE_OFFSET_Y, 1000] as [number, number]);
 
-    return (
-      Gesture.Pan()
+    const pan = Gesture.Pan()
         .enabled(gestureEnabled)
         .activeOffsetY(activeOffset)
-        .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X])
-        // Nested FlatList must not exclusively own the touch — peek should
-        // activate from anywhere on the list once atEdge is true.
-        .simultaneousWithExternalGesture(nativeGesture)
-        // After pan activates (correct direction past activeOffset), stop scroll fight.
-        .blocksExternalGesture(nativeGesture)
+        .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X]);
+
+    return composePeekPanWithNativeGestures(pan, composedNativeGestures)
         .onBegin(() => {
           if (busySV.value === 1 || atEdgeSV.value !== 1) return;
           thresholdFiredSV.value = 0;
@@ -193,15 +211,14 @@ export function useFuturePeekGesture({
           } else {
             runOnJS(snapBack)();
           }
-        })
-    );
+        });
   }, [
     atEdgeSV,
     busySV,
+    composedNativeGestures,
     direction,
     gestureEnabled,
     handleCommit,
-    nativeGesture,
     pastThreshold,
     phase,
     pullDistance,
@@ -247,18 +264,26 @@ export type UseFuturePeekEntryGestureOptions = {
   enabled: boolean;
   atBottom: boolean;
   onCommit: () => void;
+  composerNativeGesture?: NativeGesture;
 };
 
 export function useFuturePeekEntryGesture({
   enabled,
   atBottom,
   onCommit,
+  composerNativeGesture,
 }: UseFuturePeekEntryGestureOptions): FuturePeekGestureApi {
+  const extraNativeGestures = useMemo(
+    () => (composerNativeGesture ? [composerNativeGesture] : []),
+    [composerNativeGesture],
+  );
+
   return useFuturePeekGesture({
     direction: 'enter',
     enabled,
     atEdge: atBottom,
     onCommit,
+    extraNativeGestures,
   });
 }
 

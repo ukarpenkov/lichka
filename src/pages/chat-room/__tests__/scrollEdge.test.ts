@@ -1,5 +1,7 @@
 import {
   canListScroll,
+  getListPointerEvents,
+  getNonScrollableListContentStyle,
   isScrollAtBottom,
   isScrollAtTop,
   shouldAttachNativeScrollGesture,
@@ -38,6 +40,15 @@ describe('scrollEdge', () => {
   it('should attach native scroll gesture only when list can scroll', () => {
     expect(shouldAttachNativeScrollGesture(false)).toBe(false);
     expect(shouldAttachNativeScrollGesture(true)).toBe(true);
+  });
+
+  it('should pass list touches through empty viewport when not scrollable', () => {
+    expect(getListPointerEvents(false)).toBe('box-none');
+    expect(getListPointerEvents(true)).toBe('auto');
+    expect(getNonScrollableListContentStyle()).toEqual({
+      flexGrow: 1,
+      pointerEvents: 'box-none',
+    });
   });
 
   it('should stick to bottom when viewport shrinks after being at bottom', () => {

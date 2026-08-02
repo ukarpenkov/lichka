@@ -1,6 +1,6 @@
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
-  const { FlatList, View } = require('react-native');
+  const { FlatList, View, Pressable, TextInput } = require('react-native');
 
   const chainable = () => {
     const self = {};
@@ -37,6 +37,8 @@ jest.mock('react-native-gesture-handler', () => {
     },
     GestureDetector: ({ children }) => children,
     FlatList,
+    Pressable,
+    TextInput,
     State: {},
   };
 });

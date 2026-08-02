@@ -170,6 +170,20 @@ describe('Future Peek MVP acceptance', () => {
       expect(atBottom).toBe(true);
       expect(canActivatePeekGesture(true, atBottom, false)).toBe(true);
     });
+
+    it('should enter Future on the next pull-up after scrolling a long history to its end', () => {
+      const contentHeight = 900;
+      const layoutHeight = 400;
+      const bottomOffset = contentHeight - layoutHeight;
+      const atBottom = isScrollAtBottom(bottomOffset, contentHeight, layoutHeight);
+
+      expect(canListScroll(contentHeight, layoutHeight)).toBe(true);
+      expect(atBottom).toBe(true);
+      expect(canActivatePeekGesture(true, atBottom, false)).toBe(true);
+
+      const nextPullUp = getPullDistance(-(PEEK_THRESHOLD + 1), 'enter');
+      expect(shouldCommitPeek(nextPullUp, 0)).toBe(true);
+    });
   });
 
   describe('7. Pull below threshold → no commit', () => {

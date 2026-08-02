@@ -7,6 +7,7 @@ import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { useTheme, useLocale, listRow, radii, formatScheduledWhen, spacing } from '../../shared/config';
 import { hapticLongPress, MESSAGE_LIST_BOTTOM_GAP } from '../../shared/lib';
+import { getNonScrollableListContentStyle } from './scrollEdge';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
 
@@ -18,6 +19,8 @@ export type FutureTimelineProps = {
   onLongPressMessage: (message: Message) => void;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   scrollEnabled?: boolean;
+  /** Pass touches through empty viewport when the list cannot scroll. */
+  listPointerEvents?: 'auto' | 'box-none';
   onContentSizeChange?: (w: number, h: number) => void;
   onLayout?: (height: number) => void;
   /** Native scroll gesture for simultaneous Future peek exit pan.
@@ -106,6 +109,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
       onLongPressMessage,
       onScroll,
       scrollEnabled = true,
+      listPointerEvents = 'auto',
       onContentSizeChange,
       onLayout,
       nativeScrollGesture,
@@ -152,6 +156,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         scrollEnabled={scrollEnabled}
+        pointerEvents={listPointerEvents}
         ListHeaderComponent={
           <View style={styles.listHeader} accessibilityElementsHidden>
             <Text variant="mono-meta" tone="muted">
@@ -160,7 +165,11 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
           </View>
         }
         style={{ flex: 1, backgroundColor: colors.canvas }}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={
+          scrollEnabled
+            ? styles.listContent
+            : [styles.listContent, getNonScrollableListContentStyle()]
+        }
         onScroll={onScroll}
         scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}

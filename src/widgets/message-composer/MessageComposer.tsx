@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
+import { Gesture, GestureDetector, TextInput } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -328,7 +328,9 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   if (isRecording) {
     return (
-    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
+    <Animated.View
+      pointerEvents="box-none"
+      style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
@@ -354,7 +356,9 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   return (
     <>
-    <Animated.View style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
+    <Animated.View
+      pointerEvents="box-none"
+      style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       {imagePreview ? (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: imagePreview.uri }} style={styles.imagePreview} />
