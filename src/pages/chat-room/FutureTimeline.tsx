@@ -20,7 +20,8 @@ export type FutureTimelineProps = {
   scrollEnabled?: boolean;
   onContentSizeChange?: (w: number, h: number) => void;
   onLayout?: (height: number) => void;
-  /** Native scroll gesture for simultaneous Future peek exit pan. */
+  /** Native scroll gesture for simultaneous Future peek exit pan.
+   * Pass only when the list can scroll; omit for short/empty content. */
   nativeScrollGesture?: ComposedGesture | GestureType;
 };
 
@@ -88,8 +89,10 @@ function FutureMessageRow({
 function wrapNativeScroll(
   gesture: FutureTimelineProps['nativeScrollGesture'],
   child: ReactElement,
+  /** Only compose Native when the list can scroll; otherwise outer pan owns the pane. */
+  scrollEnabled = true,
 ): ReactElement {
-  if (!gesture) return child;
+  if (!gesture || !scrollEnabled) return child;
   return <GestureDetector gesture={gesture}>{child}</GestureDetector>;
 }
 
@@ -137,6 +140,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
           </Text>
           <Button title={t.futureScheduleCta} onPress={onSchedulePress} testID="future-schedule-cta" />
         </View>,
+        false,
       );
     }
 
@@ -171,6 +175,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
           }, 200);
         }}
       />,
+      scrollEnabled,
     );
   },
 );

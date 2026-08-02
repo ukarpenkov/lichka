@@ -73,6 +73,7 @@ import {
   canListScroll,
   isScrollAtBottom,
   isScrollAtTop,
+  shouldAttachNativeScrollGesture,
   shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
@@ -90,6 +91,15 @@ const FUTURE_REFRESH_INTERVAL = 15_000;
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
 ) as any;
+
+function wrapHistoryNativeScroll(
+  canScroll: boolean,
+  gesture: ReturnType<typeof useFuturePeekEntryGesture>['nativeGesture'],
+  child: React.ReactElement,
+): React.ReactElement {
+  if (!shouldAttachNativeScrollGesture(canScroll)) return child;
+  return <GestureDetector gesture={gesture}>{child}</GestureDetector>;
+}
 
 function getDayKey(iso: string): string {
   return iso.slice(0, 10);
@@ -655,7 +665,11 @@ export function ChatRoomScreen() {
                   onLongPressMessage={setMenuMessage}
                   onScroll={handleFutureScroll}
                   scrollEnabled={futureCanScroll}
-                  nativeScrollGesture={exitPeek.nativeGesture}
+                  nativeScrollGesture={
+                    shouldAttachNativeScrollGesture(futureCanScroll)
+                      ? exitPeek.nativeGesture
+                      : undefined
+                  }
                   onContentSizeChange={(w, h) => {
                     updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
                   }}
@@ -684,7 +698,9 @@ export function ChatRoomScreen() {
                 accessible
                 accessibilityHint={t.futurePeekA11y}
               >
-                <GestureDetector gesture={entryPeek.nativeGesture}>
+                {wrapHistoryNativeScroll(
+                  historyCanScroll,
+                  entryPeek.nativeGesture,
                   <AnimatedFlatList
                     ref={flatListRef as any}
                     data={listItems}
@@ -743,8 +759,8 @@ export function ChatRoomScreen() {
                         });
                       }, 200);
                     }}
-                  />
-                </GestureDetector>
+                  />,
+                )}
               </Animated.View>
             </GestureDetector>
             <FuturePeekOverlay

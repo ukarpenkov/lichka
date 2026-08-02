@@ -32,6 +32,17 @@ export function canListScroll(
 }
 
 /**
+ * Attach Native↔Pan composition only while the nested list can scroll.
+ * When content fits the viewport, Gesture.Native still joins the touch arena
+ * and fights the outer peek pan — leaving activation only in leftover empty
+ * strips (e.g. above the composer/keyboard). Non-scrollable lists must leave
+ * the outer Pan alone so it owns the full list pane.
+ */
+export function shouldAttachNativeScrollGesture(canScroll: boolean): boolean {
+  return canScroll;
+}
+
+/**
  * When the viewport shrinks (keyboard / composer lift) while the user was at
  * the bottom, offset is stale until scrollToEnd — keep treating as at-bottom
  * so Future peek stays armed over the whole visible list.

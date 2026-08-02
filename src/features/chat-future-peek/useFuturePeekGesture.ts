@@ -38,7 +38,11 @@ export type UseFuturePeekGestureOptions = {
 
 export type FuturePeekGestureApi = {
   gesture: ReturnType<typeof Gesture.Pan>;
-  /** Attach to nested FlatList/ScrollView so pan can run anywhere at the edge. */
+  /**
+   * Attach to nested FlatList/ScrollView only while it can scroll
+   * (`shouldAttachNativeScrollGesture`). Short lists must omit this wrapper
+   * so the outer pan owns the full pane.
+   */
   nativeGesture: ReturnType<typeof Gesture.Native>;
   pullDistance: SharedValue<number>;
   pastThreshold: SharedValue<number>;

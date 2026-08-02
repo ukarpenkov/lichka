@@ -11,7 +11,7 @@ import {
 } from '../../../features/chat-future-peek';
 import { resolveTimelineMode } from '../timelineMode';
 import { resolveChatRoomBackAction } from '../chatRoomBack';
-import { isScrollAtBottom, isScrollAtTop, canListScroll, shouldStickToBottomOnLayoutShrink } from '../scrollEdge';
+import { isScrollAtBottom, isScrollAtTop, canListScroll, shouldAttachNativeScrollGesture, shouldStickToBottomOnLayoutShrink } from '../scrollEdge';
 import { getScheduledChatNavigation, getFutureToScheduledNavigation } from '../../scheduled/scheduledNavigation';
 import {
   navigateToChat,
@@ -42,7 +42,18 @@ describe('Future Peek MVP acceptance', () => {
       const atBottom = isScrollAtBottom(0, contentHeight, layoutHeight);
       expect(atBottom).toBe(true);
       expect(canListScroll(contentHeight, layoutHeight)).toBe(false);
+      expect(shouldAttachNativeScrollGesture(false)).toBe(false);
       expect(canActivatePeekGesture(true, atBottom, false)).toBe(true);
+    });
+
+    it('should allow entry from single-message chat without native scroll composition', () => {
+      const contentHeight = 72;
+      const layoutHeight = 640;
+      expect(isScrollAtBottom(0, contentHeight, layoutHeight)).toBe(true);
+      expect(canListScroll(contentHeight, layoutHeight)).toBe(false);
+      // Outer pan alone owns the full pane when there is nowhere to scroll.
+      expect(shouldAttachNativeScrollGesture(false)).toBe(false);
+      expect(canActivatePeekGesture(true, true, false)).toBe(true);
     });
   });
 

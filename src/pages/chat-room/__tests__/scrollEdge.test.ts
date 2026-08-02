@@ -2,6 +2,7 @@ import {
   canListScroll,
   isScrollAtBottom,
   isScrollAtTop,
+  shouldAttachNativeScrollGesture,
   shouldStickToBottomOnLayoutShrink,
   SCROLL_EDGE_EPSILON,
 } from '../scrollEdge';
@@ -32,6 +33,11 @@ describe('scrollEdge', () => {
     expect(canListScroll(500, 200)).toBe(true);
     expect(canListScroll(200 + SCROLL_EDGE_EPSILON + 1, 200)).toBe(true);
     expect(canListScroll(200 + SCROLL_EDGE_EPSILON, 200)).toBe(false);
+  });
+
+  it('should attach native scroll gesture only when list can scroll', () => {
+    expect(shouldAttachNativeScrollGesture(false)).toBe(false);
+    expect(shouldAttachNativeScrollGesture(true)).toBe(true);
   });
 
   it('should stick to bottom when viewport shrinks after being at bottom', () => {

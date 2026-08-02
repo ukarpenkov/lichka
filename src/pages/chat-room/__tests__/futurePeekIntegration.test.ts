@@ -2,6 +2,7 @@ import { canActivatePeekGesture } from '../../../features/chat-future-peek';
 import {
   canListScroll,
   isScrollAtBottom,
+  shouldAttachNativeScrollGesture,
   shouldStickToBottomOnLayoutShrink,
 } from '../scrollEdge';
 
@@ -41,6 +42,21 @@ describe('future peek gesture integration gates', () => {
     const layoutHeight = 700;
     expect(isScrollAtBottom(0, contentHeight, layoutHeight)).toBe(true);
     expect(canListScroll(contentHeight, layoutHeight)).toBe(false);
+    expect(canActivatePeekGesture(true, true, false)).toBe(true);
+  });
+
+  it('should omit native scroll composition when short list cannot scroll', () => {
+    const contentHeight = 80;
+    const layoutHeight = 640;
+    expect(canListScroll(contentHeight, layoutHeight)).toBe(false);
+    expect(shouldAttachNativeScrollGesture(false)).toBe(false);
+    expect(canActivatePeekGesture(true, true, false)).toBe(true);
+  });
+
+  it('should keep native scroll composition when list overflows at bottom', () => {
+    expect(canListScroll(900, 400)).toBe(true);
+    expect(shouldAttachNativeScrollGesture(true)).toBe(true);
+    expect(isScrollAtBottom(500, 900, 400)).toBe(true);
     expect(canActivatePeekGesture(true, true, false)).toBe(true);
   });
 });
