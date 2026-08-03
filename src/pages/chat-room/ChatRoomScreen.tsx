@@ -510,39 +510,47 @@ export function ChatRoomScreen() {
     const actualId = isPeriodicDisplayId(menuMessage.id)
       ? extractTemplateId(menuMessage.id)
       : menuMessage.id;
-    setDialog({
-      title: t.deleteMessage,
-      message: t.deleteMessageConfirm,
-      buttons: [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: t.delete,
-          style: 'destructive',
-          onPress: () => {
-            deleteMessage(actualId);
-            cancelNotification(actualId);
-            loadData();
-            loadFuture();
+    setMenuMessage(null);
+    // Wait for MessageContextMenu Modal to dismiss before opening AlertDialog
+    setTimeout(() => {
+      setDialog({
+        title: t.deleteMessage,
+        message: t.deleteMessageConfirm,
+        buttons: [
+          { text: t.cancel, style: 'cancel' },
+          {
+            text: t.delete,
+            style: 'destructive',
+            onPress: () => {
+              deleteMessage(actualId);
+              cancelNotification(actualId);
+              loadData();
+              loadFuture();
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
+    }, 300);
   }, [menuMessage, t, loadData, loadFuture]);
 
   const { saveEdit } = useEditMessage();
 
   const handleEditMessage = useCallback(() => {
-    if (menuMessage) {
-      if (isPeriodicDisplayId(menuMessage.id)) {
-        const templateId = extractTemplateId(menuMessage.id);
+    if (!menuMessage) return;
+    const pending = menuMessage;
+    setMenuMessage(null);
+    // Wait for MessageContextMenu Modal to dismiss before opening MessageEditor
+    setTimeout(() => {
+      if (isPeriodicDisplayId(pending.id)) {
+        const templateId = extractTemplateId(pending.id);
         const template = getMessageById(templateId);
         if (template) {
           setEditMessage(template);
         }
       } else {
-        setEditMessage(menuMessage);
+        setEditMessage(pending);
       }
-    }
+    }, 300);
   }, [menuMessage]);
 
   const handleSaveEdit = useCallback(
