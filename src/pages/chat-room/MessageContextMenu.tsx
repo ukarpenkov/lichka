@@ -1,8 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
 import { Pencil, Trash2 } from '../../shared/ui/pixel';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Text, AnimatedPressable } from '../../shared/ui';
+import { Text } from '../../shared/ui';
 import {
   useTheme,
   useLocale,
@@ -19,71 +18,72 @@ type MessageContextMenuProps = {
   onClose: () => void;
 };
 
+// RN Pressable: Modal is outside app GestureHandlerRootView; RNGH pressables often miss onPress.
 export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: MessageContextMenuProps) {
   const { text, background, colors } = useTheme();
   const { t } = useLocale();
 
   return (
     <Modal visible={visible} transparent statusBarTranslucent onRequestClose={onClose}>
-      <Animated.View
-        entering={FadeIn.duration(150)}
-        exiting={FadeOut.duration(100)}
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
-        <Pressable style={styles.backdropTouch} onPress={onClose}>
-          <View style={styles.menuShadowWrap}>
-            <View
-              style={[
-                styles.hardShadowLayer,
-                { backgroundColor: text, borderRadius: radii.sm },
-              ]}
-            />
-            <View
-              style={[
-                styles.menu,
-                {
-                  backgroundColor: background,
-                  borderColor: text,
-                  borderWidth: hardBorderWidth,
-                  borderRadius: radii.sm,
-                },
-              ]}
-            >
-              <AnimatedPressable
-                scaleTo={1}
-                onPress={() => {
-                  onClose();
-                  onEdit();
-                }}
-                pressStyle={{ backgroundColor: colors.surfaceSoft }}
-                {...(Platform.OS === 'android'
-                  ? { android_ripple: { color: colors.surfaceSoft } }
-                  : {})}>
-                <View style={styles.item}>
-                  <Pencil size={18} color={colors.ink} />
-                  <Text variant="body">{t.edit}</Text>
-                </View>
-              </AnimatedPressable>
-              <AnimatedPressable
-                scaleTo={1}
-                onPress={() => {
-                  onClose();
-                  onDelete();
-                }}
-                pressStyle={{ backgroundColor: colors.surfaceSoft }}
-                {...(Platform.OS === 'android'
-                  ? { android_ripple: { color: colors.surfaceSoft } }
-                  : {})}>
-                <View style={styles.item}>
-                  <Trash2 size={18} color={colors.destructive} />
-                  <Text variant="body" style={{ color: colors.destructive }}>
-                    {t.delete}
-                  </Text>
-                </View>
-              </AnimatedPressable>
-            </View>
+      <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
+        <View style={styles.menuShadowWrap}>
+          <View
+            style={[
+              styles.hardShadowLayer,
+              { backgroundColor: text, borderRadius: radii.sm },
+            ]}
+          />
+          <View
+            style={[
+              styles.menu,
+              {
+                backgroundColor: background,
+                borderColor: text,
+                borderWidth: hardBorderWidth,
+                borderRadius: radii.sm,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                onClose();
+                onEdit();
+              }}
+              android_ripple={
+                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+              }
+              style={({ pressed }) => [
+                styles.item,
+                pressed && Platform.OS !== 'android'
+                  ? { backgroundColor: colors.surfaceSoft }
+                  : null,
+              ]}>
+              <Pencil size={18} color={colors.ink} />
+              <Text variant="body">{t.edit}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                onClose();
+                onDelete();
+              }}
+              android_ripple={
+                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+              }
+              style={({ pressed }) => [
+                styles.item,
+                pressed && Platform.OS !== 'android'
+                  ? { backgroundColor: colors.surfaceSoft }
+                  : null,
+              ]}>
+              <Trash2 size={18} color={colors.destructive} />
+              <Text variant="body" style={{ color: colors.destructive }}>
+                {t.delete}
+              </Text>
+            </Pressable>
           </View>
-        </Pressable>
-      </Animated.View>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -95,12 +95,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  backdropTouch: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
   },
   menuShadowWrap: {
     position: 'relative',
