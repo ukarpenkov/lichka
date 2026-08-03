@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
 import { Pencil, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
@@ -18,15 +18,31 @@ type MessageContextMenuProps = {
   onClose: () => void;
 };
 
+/** Ignore presses that arrive from the long-press that opened the menu. */
+const MENU_ARM_MS = 350;
+
 // RN Pressable: Modal is outside app GestureHandlerRootView; RNGH pressables often miss onPress.
 export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: MessageContextMenuProps) {
   const { text, background, colors } = useTheme();
   const { t } = useLocale();
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setArmed(false);
+      return;
+    }
+    const timer = setTimeout(() => setArmed(true), MENU_ARM_MS);
+    return () => clearTimeout(timer);
+  }, [visible]);
 
   return (
     <Modal visible={visible} transparent statusBarTranslucent onRequestClose={onClose}>
-      <View style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
+      <Pressable
+        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+        onPress={onClose}
+        accessibilityRole="button"
+      >
         <View style={styles.menuShadowWrap}>
           <View
             style={[
@@ -46,6 +62,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
             ]}
           >
             <Pressable
+              disabled={!armed}
               onPress={() => {
                 onClose();
                 onEdit();
@@ -55,7 +72,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
               }
               style={({ pressed }) => [
                 styles.item,
-                pressed && Platform.OS !== 'android'
+                pressed && armed && Platform.OS !== 'android'
                   ? { backgroundColor: colors.surfaceSoft }
                   : null,
               ]}>
@@ -63,6 +80,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
               <Text variant="body">{t.edit}</Text>
             </Pressable>
             <Pressable
+              disabled={!armed}
               onPress={() => {
                 onClose();
                 onDelete();
@@ -72,7 +90,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
               }
               style={({ pressed }) => [
                 styles.item,
-                pressed && Platform.OS !== 'android'
+                pressed && armed && Platform.OS !== 'android'
                   ? { backgroundColor: colors.surfaceSoft }
                   : null,
               ]}>
@@ -83,7 +101,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
             </Pressable>
           </View>
         </View>
-      </View>
+      </Pressable>
     </Modal>
   );
 }
