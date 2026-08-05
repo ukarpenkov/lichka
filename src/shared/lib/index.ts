@@ -34,6 +34,7 @@ export {
   type ScheduledWidgetSnapshotItem,
 } from './scheduledWidget';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
+export { setClipboardString } from './clipboard';
 export { playSendSound, playReminderSound } from './sounds';
 export {
   useKeyboardHeight,

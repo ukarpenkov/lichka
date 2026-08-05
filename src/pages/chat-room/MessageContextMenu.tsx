@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
-import { Pencil, Trash2 } from '../../shared/ui/pixel';
+import { Copy, Pencil, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
 import {
   useTheme,
@@ -13,6 +13,9 @@ import {
 
 type MessageContextMenuProps = {
   visible: boolean;
+  /** Remount Modal when reopening after blur / stuck native state. */
+  presentationKey?: string | number;
+  onCopy: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
@@ -22,7 +25,14 @@ type MessageContextMenuProps = {
 const MENU_ARM_MS = 350;
 
 // RN Pressable: Modal is outside app GestureHandlerRootView; RNGH pressables often miss onPress.
-export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: MessageContextMenuProps) {
+export function MessageContextMenu({
+  visible,
+  presentationKey,
+  onCopy,
+  onEdit,
+  onDelete,
+  onClose,
+}: MessageContextMenuProps) {
   const { text, background, colors } = useTheme();
   const { t } = useLocale();
   const [armed, setArmed] = useState(false);
@@ -34,16 +44,37 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
     }
     const timer = setTimeout(() => setArmed(true), MENU_ARM_MS);
     return () => clearTimeout(timer);
-  }, [visible]);
+  }, [visible, presentationKey]);
+
+  const runWhenArmed = (action: () => void) => {
+    if (!armed) return;
+    onClose();
+    action();
+  };
 
   return (
-    <Modal visible={visible} transparent statusBarTranslucent onRequestClose={onClose}>
+    <Modal
+      key={presentationKey}
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <Pressable
         style={[styles.backdrop, { backgroundColor: colors.scrim }]}
-        onPress={onClose}
+        onPress={() => {
+          if (!armed) return;
+          onClose();
+        }}
         accessibilityRole="button"
       >
-        <View style={styles.menuShadowWrap}>
+        {/* Absorb presses so they never reach the backdrop (esp. while items were disabled). */}
+        <Pressable
+          accessibilityRole="menu"
+          onPress={() => {}}
+          style={styles.menuShadowWrap}
+        >
           <View
             style={[
               styles.hardShadowLayer,
@@ -62,11 +93,7 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
             ]}
           >
             <Pressable
-              disabled={!armed}
-              onPress={() => {
-                onClose();
-                onEdit();
-              }}
+              onPress={() => runWhenArmed(onCopy)}
               android_ripple={
                 Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
               }
@@ -75,16 +102,32 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
                 pressed && armed && Platform.OS !== 'android'
                   ? { backgroundColor: colors.surfaceSoft }
                   : null,
-              ]}>
+              ]}
+              accessibilityRole="menuitem"
+              accessibilityState={{ disabled: !armed }}
+            >
+              <Copy size={18} color={colors.ink} />
+              <Text variant="body">{t.copy}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => runWhenArmed(onEdit)}
+              android_ripple={
+                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+              }
+              style={({ pressed }) => [
+                styles.item,
+                pressed && armed && Platform.OS !== 'android'
+                  ? { backgroundColor: colors.surfaceSoft }
+                  : null,
+              ]}
+              accessibilityRole="menuitem"
+              accessibilityState={{ disabled: !armed }}
+            >
               <Pencil size={18} color={colors.ink} />
               <Text variant="body">{t.edit}</Text>
             </Pressable>
             <Pressable
-              disabled={!armed}
-              onPress={() => {
-                onClose();
-                onDelete();
-              }}
+              onPress={() => runWhenArmed(onDelete)}
               android_ripple={
                 Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
               }
@@ -93,14 +136,17 @@ export function MessageContextMenu({ visible, onEdit, onDelete, onClose }: Messa
                 pressed && armed && Platform.OS !== 'android'
                   ? { backgroundColor: colors.surfaceSoft }
                   : null,
-              ]}>
+              ]}
+              accessibilityRole="menuitem"
+              accessibilityState={{ disabled: !armed }}
+            >
               <Trash2 size={18} color={colors.destructive} />
               <Text variant="body" style={{ color: colors.destructive }}>
                 {t.delete}
               </Text>
             </Pressable>
           </View>
-        </View>
+        </Pressable>
       </Pressable>
     </Modal>
   );

@@ -23,6 +23,7 @@ export const X = createPixelIcon('close');
 export const Check = createPixelIcon('business-product-check');
 export const Pencil = createPixelIcon('interface-essential-pencil-edit-1');
 export const Trash2 = createPixelIcon('interface-essential-bin');
+export const Copy = createPixelIcon('copy');
 export const Paperclip = createPixelIcon('interface-essential-clip-1');
 export const Square = createPixelIcon('video-movies-video-square');
 

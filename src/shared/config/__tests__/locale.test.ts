@@ -29,7 +29,7 @@ describe('locale', () => {
 
     it('should have all required string keys', () => {
       const requiredKeys: (keyof LocaleDictionary)[] = [
-        'cancel', 'save', 'done', 'error', 'loading', 'delete', 'edit',
+        'cancel', 'save', 'done', 'error', 'loading', 'delete', 'edit', 'copy',
         'today', 'yesterday', 'tomorrow',
         'chats', 'deleteChat', 'createFirstChat',
         'scheduled', 'noScheduled',

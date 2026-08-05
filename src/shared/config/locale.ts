@@ -11,6 +11,7 @@ export interface LocaleDictionary {
   loading: string;
   delete: string;
   edit: string;
+  copy: string;
   replace: string;
   replaceAll: string;
   merge: string;
@@ -164,6 +165,7 @@ export const ru: LocaleDictionary = {
   loading: 'Загрузка...',
   delete: 'Удалить',
   edit: 'Редактировать',
+  copy: 'Копировать',
   replace: 'Заменить',
   replaceAll: 'Заменить всё',
   merge: 'Объединить',
@@ -317,6 +319,7 @@ export const en: LocaleDictionary = {
   loading: 'Loading...',
   delete: 'Delete',
   edit: 'Edit',
+  copy: 'Copy',
   replace: 'Replace',
   replaceAll: 'Replace all',
   merge: 'Merge',

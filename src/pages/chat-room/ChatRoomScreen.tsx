@@ -31,6 +31,7 @@ import {
   KEYBOARD_COMPOSER_GAP,
   MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
+  setClipboardString,
 } from '../../shared/lib';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
@@ -154,6 +155,7 @@ export function ChatRoomScreen() {
   const timelineModeRef = useRef<TimelineMode>(timelineMode);
   timelineModeRef.current = timelineMode;
   const [menuMessage, setMenuMessage] = useState<Message | null>(null);
+  const [menuPresentationKey, setMenuPresentationKey] = useState(0);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -291,9 +293,19 @@ export function ChatRoomScreen() {
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => {
       Keyboard.dismiss();
+      setMenuMessage(null);
     });
     return unsubscribe;
   }, [navigation]);
+
+  const closeMessageMenu = useCallback(() => {
+    setMenuMessage(null);
+  }, []);
+
+  const openMessageMenu = useCallback((message: Message) => {
+    setMenuPresentationKey((key) => key + 1);
+    setMenuMessage(message);
+  }, []);
 
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
@@ -301,6 +313,7 @@ export function ChatRoomScreen() {
     historyScrollOffsetRef.current = scrollY.value;
     suppressScrollToBottomRef.current = true;
     Keyboard.dismiss();
+    setMenuMessage(null);
     timelineModeRef.current = 'future';
     setTimelineMode('future');
     loadFuture();
@@ -309,6 +322,7 @@ export function ChatRoomScreen() {
 
   const exitFuture = useCallback(() => {
     suppressScrollToBottomRef.current = true;
+    setMenuMessage(null);
     timelineModeRef.current = 'history';
     setTimelineMode('history');
     if (mode === 'future') {
@@ -535,6 +549,12 @@ export function ChatRoomScreen() {
 
   const { saveEdit } = useEditMessage();
 
+  const handleCopyMessage = useCallback(() => {
+    if (!menuMessage) return;
+    setClipboardString(menuMessage.body ?? '');
+    setMenuMessage(null);
+  }, [menuMessage]);
+
   const handleEditMessage = useCallback(() => {
     if (!menuMessage) return;
     const pending = menuMessage;
@@ -589,12 +609,12 @@ export function ChatRoomScreen() {
         <MessageLine
           message={item.message}
           highlighted={item.message.id === highlightedMessageId}
-          onLongPress={setMenuMessage}
+          onLongPress={openMessageMenu}
           onImagePress={open}
         />
       );
     },
-    [open, highlightedMessageId],
+    [open, highlightedMessageId, openMessageMenu],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -692,7 +712,7 @@ export function ChatRoomScreen() {
                     highlightedMessageId={highlightedMessageId}
                     onSchedulePress={handleScheduleCta}
                     onPressMessage={handleFutureMessagePress}
-                    onLongPressMessage={setMenuMessage}
+                    onLongPressMessage={openMessageMenu}
                     onScroll={handleFutureScroll}
                     scrollEnabled={futureCanScroll}
                     listPointerEvents={getListPointerEvents(futureCanScroll)}
@@ -826,9 +846,11 @@ export function ChatRoomScreen() {
 
       <MessageContextMenu
         visible={menuMessage !== null}
+        presentationKey={menuPresentationKey}
+        onCopy={handleCopyMessage}
         onEdit={handleEditMessage}
         onDelete={handleDeleteMessage}
-        onClose={() => setMenuMessage(null)}
+        onClose={closeMessageMenu}
       />
 
       <MessageEditor

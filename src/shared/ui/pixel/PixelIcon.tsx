@@ -20,6 +20,11 @@ const CUSTOM: Record<string, string[]> = {
     'M6.1 4.57h3.05v3.05h3.05v3.05h2.28v3.05h3.05V10.67h3.05V7.62h3.05V4.57h3.05v3.05h-3.05v3.05h-3.05v3.05h-3.05v3.05h3.05v3.05h3.05v3.05h3.05v3.05h-3.05v-3.05h-3.05v-3.05h-3.05v-3.05h-3.05v3.05h-3.05v3.05H9.15v3.05H6.1v-3.05h3.05v-3.05h3.05v-3.05h3.05v-3.05H12.2V10.67H9.15V7.62H6.1V4.57Z',
   ],
   pause: ['M9.14 6.1h4.57V25.9H9.14V6.1Z', 'M18.29 6.1h4.57V25.9H18.29V6.1Z'],
+  // Two overlapping squares — copy / duplicate.
+  copy: [
+    'M12.19 6.1h13.71v13.71h-3.05V9.15H12.19V6.1Z',
+    'M6.1 12.19h13.71v13.71H6.1V12.19Zm3.05 3.05v7.62h7.62v-7.62H9.15Z',
+  ],
 };
 
 function pathsFor(name: string): string[] {
@@ -35,7 +40,7 @@ function pathsFor(name: string): string[] {
 }
 
 type PixelIconProps = IconProps & {
-  /** Streamline Pixel icon id, or custom: plus | close | pause */
+  /** Streamline Pixel icon id, or custom: plus | close | pause | copy */
   name: string;
 };
 
