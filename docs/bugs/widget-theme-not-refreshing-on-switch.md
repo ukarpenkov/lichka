@@ -1,7 +1,7 @@
 # Виджет не перекрашивается сразу при смене темы
 
 **Дата:** 2026-08-01  
-**Статус:** fixed  
+**Статус:** fixed (partial) — residual intermittent: [`widget-theme-partial-redraw-intermittent.md`](widget-theme-partial-redraw-intermittent.md)  
 **Затрагивает:** Android home-screen widget «Запланировано», `ThemeModule`, `ThemeProvider`
 
 ## Описание

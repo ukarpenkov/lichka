@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Plate is a single ImageView; colors come from a Canvas bitmap in ScheduledWidgetProvider
-  (not ImageView tint — tint sticks across theme switches on many launchers).
+  Plate is a single ImageView; colors come from a PNG via FileProvider URI
+  (not setImageViewBitmap — large bitmaps fail Binder intermittently;
+  not ImageView tint — tint sticks across theme switches on many launchers).
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"

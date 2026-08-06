@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -15,8 +16,13 @@ import android.graphics.RectF
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.SizeF
 import android.widget.RemoteViews
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 class ScheduledWidgetProvider : AppWidgetProvider() {
 
@@ -46,8 +52,42 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         private const val HARD_SHADOW_DP = 4f
         private const val HARD_BORDER_DP = 2f
         private const val CORNER_RADIUS_DP = 16f
+        private const val FILE_PROVIDER_SUFFIX = ".fileprovider"
+        private const val PLATE_DIR = "widget_plates"
 
+        private val refreshHandler = Handler(Looper.getMainLooper())
+        private val refreshLock = Any()
+        @Volatile private var refreshPending = false
+        @Volatile private var refreshRunning = false
+
+        /**
+         * Coalesce rapid refreshAll calls (setTheme + AppState background re-push) so we do not
+         * stack competing updateAppWidget binder transactions.
+         */
         fun refreshAll(context: Context) {
+            val appContext = context.applicationContext
+            synchronized(refreshLock) {
+                refreshPending = true
+                if (refreshRunning) return
+                refreshRunning = true
+            }
+            refreshHandler.post { drainRefreshQueue(appContext) }
+        }
+
+        private fun drainRefreshQueue(context: Context) {
+            while (true) {
+                synchronized(refreshLock) {
+                    if (!refreshPending) {
+                        refreshRunning = false
+                        return
+                    }
+                    refreshPending = false
+                }
+                refreshAllNow(context)
+            }
+        }
+
+        private fun refreshAllNow(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids =
                 manager.getAppWidgetIds(ComponentName(context, ScheduledWidgetProvider::class.java))
@@ -83,7 +123,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                 Intent(context, ScheduledWidgetService::class.java).apply {
                     putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                     // Theme extras change the intent URI so the adapter reconnects on theme switch
-                    // instead of reusing a stale RemoteViewsFactory.
+                    // instead of reusing a stale RemoteViewsFactory. Factory also reads them.
                     putExtra(EXTRA_THEME_BACKGROUND, canvasColor)
                     putExtra(EXTRA_THEME_INK, inkColor)
                     data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
@@ -124,10 +164,11 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         }
 
         /**
-         * Neo-brutal plate as one Canvas bitmap (fill-only round rects).
+         * Neo-brutal plate as a PNG on disk + setImageViewUri (not setImageViewBitmap).
          *
-         * Do not theme via ImageView tint/colorFilter: launchers often keep the previous tint on
-         * reapply, so background/shadow stay on the old theme while setTextColor updates.
+         * Large bitmaps in RemoteViews go through Binder IPC (~1MB shared buffer) and can fail
+         * intermittently: text colors apply, plate/shadow/icons stay on the old theme.
+         * File URI keeps the binder payload tiny; colors stay in pixels (no sticky ImageView tint).
          * Size from current widget bounds (SIZES / MIN_*), not MAX_* — avoids elliptical corners.
          */
         private fun applyThemePlate(
@@ -140,12 +181,81 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         ) {
             val (widthPx, heightPx) = widgetSizePx(context, manager, appWidgetId)
             val density = context.resources.displayMetrics.density
-            // Drop any tint left from older builds that used setImageTintList on plate layers.
             clearImageTint(views, R.id.widget_plate)
-            views.setImageViewBitmap(
-                R.id.widget_plate,
-                createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor),
-            )
+
+            val bitmap = createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor)
+            val written =
+                writePlatePng(context, appWidgetId, bitmap, canvasColor, inkColor, widthPx, heightPx)
+            bitmap.recycle()
+
+            if (written != null) {
+                // Grant the base content URI (without cache-bust query) so openFile matches.
+                grantUriToHomeLaunchers(context, written.grantUri)
+                views.setImageViewUri(R.id.widget_plate, written.displayUri)
+            } else {
+                // Fallback: binder bitmap if disk write fails (rare).
+                views.setImageViewBitmap(
+                    R.id.widget_plate,
+                    createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor),
+                )
+            }
+        }
+
+        private data class PlateUris(val grantUri: Uri, val displayUri: Uri)
+
+        private fun writePlatePng(
+            context: Context,
+            appWidgetId: Int,
+            bitmap: Bitmap,
+            canvasColor: Int,
+            inkColor: Int,
+            widthPx: Int,
+            heightPx: Int,
+        ): PlateUris? {
+            return try {
+                val dir = File(context.cacheDir, PLATE_DIR).apply { mkdirs() }
+                // Stable filename per widget; cache-bust via URI query below.
+                val file = File(dir, "plate_$appWidgetId.png")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+                val grantUri =
+                    FileProvider.getUriForFile(
+                        context,
+                        context.packageName + FILE_PROVIDER_SUFFIX,
+                        file,
+                    )
+                // Unique query so launchers reload the ImageView instead of caching the old plate.
+                val displayUri =
+                    grantUri
+                        .buildUpon()
+                        .appendQueryParameter(
+                            "v",
+                            "${Integer.toHexString(canvasColor)}_${Integer.toHexString(inkColor)}_${widthPx}x$heightPx",
+                        )
+                        .build()
+                PlateUris(grantUri = grantUri, displayUri = displayUri)
+            } catch (_: Exception) {
+                null
+            }
+        }
+
+        private fun grantUriToHomeLaunchers(context: Context, uri: Uri) {
+            val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val launchers =
+                context.packageManager.queryIntentActivities(home, PackageManager.MATCH_DEFAULT_ONLY)
+            for (info in launchers) {
+                val packageName = info.activityInfo?.packageName ?: continue
+                try {
+                    context.grantUriPermission(
+                        packageName,
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                } catch (_: Exception) {
+                    // Ignore packages that reject grants.
+                }
+            }
         }
 
         private fun clearImageTint(views: RemoteViews, viewId: Int) {

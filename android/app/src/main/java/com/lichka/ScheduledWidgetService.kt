@@ -18,16 +18,25 @@ import java.util.Locale
 
 class ScheduledWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return ScheduledWidgetRemoteViewsFactory(applicationContext)
+        return ScheduledWidgetRemoteViewsFactory(applicationContext, intent)
     }
 }
 
 class ScheduledWidgetRemoteViewsFactory(
     private val context: Context,
+    intent: Intent,
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
     private var inkColor: Int = Color.BLACK
+
+    /** Ink from setRemoteAdapter extras (reconnect URI); prefs are the source of truth in getViewAt. */
+    private val intentInkColor: Int? =
+        if (intent.hasExtra(ScheduledWidgetProvider.EXTRA_THEME_INK)) {
+            intent.getIntExtra(ScheduledWidgetProvider.EXTRA_THEME_INK, Color.BLACK)
+        } else {
+            null
+        }
 
     override fun onCreate() {}
 
@@ -68,6 +77,7 @@ class ScheduledWidgetRemoteViewsFactory(
         views.setTextColor(R.id.widget_row_meta, mutedColor)
 
         // Clear any leftover ImageView tint, then set a pre-colored bitmap.
+        // Icons are tiny (~18dp) so Binder size is fine; plate uses FileProvider URI instead.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             views.setColorStateList(R.id.widget_row_icon, "setImageTintList", null as ColorStateList?)
         }
@@ -99,8 +109,15 @@ class ScheduledWidgetRemoteViewsFactory(
 
     override fun hasStableIds(): Boolean = true
 
-    private fun currentInkColor(): Int =
-        parseColorOr(ThemeModule.getText(context), Color.BLACK)
+    private fun currentInkColor(): Int {
+        // Prefs are source of truth (commit() before refresh). Intent extra is fallback when
+        // the host reconnects the factory before prefs are readable.
+        val prefsHex = ThemeModule.getText(context)
+        if (prefsHex.isNotBlank()) {
+            return parseColorOr(prefsHex, intentInkColor ?: Color.BLACK)
+        }
+        return intentInkColor ?: Color.BLACK
+    }
 
     private fun iconForType(type: String): Int {
         return when (type) {
