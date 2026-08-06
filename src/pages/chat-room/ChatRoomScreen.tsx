@@ -96,11 +96,11 @@ const AnimatedFlatList = Animated.createAnimatedComponent(
 ) as any;
 
 function wrapComposerNativeScroll(
-  armed: boolean,
   gesture: ReturnType<typeof Gesture.Native>,
   child: React.ReactElement,
 ): React.ReactElement {
-  if (!armed) return child;
+  // Keep this boundary mounted while list metrics change. Toggling it with
+  // `atBottom` remounts TextInput during keyboard layout and drops focus.
   return (
     <GestureDetector gesture={gesture}>
       <View pointerEvents="box-none">{child}</View>
@@ -359,9 +359,6 @@ export function ChatRoomScreen() {
   }, [navigation, exitFuture]);
 
   const composerNativeGesture = useMemo(() => Gesture.Native(), []);
-
-  const entryPeekArmed =
-    timelineMode === 'history' && !searchVisible && atBottom;
 
   const entryPeek = useFuturePeekEntryGesture({
     enabled: timelineMode === 'history' && !searchVisible,
@@ -829,7 +826,6 @@ export function ChatRoomScreen() {
                 />
               </View>
               {wrapComposerNativeScroll(
-                entryPeekArmed,
                 composerNativeGesture,
                 <MessageComposer
                   chatId={chatId}
