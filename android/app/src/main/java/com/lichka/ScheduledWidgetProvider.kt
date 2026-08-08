@@ -11,6 +11,7 @@ import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.net.Uri
@@ -18,6 +19,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.SizeF
 import android.widget.RemoteViews
 import androidx.core.content.FileProvider
@@ -31,8 +33,12 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        for (id in appWidgetIds) {
-            updateWidget(context, appWidgetManager, id)
+        try {
+            for (id in appWidgetIds) {
+                updateWidget(context, appWidgetManager, id)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "onUpdate crashed", e)
         }
     }
 
@@ -54,6 +60,8 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         private const val CORNER_RADIUS_DP = 16f
         private const val FILE_PROVIDER_SUFFIX = ".fileprovider"
         private const val PLATE_DIR = "widget_plates"
+        private const val MAX_BITMAP_PX = 480
+        private const val TAG = "ScheduledWidget"
 
         private val refreshHandler = Handler(Looper.getMainLooper())
         private val refreshLock = Any()
@@ -224,23 +232,30 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                         heightPx,
                     )
                 if (written != null) {
-                    // Grant the base content URI (without cache-bust query) so openFile matches.
-                    // Without a successful grant, setImageViewUri makes the host crash the
-                    // whole RemoteViews into «Не удалось загрузить виджет».
-                    val granted = grantUriToHomeLaunchers(context, written.grantUri)
+                    // Grant on the display URI (with cache-bust query) — the launcher opens
+                    // the exact URI from setImageViewUri, not the bare content://…/plate_N.png.
+                    // Without a matching grant, the host gets SecurityException →
+                    // «Не удалось загрузить виджет».
+                    val granted = grantUriToHomeLaunchers(context, written.displayUri)
+                    Log.d(
+                        TAG,
+                        "widget $appWidgetId: URI grants=$granted, size=${widthPx}x$heightPx, uri=${written.displayUri}",
+                    )
                     if (granted > 0) {
                         views.setImageViewUri(R.id.widget_plate, written.displayUri)
                         bitmap.recycle()
                         return
                     }
+                    Log.w(TAG, "widget $appWidgetId: NO grants, falling back to bitmap")
                 }
             }
-            // Fallback: binder bitmap if URI path is unavailable (no grants / disk / forced).
-            // Do not recycle here — RemoteViews keeps the bitmap until updateAppWidget parcels it.
-            views.setImageViewBitmap(R.id.widget_plate, bitmap)
+            // Fallback: downscale bitmap to safe Binder size, then setImageViewBitmap.
+            val safeBitmap = safeBinderBitmap(bitmap)
+            if (safeBitmap !== bitmap) bitmap.recycle()
+            views.setImageViewBitmap(R.id.widget_plate, safeBitmap)
         }
 
-        private data class PlateUris(val grantUri: Uri, val displayUri: Uri)
+        private data class PlateUris(val displayUri: Uri)
 
         private fun writePlatePng(
             context: Context,
@@ -253,30 +268,43 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         ): PlateUris? {
             return try {
                 val dir = File(context.cacheDir, PLATE_DIR).apply { mkdirs() }
-                // Stable filename per widget; cache-bust via URI query below.
                 val file = File(dir, "plate_$appWidgetId.png")
                 FileOutputStream(file).use { out ->
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
-                val grantUri =
+                val fileUri =
                     FileProvider.getUriForFile(
                         context,
                         context.packageName + FILE_PROVIDER_SUFFIX,
                         file,
                     )
-                // Unique query so launchers reload the ImageView instead of caching the old plate.
                 val displayUri =
-                    grantUri
+                    fileUri
                         .buildUpon()
                         .appendQueryParameter(
                             "v",
                             "${Integer.toHexString(canvasColor)}_${Integer.toHexString(inkColor)}_${widthPx}x$heightPx",
                         )
                         .build()
-                PlateUris(grantUri = grantUri, displayUri = displayUri)
+                PlateUris(displayUri = displayUri)
             } catch (_: Exception) {
                 null
             }
+        }
+
+        private fun safeBinderBitmap(source: Bitmap): Bitmap {
+            val maxSide = maxOf(source.width, source.height)
+            if (maxSide <= MAX_BITMAP_PX) return source
+            val scale = MAX_BITMAP_PX.toFloat() / maxSide.toFloat()
+            val w = (source.width * scale).toInt().coerceAtLeast(1)
+            val h = (source.height * scale).toInt().coerceAtLeast(1)
+            val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(scaled)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+            val matrix = Matrix().apply { setScale(scale, scale) }
+            canvas.drawBitmap(source, matrix, paint)
+            Log.d(TAG, "scaled bitmap ${source.width}x${source.height} → ${w}x$h for Binder safety")
+            return scaled
         }
 
         /**
@@ -288,7 +316,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
          * real launcher still lacks permission → «Не удалось загрузить виджет».
          */
         private fun grantUriToHomeLaunchers(context: Context, uri: Uri): Int {
-            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
             val homeGranted = linkedSetOf<String>()
             val extrasGranted = linkedSetOf<String>()
             val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)

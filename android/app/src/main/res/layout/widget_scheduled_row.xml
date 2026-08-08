@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/jetbrains_mono_regular"
+            android:fontFamily="sans-serif"
             android:maxLines="1"
             android:textColor="@color/widget_ink"
             android:textSize="13sp" />
@@ -37,7 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="@font/jetbrains_mono_regular"
+            android:fontFamily="sans-serif"
             android:maxLines="1"
             android:textColor="@color/widget_ink_muted"
             android:textSize="11sp" />
