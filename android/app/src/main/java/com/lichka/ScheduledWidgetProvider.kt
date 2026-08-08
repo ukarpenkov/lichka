@@ -103,6 +103,25 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             manager: AppWidgetManager,
             appWidgetId: Int,
         ) {
+            try {
+                updateWidgetInner(context, manager, appWidgetId, preferUriPlate = true)
+            } catch (_: Exception) {
+                // Host shows «Не удалось загрузить виджет» if update throws / URI is denied.
+                // Last resort: binder bitmap plate, still themed (coalesce keeps this rare).
+                try {
+                    updateWidgetInner(context, manager, appWidgetId, preferUriPlate = false)
+                } catch (_: Exception) {
+                    // Ignore — better a stale frame than a permanent error placeholder.
+                }
+            }
+        }
+
+        private fun updateWidgetInner(
+            context: Context,
+            manager: AppWidgetManager,
+            appWidgetId: Int,
+            preferUriPlate: Boolean,
+        ) {
             val views = RemoteViews(context.packageName, R.layout.widget_scheduled)
 
             val canvasColor =
@@ -110,7 +129,15 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val inkColor = parseColorOr(ThemeModule.getText(context), Color.BLACK)
             val mutedColor = withAlpha(inkColor, 0.6f)
 
-            applyThemePlate(context, manager, appWidgetId, views, canvasColor, inkColor)
+            applyThemePlate(
+                context,
+                manager,
+                appWidgetId,
+                views,
+                canvasColor,
+                inkColor,
+                preferUriPlate,
+            )
             views.setTextColor(R.id.widget_title, inkColor)
             views.setTextColor(R.id.widget_empty, mutedColor)
             views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_scheduled_title))
@@ -178,27 +205,39 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             canvasColor: Int,
             inkColor: Int,
+            preferUriPlate: Boolean,
         ) {
             val (widthPx, heightPx) = widgetSizePx(context, manager, appWidgetId)
             val density = context.resources.displayMetrics.density
             clearImageTint(views, R.id.widget_plate)
 
             val bitmap = createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor)
-            val written =
-                writePlatePng(context, appWidgetId, bitmap, canvasColor, inkColor, widthPx, heightPx)
-            bitmap.recycle()
-
-            if (written != null) {
-                // Grant the base content URI (without cache-bust query) so openFile matches.
-                grantUriToHomeLaunchers(context, written.grantUri)
-                views.setImageViewUri(R.id.widget_plate, written.displayUri)
-            } else {
-                // Fallback: binder bitmap if disk write fails (rare).
-                views.setImageViewBitmap(
-                    R.id.widget_plate,
-                    createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor),
-                )
+            if (preferUriPlate) {
+                val written =
+                    writePlatePng(
+                        context,
+                        appWidgetId,
+                        bitmap,
+                        canvasColor,
+                        inkColor,
+                        widthPx,
+                        heightPx,
+                    )
+                if (written != null) {
+                    // Grant the base content URI (without cache-bust query) so openFile matches.
+                    // Without a successful grant, setImageViewUri makes the host crash the
+                    // whole RemoteViews into «Не удалось загрузить виджет».
+                    val granted = grantUriToHomeLaunchers(context, written.grantUri)
+                    if (granted > 0) {
+                        views.setImageViewUri(R.id.widget_plate, written.displayUri)
+                        bitmap.recycle()
+                        return
+                    }
+                }
             }
+            // Fallback: binder bitmap if URI path is unavailable (no grants / disk / forced).
+            // Do not recycle here — RemoteViews keeps the bitmap until updateAppWidget parcels it.
+            views.setImageViewBitmap(R.id.widget_plate, bitmap)
         }
 
         private data class PlateUris(val grantUri: Uri, val displayUri: Uri)
@@ -240,23 +279,101 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun grantUriToHomeLaunchers(context: Context, uri: Uri) {
+        /**
+         * Grant read access to home launchers (and common widget hosts).
+         *
+         * @return number of **HOME** packages that received a grant. Extra host packages
+         * (SystemUI, OEM launchers) are granted opportunistically but do **not** count —
+         * otherwise a successful SystemUI grant would enable setImageViewUri while the
+         * real launcher still lacks permission → «Не удалось загрузить виджет».
+         */
+        private fun grantUriToHomeLaunchers(context: Context, uri: Uri): Int {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            val homeGranted = linkedSetOf<String>()
+            val extrasGranted = linkedSetOf<String>()
             val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-            val launchers =
-                context.packageManager.queryIntentActivities(home, PackageManager.MATCH_DEFAULT_ONLY)
-            for (info in launchers) {
-                val packageName = info.activityInfo?.packageName ?: continue
+
+            fun tryGrant(packageName: String?, into: MutableSet<String>) {
+                if (packageName.isNullOrBlank() || packageName in homeGranted || packageName in extrasGranted) {
+                    return
+                }
                 try {
-                    context.grantUriPermission(
-                        packageName,
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                    )
+                    context.grantUriPermission(packageName, uri, flags)
+                    into.add(packageName)
                 } catch (_: Exception) {
-                    // Ignore packages that reject grants.
+                    // Package missing or rejects grants.
                 }
             }
+
+            // Default home (works even when query list is filtered).
+            try {
+                val resolved =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.resolveActivity(
+                            home,
+                            PackageManager.ResolveInfoFlags.of(
+                                PackageManager.MATCH_DEFAULT_ONLY.toLong(),
+                            ),
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+                    }
+                tryGrant(resolved?.activityInfo?.packageName, homeGranted)
+            } catch (_: Exception) {
+                // ignore
+            }
+
+            try {
+                val launchers =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        context.packageManager.queryIntentActivities(
+                            home,
+                            PackageManager.ResolveInfoFlags.of(
+                                PackageManager.MATCH_DEFAULT_ONLY.toLong(),
+                            ),
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        context.packageManager.queryIntentActivities(
+                            home,
+                            PackageManager.MATCH_DEFAULT_ONLY,
+                        )
+                    }
+                for (info in launchers) {
+                    tryGrant(info.activityInfo?.packageName, homeGranted)
+                }
+            } catch (_: Exception) {
+                // ignore
+            }
+
+            // Opportunistic extras — only useful once a real HOME grant exists.
+            if (homeGranted.isNotEmpty()) {
+                for (pkg in EXTRA_WIDGET_HOST_PACKAGES) {
+                    tryGrant(pkg, extrasGranted)
+                }
+            }
+
+            return homeGranted.size
         }
+
+        private val EXTRA_WIDGET_HOST_PACKAGES =
+            arrayOf(
+                "com.android.systemui",
+                "com.google.android.apps.nexuslauncher",
+                "com.android.launcher3",
+                "com.android.launcher",
+                "com.miui.home",
+                "com.huawei.android.launcher",
+                "com.samsung.android.app.launcher",
+                "com.sec.android.app.launcher",
+                "com.oneplus.launcher",
+                "com.oppo.launcher",
+                "com.realme.launcher",
+                "com.vivo.launcher",
+                "com.bbk.launcher2",
+                "org.lineageos.launcher",
+            )
 
         private fun clearImageTint(views: RemoteViews, viewId: Int) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

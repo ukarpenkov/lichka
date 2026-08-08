@@ -3,7 +3,7 @@
 **Дата:** 2026-08-06  
 **Статус:** fixed  
 **Затрагивает:** Android home-screen widget «Запланировано», `ThemeModule`, `ScheduledWidgetProvider`  
-**Связано:** [`widget-theme-not-refreshing-on-switch.md`](widget-theme-not-refreshing-on-switch.md) (2026-08-01, marked fixed) — residual intermittent
+**Связано:** [`widget-theme-not-refreshing-on-switch.md`](widget-theme-not-refreshing-on-switch.md) (2026-08-01, marked fixed) — residual intermittent; регрессия загрузки после FileProvider: [`widget-failed-to-load.md`](widget-failed-to-load.md)
 
 ## Описание
 

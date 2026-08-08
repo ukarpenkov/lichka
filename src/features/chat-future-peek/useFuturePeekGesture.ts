@@ -264,26 +264,18 @@ export type UseFuturePeekEntryGestureOptions = {
   enabled: boolean;
   atBottom: boolean;
   onCommit: () => void;
-  composerNativeGesture?: NativeGesture;
 };
 
 export function useFuturePeekEntryGesture({
   enabled,
   atBottom,
   onCommit,
-  composerNativeGesture,
 }: UseFuturePeekEntryGestureOptions): FuturePeekGestureApi {
-  const extraNativeGestures = useMemo(
-    () => (composerNativeGesture ? [composerNativeGesture] : []),
-    [composerNativeGesture],
-  );
-
   return useFuturePeekGesture({
     direction: 'enter',
     enabled,
     atEdge: atBottom,
     onCommit,
-    extraNativeGestures,
   });
 }
 

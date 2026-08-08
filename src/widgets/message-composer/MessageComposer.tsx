@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
-import { Gesture, GestureDetector, TextInput } from 'react-native-gesture-handler';
+import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image, TextInput } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -329,7 +329,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
   if (isRecording) {
     return (
     <Animated.View
-      pointerEvents="box-none"
       style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
@@ -357,7 +356,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
   return (
     <>
     <Animated.View
-      pointerEvents="box-none"
       style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
       {imagePreview ? (
         <View style={styles.imagePreviewContainer}>

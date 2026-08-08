@@ -18,7 +18,7 @@ import Animated, {
   FadeOut,
   runOnJS,
 } from 'react-native-reanimated';
-import { FlatList, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { FlatList, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -95,19 +95,6 @@ const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
 ) as any;
 
-function wrapComposerNativeScroll(
-  gesture: ReturnType<typeof Gesture.Native>,
-  child: React.ReactElement,
-): React.ReactElement {
-  // Keep this boundary mounted while list metrics change. Toggling it with
-  // `atBottom` remounts TextInput during keyboard layout and drops focus.
-  return (
-    <GestureDetector gesture={gesture}>
-      <View pointerEvents="box-none">{child}</View>
-    </GestureDetector>
-  );
-}
-
 function wrapHistoryNativeScroll(
   canScroll: boolean,
   gesture: ReturnType<typeof useFuturePeekEntryGesture>['nativeGesture'],
@@ -171,6 +158,7 @@ export function ChatRoomScreen() {
   const [atTop, setAtTop] = useState(true);
   const [historyCanScroll, setHistoryCanScroll] = useState(false);
   const [futureCanScroll, setFutureCanScroll] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const {
     open,
     close,
@@ -358,13 +346,11 @@ export function ChatRoomScreen() {
     return unsubscribe;
   }, [navigation, exitFuture]);
 
-  const composerNativeGesture = useMemo(() => Gesture.Native(), []);
-
   const entryPeek = useFuturePeekEntryGesture({
-    enabled: timelineMode === 'history' && !searchVisible,
+    // Keep peek off the composer while typing: pan + keyboard lift fights TextInput focus.
+    enabled: timelineMode === 'history' && !searchVisible && !keyboardOpen,
     atBottom,
     onCommit: enterFuture,
-    composerNativeGesture,
   });
 
   const exitPeek = useFuturePeekExitGesture({
@@ -389,11 +375,18 @@ export function ChatRoomScreen() {
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardOpen(true);
       // Keep peek armed while layout shrinks; then pin to end.
       setAtBottom(true);
       setTimeout(() => scrollToBottom(true), 100);
     });
-    return () => showSub.remove();
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardOpen(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, [scrollToBottom]);
 
   useEffect(() => {
@@ -741,9 +734,15 @@ export function ChatRoomScreen() {
           </Animated.View>
         </GestureDetector>
       ) : (
-        <GestureDetector gesture={entryPeek.gesture}>
-          <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
-            <View style={styles.peekHost}>
+        <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
+          <View style={styles.peekHost}>
+            {/*
+              List + composer stay siblings inside peekHost so FlatList gets a
+              bounded flex height. Only the list is wrapped by entry-peek pan —
+              wrapping composer too fights TextInput focus; placing composer
+              outside peekHost lets the list grow to content and clips the top.
+            */}
+            <GestureDetector gesture={entryPeek.gesture}>
               <View style={styles.listContainer}>
                 <Animated.View
                   style={[styles.listPane, entryPeek.rubberBandStyle]}
@@ -766,6 +765,7 @@ export function ChatRoomScreen() {
                       }
                       scrollEnabled={historyCanScroll}
                       pointerEvents={getListPointerEvents(historyCanScroll)}
+                      keyboardShouldPersistTaps="handled"
                       onViewableItemsChanged={handleViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}
                       onScroll={scrollHandler}
@@ -825,19 +825,16 @@ export function ChatRoomScreen() {
                   accessibilityLabel={t.futurePeekA11y}
                 />
               </View>
-              {wrapComposerNativeScroll(
-                composerNativeGesture,
-                <MessageComposer
-                  chatId={chatId}
-                  onSent={() => {
-                    loadData();
-                    loadFuture();
-                  }}
-                />,
-              )}
-            </View>
-          </Animated.View>
-        </GestureDetector>
+            </GestureDetector>
+            <MessageComposer
+              chatId={chatId}
+              onSent={() => {
+                loadData();
+                loadFuture();
+              }}
+            />
+          </View>
+        </Animated.View>
       )}
 
       <MessageContextMenu
@@ -918,17 +915,21 @@ const styles = StyleSheet.create({
   },
   peekHost: {
     flex: 1,
+    minHeight: 0,
   },
   listContainer: {
     flex: 1,
+    minHeight: 0,
   },
   listPane: {
     flex: 1,
+    minHeight: 0,
     overflow: 'hidden',
   },
 
   list: {
     flex: 1,
+    minHeight: 0,
   },
   listContent: {
     paddingTop: 4,

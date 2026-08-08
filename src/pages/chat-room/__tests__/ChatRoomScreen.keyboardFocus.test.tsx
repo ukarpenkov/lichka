@@ -195,4 +195,29 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     expect(mockComposerMount).toHaveBeenCalledTimes(1);
     expect(mockComposerUnmount).not.toHaveBeenCalled();
   });
+
+  it('should keep the composer mounted when the keyboard opens', () => {
+    const { Keyboard } = require('react-native');
+    let showHandler: (() => void) | undefined;
+    const addListener = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, handler) => {
+      if (event === 'keyboardDidShow') {
+        showHandler = handler as () => void;
+      }
+      return { remove: jest.fn() };
+    });
+
+    const screen = render(<ChatRoomScreen />);
+    expect(screen.getByTestId('message-composer')).toBeTruthy();
+    expect(mockComposerMount).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      showHandler?.();
+    });
+
+    expect(screen.getByTestId('message-composer')).toBeTruthy();
+    expect(mockComposerMount).toHaveBeenCalledTimes(1);
+    expect(mockComposerUnmount).not.toHaveBeenCalled();
+
+    addListener.mockRestore();
+  });
 });

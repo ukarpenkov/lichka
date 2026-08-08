@@ -9,6 +9,18 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!--
+      Package visibility (targetSdk 30+): without this, queryIntentActivities(HOME)
+      is empty and FileProvider grants never reach the launcher → SecurityException
+      on setImageViewUri → system "Can't load widget" / «Не удалось загрузить виджет».
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"

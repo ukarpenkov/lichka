@@ -14,13 +14,13 @@ describe('future peek gesture integration gates', () => {
     expect(canActivatePeekGesture(true, false, false)).toBe(false);
   });
 
-  it('should allow entry while keyboard is open (dismiss happens on commit)', () => {
+  it('should disable entry while keyboard is open to protect composer focus', () => {
     const keyboardOpen = true;
     const historyAtBottom = true;
     const searchVisible = false;
-    const enabled = historyAtBottom && !searchVisible;
+    const enabled = historyAtBottom && !searchVisible && !keyboardOpen;
     expect(keyboardOpen).toBe(true);
-    expect(canActivatePeekGesture(enabled, historyAtBottom, false)).toBe(true);
+    expect(canActivatePeekGesture(enabled, historyAtBottom, false)).toBe(false);
   });
 
   it('should keep at-bottom armed when keyboard shrinks the list viewport', () => {
