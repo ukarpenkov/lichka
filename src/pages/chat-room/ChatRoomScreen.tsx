@@ -763,8 +763,10 @@ export function ChatRoomScreen() {
                           ? styles.listContent
                           : [styles.listContent, getNonScrollableListContentStyle()]
                       }
-                      scrollEnabled={historyCanScroll}
-                      pointerEvents={getListPointerEvents(historyCanScroll)}
+                      scrollEnabled={historyCanScroll || keyboardOpen}
+                      pointerEvents={
+                        getListPointerEvents(historyCanScroll || keyboardOpen)
+                      }
                       keyboardShouldPersistTaps="handled"
                       onViewableItemsChanged={handleViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}
