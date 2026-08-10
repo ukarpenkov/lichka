@@ -127,6 +127,7 @@ const mockPeekGesture = () => ({
   nativeGesture: {},
   rubberBandStyle: {},
   overlayStyle: {},
+  reset: jest.fn(),
 });
 
 jest.mock('../../../features', () => ({
@@ -199,10 +200,10 @@ describe('ChatRoomScreen keyboard focus regression', () => {
 
   it('should keep the composer mounted when the keyboard opens', () => {
     const { Keyboard } = require('react-native');
-    let showHandler: (() => void) | undefined;
+    let showHandler: ((e?: { endCoordinates: { height: number } }) => void) | undefined;
     const addListener = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, handler) => {
       if (event === 'keyboardDidShow') {
-        showHandler = handler as () => void;
+        showHandler = handler as typeof showHandler;
       }
       return { remove: jest.fn() };
     });
@@ -212,7 +213,7 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     expect(mockComposerMount).toHaveBeenCalledTimes(1);
 
     act(() => {
-      showHandler?.();
+      showHandler?.({ endCoordinates: { height: 300 } } as never);
     });
 
     expect(screen.getByTestId('message-composer')).toBeTruthy();
