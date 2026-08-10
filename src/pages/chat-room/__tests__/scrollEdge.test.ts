@@ -5,6 +5,7 @@ import {
   isScrollAtBottom,
   isScrollAtTop,
   shouldAttachNativeScrollGesture,
+  shouldEnableHistoryListScroll,
   shouldStickToBottomOnLayoutShrink,
   SCROLL_EDGE_EPSILON,
 } from '../scrollEdge';
@@ -55,5 +56,16 @@ describe('scrollEdge', () => {
     expect(shouldStickToBottomOnLayoutShrink(true, 700, 400)).toBe(true);
     expect(shouldStickToBottomOnLayoutShrink(true, 400, 700)).toBe(false);
     expect(shouldStickToBottomOnLayoutShrink(false, 700, 400)).toBe(false);
+  });
+
+  it('should enable history scroll on Android when keyboard is open even if metrics are stale', () => {
+    expect(shouldEnableHistoryListScroll(false, true, 'android')).toBe(true);
+    expect(shouldEnableHistoryListScroll(false, false, 'android')).toBe(false);
+    expect(shouldEnableHistoryListScroll(true, false, 'android')).toBe(true);
+  });
+
+  it('should not force history scroll from keyboard on iOS', () => {
+    expect(shouldEnableHistoryListScroll(false, true, 'ios')).toBe(false);
+    expect(shouldEnableHistoryListScroll(true, true, 'ios')).toBe(true);
   });
 });

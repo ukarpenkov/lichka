@@ -73,6 +73,7 @@ jest.mock('../../../shared/config', () => ({
 
 jest.mock('../../../shared/lib', () => ({
   useKeyboardHeight: () => ({ value: 0 }),
+  getAndroidChatAreaKeyboardPad: () => 0,
   KEYBOARD_ANDROID_LIFT_FUDGE: 0,
   KEYBOARD_COMPOSER_GAP: 0,
   MESSAGE_LIST_BOTTOM_GAP: 0,

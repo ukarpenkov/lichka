@@ -13,7 +13,6 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
-  useAnimatedStyle,
   FadeIn,
   FadeOut,
   runOnJS,
@@ -26,9 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale, spacing } from '../../shared/config';
 import {
-  useKeyboardHeight,
-  KEYBOARD_ANDROID_LIFT_FUDGE,
-  KEYBOARD_COMPOSER_GAP,
+  getAndroidChatAreaKeyboardPad,
   MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
   setClipboardString,
@@ -77,6 +74,7 @@ import {
   isScrollAtBottom,
   isScrollAtTop,
   shouldAttachNativeScrollGesture,
+  shouldEnableHistoryListScroll,
   shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
@@ -159,6 +157,8 @@ export function ChatRoomScreen() {
   const [historyCanScroll, setHistoryCanScroll] = useState(false);
   const [futureCanScroll, setFutureCanScroll] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  /** Android only: JS-driven pad so Yoga relayouts FlatList (Reanimated pad did not). */
+  const [androidKeyboardPad, setAndroidKeyboardPad] = useState(0);
   const {
     open,
     close,
@@ -176,7 +176,6 @@ export function ChatRoomScreen() {
   const historyScrollOffsetRef = useRef(0);
   const suppressScrollToBottomRef = useRef(false);
   const listMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
-  const keyboardHeight = useKeyboardHeight();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -218,18 +217,11 @@ export function ChatRoomScreen() {
     },
   });
 
-  const chatAreaAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom:
-      Platform.OS === 'android'
-        ? Math.max(
-            keyboardHeight.value -
-              tabBarHeight +
-              KEYBOARD_ANDROID_LIFT_FUDGE +
-              KEYBOARD_COMPOSER_GAP,
-            0,
-          )
-        : 0,
-  }));
+  const historyListScrollEnabled = shouldEnableHistoryListScroll(
+    historyCanScroll,
+    keyboardOpen,
+    Platform.OS,
+  );
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
@@ -374,20 +366,30 @@ export function ChatRoomScreen() {
   }, [listItems, scrollToBottom, timelineMode]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardOpen(true);
+      if (Platform.OS === 'android') {
+        // React state (not Reanimated): Yoga must shrink FlatList so onLayout /
+        // contentSize update and older messages become reachable by scroll.
+        setAndroidKeyboardPad(
+          getAndroidChatAreaKeyboardPad(e.endCoordinates.height, tabBarHeight),
+        );
+      }
       // Keep peek armed while layout shrinks; then pin to end.
       setAtBottom(true);
       setTimeout(() => scrollToBottom(true), 100);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
+      if (Platform.OS === 'android') {
+        setAndroidKeyboardPad(0);
+      }
     });
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [scrollToBottom]);
+  }, [scrollToBottom, tabBarHeight]);
 
   useEffect(() => {
     scrolledToMessageRef.current = null;
@@ -688,7 +690,7 @@ export function ChatRoomScreen() {
 
       {isFuture ? (
         <GestureDetector gesture={exitPeek.gesture}>
-          <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
+          <Animated.View style={styles.chatArea}>
             <View style={styles.peekHost}>
               <View style={styles.listContainer}>
                 <Animated.View
@@ -734,7 +736,12 @@ export function ChatRoomScreen() {
           </Animated.View>
         </GestureDetector>
       ) : (
-        <Animated.View style={[styles.chatArea, chatAreaAnimatedStyle]}>
+        <Animated.View
+          style={[
+            styles.chatArea,
+            Platform.OS === 'android' ? { paddingBottom: androidKeyboardPad } : null,
+          ]}
+        >
           <View style={styles.peekHost}>
             {/*
               List + composer stay siblings inside peekHost so FlatList gets a
@@ -759,14 +766,12 @@ export function ChatRoomScreen() {
                       keyExtractor={keyExtractor}
                       style={styles.list}
                       contentContainerStyle={
-                        historyCanScroll
+                        historyListScrollEnabled
                           ? styles.listContent
                           : [styles.listContent, getNonScrollableListContentStyle()]
                       }
-                      scrollEnabled={historyCanScroll || keyboardOpen}
-                      pointerEvents={
-                        getListPointerEvents(historyCanScroll || keyboardOpen)
-                      }
+                      scrollEnabled={historyListScrollEnabled}
+                      pointerEvents={getListPointerEvents(historyListScrollEnabled)}
                       keyboardShouldPersistTaps="handled"
                       onViewableItemsChanged={handleViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}

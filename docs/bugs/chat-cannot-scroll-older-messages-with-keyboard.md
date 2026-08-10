@@ -1,11 +1,11 @@
 # [UI] При открытой клавиатуре нельзя проскроллить к сообщениям прошлых дней
 
 **Дата:** 2026-08-10  
-**Модуль:** `src/pages/chat-room/ChatRoomScreen.tsx` (список сообщений / insets при клавиатуре)  
+**Модуль:** `src/pages/chat-room/ChatRoomScreen.tsx`, `src/shared/lib/keyboard.ts`, `src/pages/chat-room/scrollEdge.ts`  
 **Платформа:** Android  
 **Приоритет:** P1  
 **Воспроизводимость:** высокая  
-**Статус:** fixed (2026-08-10)
+**Статус:** fixed (2026-08-10, вторая итерация)
 
 ## Описание
 
@@ -33,26 +33,30 @@
 
 ## Ожидаемый результат
 
-При открытой клавиатуре список сообщений остаётся полностью прокручиваемым: можно дойти до самых старых сообщений (в т.ч. прошлых дней). Верхние сообщения не обрезаются хедером, нижние не прячутся за композером/клавиатурой за счёт корректных insets.
+При открытой клавиатуре список сообщений остаётся полностью прокручиваемым: можно дойти до самых старых сообщений (в т.ч. прошлых дней).
 
 ## Фактический результат
 
 При развёрнутой клавиатуре проскроллить до сообщений прошлых дней нельзя — ранняя история недоступна для просмотра, хотя при свёрнутой клавиатуре она есть.
 
-## Вероятная зона
-
-- Анимация/`paddingBottom` области чата при `useKeyboardHeight` / `adjustNothing`
-- `contentContainerStyle` / insets `FlatList` сообщений
-- Возможный конфликт с автоскроллом к низу / `maintainVisibleContentPosition` (если снова включён)
-- Обрезка верхнего контента под хедером при уменьшенной высоте viewport
-
-Связанные закрытые баги по клавиатуре/списку: `chat-last-message-hidden-behind-composer.md`, `chat-keyboard-gap-*.md`, `keyboard-covers-input-android.md`.
-
 ## Корневая причина
 
-При открытии клавиатуры на Android с `adjustNothing` анимированный `paddingBottom` на `chatArea` (через `useAnimatedStyle` / reanimated) сжимает viewport FlatList на UI-потоке. Однако `onLayout` на `AnimatedFlatList` (`Animated.createAnimatedComponent(RNGH_FlatList)`) не срабатывает надёжно при изменении родительского padding через reanimated — JS-поток «не видит» изменение layout. Без `onLayout` не вызывается `updateHistoryEdges`, и `historyCanScroll` остаётся в stale-состоянии: если до открытия клавиатуры контент помещался в viewport (`historyCanScroll = false`), скролл остаётся заблокированным (`scrollEnabled={false}`), хотя клавиатура сжала доступную область и контент уже переполняет экран.
+На Android с `adjustNothing` подъём композера делался через `useAnimatedStyle` → `paddingBottom` на `chatArea` (Reanimated, UI-поток).
 
-## Исправление
+1. Родитель визуально «сжимался» / клипил список через `overflow: hidden`, но Yoga/`onLayout` у `AnimatedFlatList` не обновлялись надёжно.
+2. `historyCanScroll` оставался `false` (контент «влезал» в старый viewport) → `scrollEnabled={false}` и `contentContainerStyle` с `flexGrow: 1`.
+3. Верх ленты (сообщения прошлых дней) оказывался за клипом; скроллить было некуда (`maxOffset ≈ 0`).
 
-- `scrollEnabled` изменён с `{historyCanScroll}` на `{historyCanScroll || keyboardOpen}` — при открытой клавиатуре скролл всегда разрешён, независимо от состояния `historyCanScroll`
-- `pointerEvents` аналогично использует `historyCanScroll || keyboardOpen`
+## Попытка 1 (не сработала)
+
+Только `scrollEnabled={historyCanScroll || keyboardOpen}` (и `pointerEvents`).  
+`flexGrow: 1` и Reanimated-padding остались → нативный список не получал реальный меньший layout, скроллить по-прежнему было некуда.
+
+## Исправление (итерация 2)
+
+- **Android:** `paddingBottom` на `chatArea` из React state (`androidKeyboardPad` / `getAndroidChatAreaKeyboardPad`) по `keyboardDidShow`/`Hide` — обычный Yoga-relayout, `onLayout` срабатывает. iOS не трогаем (`paddingBottom` только при `Platform.OS === 'android'`).
+- Убран Reanimated `paddingBottom` с `chatArea`.
+- `shouldEnableHistoryListScroll`: на Android при открытой клавиатуре включаем скролл и **снимаем** `flexGrow: 1` с `contentContainerStyle` (не только `scrollEnabled`).
+- iOS: поведение как раньше — gate только по `historyCanScroll`.
+
+Связанные баги: `chat-last-message-hidden-behind-composer.md`, `chat-keyboard-gap-*.md`, `keyboard-covers-input-android.md`, `chat-input-keyboard-dismisses-after-focus.md`.

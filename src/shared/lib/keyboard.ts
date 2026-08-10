@@ -29,6 +29,25 @@ export const KEYBOARD_COMPOSER_GAP = 16;
 export const MESSAGE_LIST_BOTTOM_GAP = 8;
 
 /**
+ * `paddingBottom` для `chatArea` на Android при открытой клавиатуре
+ * (`adjustNothing` + ручной lift). Высота клавиатуры минус tab bar
+ * (уже в layout) плюс fudge/gap. На iOS не используется.
+ */
+export function getAndroidChatAreaKeyboardPad(
+  keyboardHeight: number,
+  tabBarHeight: number,
+): number {
+  if (keyboardHeight <= 0) return 0;
+  return Math.max(
+    keyboardHeight -
+      tabBarHeight +
+      KEYBOARD_ANDROID_LIFT_FUDGE +
+      KEYBOARD_COMPOSER_GAP,
+    0,
+  );
+}
+
+/**
  * Единый источник правды по высоте клавиатуры для всего приложения.
  *
  * Возвращает shared value с «эффективной» высотой клавиатуры: она ненулевая

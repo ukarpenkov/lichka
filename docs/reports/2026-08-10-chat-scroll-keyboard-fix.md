@@ -2,34 +2,34 @@
 
 **Дата:** 2026-08-10
 **Баг:** `docs/bugs/chat-cannot-scroll-older-messages-with-keyboard.md`
-**Промпт/задача:** При открытой клавиатуре в чате нельзя проскроллить к сообщениям прошлых дней — история «обрезана» сверху. При свёрнутой клавиатуре скролл работает.
+**Промпт/задача:** При открытой клавиатуре в чате (Android) нельзя проскроллить к сообщениям прошлых дней. iOS не трогать. Первая попытка в коммите не помогла.
 
 ## Что сделано
 
-- Выявлена корневая причина: на Android с `adjustNothing` анимированный `paddingBottom` на `chatArea` (через `useAnimatedStyle` / reanimated) сжимает viewport FlatList на UI-потоке. `onLayout` на `AnimatedFlatList` (`Animated.createAnimatedComponent(RNGH_FlatList)`) не срабатывает при изменении родительского padding через reanimated — JS-поток не получает уведомления об изменении layout.
-- Без `onLayout` не вызывается `updateHistoryEdges` → `historyCanScroll` остаётся в stale-состоянии. Если до открытия клавиатуры контент помещался в viewport (`historyCanScroll = false`), `scrollEnabled={false}` блокирует скролл, хотя viewport уже сжат и контент переполняет экран.
-- `scrollEnabled` изменён с `{historyCanScroll}` на `{historyCanScroll || keyboardOpen}`: при открытой клавиатуре скролл всегда разрешён, независимо от `historyCanScroll`.
-- `pointerEvents` аналогично вычисляется с учётом `keyboardOpen`.
-- Обновлена карточка бага: добавлена корневая причина, описание исправления, статус → `fixed`.
+### Попытка 1 (не сработала)
+- Только `scrollEnabled` / `pointerEvents` с `|| keyboardOpen`.
+- `flexGrow: 1` и Reanimated `paddingBottom` остались → список клипился, скроллить было некуда.
+
+### Итерация 2
+- Android: `paddingBottom` на `chatArea` через React state (`getAndroidChatAreaKeyboardPad`) — Yoga реально сжимает FlatList.
+- Убран Reanimated `paddingBottom` с `chatArea`.
+- `shouldEnableHistoryListScroll` (Android + keyboard) включает скролл и снимает `flexGrow: 1`.
+- iOS без изменений.
 
 ## Изменённые файлы
-
-- `src/pages/chat-room/ChatRoomScreen.tsx:766-769` — `scrollEnabled` и `pointerEvents` учитывают `keyboardOpen`
-- `docs/bugs/chat-cannot-scroll-older-messages-with-keyboard.md` — корневая причина, исправление, статус
+- `src/pages/chat-room/ChatRoomScreen.tsx`
+- `src/pages/chat-room/scrollEdge.ts`
+- `src/shared/lib/keyboard.ts`
+- `src/shared/lib/index.ts`
+- тесты `scrollEdge`, `keyboard`
+- `docs/bugs/chat-cannot-scroll-older-messages-with-keyboard.md`
 
 ## Принятые решения
-
-- **Не менять логику `historyCanScroll` / `wrapHistoryNativeScroll` / `contentContainerStyle`** — они используются для Future Peek gesture, и их зависимость от `historyCanScroll` (а не `keyboardOpen`) корректна: при открытой клавиатуре entry peek отключён, поэтому stale `historyCanScroll = false` в этих местах безопасен.
-- **Минимальный diff:** только `scrollEnabled` и `pointerEvents` получают `|| keyboardOpen`. Остальной layout и gesture-логика не затронуты.
-- **Не увеличивать таймаут `scrollToBottom` / не добавлять `onLayout` на `chatArea`** — это борьба с симптомом, а не причиной. Корневая проблема — stale `historyCanScroll`, и она решена прямым разрешением скролла при открытой клавиатуре.
+- Не поднимать iOS на тот же JS-pad.
+- Оставить `useKeyboardHeight` в `MessageComposer` для косметического padding.
 
 ## Известные ограничения
-
-- При очень коротком чате (1-2 сообщения) скролл будет разрешён при открытой клавиатуре, но скроллить некуда — визуально без изменений.
-- Требуется ручная проверка на Android-устройстве: открыть чат с историей за несколько дней → открыть клавиатуру → проскроллить вверх до первого сообщения.
+- Нужна ручная проверка на Android: Saved → клавиатура → скролл к первому дню.
 
 ## Тестирование
-
-- `npm test -- --testPathPattern='ChatRoomScreen|scrollEdge|futurePeek'` — 5 suites, 34 tests PASS
-- `npx tsc --noEmit` — без ошибок в ChatRoomScreen
-- `npx eslint src/pages/chat-room/ChatRoomScreen.tsx` — без новых ошибок (1 pre-existing warning)
+- Unit: `scrollEdge`, `keyboard`, `ChatRoomScreen.keyboardFocus`

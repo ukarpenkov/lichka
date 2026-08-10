@@ -38,6 +38,7 @@ export { setClipboardString } from './clipboard';
 export { playSendSound, playReminderSound } from './sounds';
 export {
   useKeyboardHeight,
+  getAndroidChatAreaKeyboardPad,
   KEYBOARD_ANDROID_LIFT_FUDGE,
   KEYBOARD_COMPOSER_GAP,
   MESSAGE_LIST_BOTTOM_GAP,

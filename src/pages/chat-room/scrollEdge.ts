@@ -71,3 +71,19 @@ export function shouldStickToBottomOnLayoutShrink(
   if (previousLayoutHeight <= 0 || nextLayoutHeight <= 0) return wasAtBottom;
   return nextLayoutHeight < previousLayoutHeight;
 }
+
+/**
+ * History list scroll gate. On Android, opening the keyboard must enable
+ * scroll even when `historyCanScroll` is stale: reanimated parent padding
+ * historically did not deliver FlatList `onLayout`, and `flexGrow: 1` for
+ * non-scrollable lists left maxOffset at 0 while overflow:hidden clipped
+ * older messages. iOS is unchanged — only `historyCanScroll` counts.
+ */
+export function shouldEnableHistoryListScroll(
+  historyCanScroll: boolean,
+  keyboardOpen: boolean,
+  platformOS: 'ios' | 'android' | 'windows' | 'macos' | 'web',
+): boolean {
+  if (historyCanScroll) return true;
+  return keyboardOpen && platformOS === 'android';
+}
