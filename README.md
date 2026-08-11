@@ -1,55 +1,140 @@
-# Journal (Lichka)
+# Lichka
 
-> 🚧 **Project Status:** In Development / Early Build
+Offline Android app for personal thematic chats with yourself. Messages, reminders, alarms, and periodic notifications are stored locally in SQLite. No server.
 
-This project is currently being shaped. It is not yet the final version, but the foundation is being laid carefully.
+Version: 2.0  
+Platform: Android (minSdk 24, package `com.lichka`)  
+License: MIT
 
----
+## Features
 
-## For Those Without Constant Internet
+### Chats
 
-This application is being built with a different philosophy in mind. It does not demand you to be online. It does not push your thoughts into a cloud somewhere far away.
+- Thematic journals in chat form (Telegram-with-yourself model).
+- Create a chat with a title and avatar (gallery photo, emoji, or title initial).
+- System chat "Saved messages" on first launch.
+- Edit and delete chats (system chat cannot be deleted).
+- Chat list sorted by last message.
+- Global search across all messages and local search inside a chat.
 
-**Journal** is designed to live on your device, ready the moment you need it — whether you are on a subway, a mountain, or simply in a place with no signal. It respects your attention and works at your speed, not the network's.
+### Message types
 
-> Think of it as a quiet space that is always there, even when the rest of the world is offline.
+Send from the chat composer with four actions:
 
----
+| Type | Behavior |
+|------|----------|
+| `simple` | Appears in the feed immediately |
+| `reminder` | Push at the scheduled time; listed under Scheduled until then |
+| `alarm` | Full-screen alarm over the lock screen |
+| `periodic` | Repeat by interval (presets or custom); each fire via push |
 
-## The Core Idea
+Supports text, voice messages (AAC `.m4a`, up to 60 s), and images. Edit text and message time with an "edited" marker. Hard delete with no undo.
 
-Journal functions like *"Telegram with yourself."*
+### Scheduled
 
-- You create thematic chat journals.
-- Send messages to your future self.
-- Set reminders and use gentle alarms.
+- Tab with all active `reminder` / `alarm` / `periodic` items.
+- Sorted by fire time.
+- Navigate to the chat and specific message.
+- Android widget with the scheduled list.
 
-Everything is designed with **minimal steps** and a **calm, silent visual style**. The priority is speed from intention to result, without flashing decorations or complex menus.
+### Notifications
 
----
+- Channels `reminders` and `alarms`.
+- Exact alarms via `AlarmManager.setAlarmClock()`.
+- Deep link from notification into the chat message.
+- Default snooze: 5 minutes.
 
-## Technical Heart
+### Settings
 
-The product follows an **offline-first architecture**.
+- 13 two-color themes (background + text, no accent).
+- Haptic and sound toggles.
+- Localization RU / EN (system language, fallback EN).
+- Backup: ZIP (data + media) and Google Drive (manual upload/download).
+- Import in merge and replace modes.
 
-| Aspect | Technology |
-| :--- | :--- |
-| **Data** | Local SQLite with FTS5 for fast search |
-| **UI** | React Native + Reanimated 4 |
-| *Alarms** | Full-screen alarms & precise notifications |
-| **Voice notes** | AAC format, 60 sec max |
-| **Backup** | Manual Google Drive backups |
+### UI
 
-> There is **no server**. Your data lives only on your device.
+- Three tabs: Chats, Scheduled, Settings.
+- Terminal / CLI visual language (line-based feed, mono).
+- Animations with Reanimated 4 and Gesture Handler.
+- No telemetry or analytics.
 
----
+## Stack
 
-## Open for Contributions
+| Layer | Technology |
+|-------|------------|
+| UI | React Native 0.85, React 19, TypeScript |
+| DB | `@op-engineering/op-sqlite` |
+| Navigation | React Navigation 7 (bottom tabs + native stack) |
+| Animations | Reanimated 4, Gesture Handler |
+| Media | image-picker, audio-recorder-player, react-native-fs |
+| Backup | ZIP (`react-native-zip-archive`), Google Drive REST v3 |
+| Tests | Jest, Testing Library |
+| Architecture | Feature-Sliced Design |
 
-This is an open project. If you have a suggestion or see a rough edge, you are welcome to propose a change.
+## Structure
 
-- The specification is detailed.
-- The goal is **clarity over speed**.
-- The project is not in a rush — it aims to be finished *right*.
+```
+src/
+  app/        init, navigation, providers
+  pages/      screens
+  widgets/    composite UI blocks
+  features/   user scenarios
+  entities/   Chat, Message, Settings
+  shared/     UI-kit, DB, utilities
+```
 
-📫 Feel free to **open an issue** or a **pull request**. Your input is valuable.
+Dependencies only downward: `app → pages → widgets → features → entities → shared`.  
+Slice public API: `index.ts`.
+
+Docs: `docs/spec/`, development rules: `docs/rules/`, `AGENTS.md`.
+
+## Requirements
+
+- Node.js >= 18
+- Android SDK (API 24+)
+- JDK for Android builds
+
+## Install
+
+```bash
+npm install
+```
+
+`postinstall` applies patch-package. `prepare` sets `core.hooksPath` to `.githooks`.
+
+## Run
+
+```bash
+# Metro
+npm start
+
+# Metro with cache reset
+npm run start:reset
+
+# Android (device / emulator)
+npm run android
+
+# Emulator, active arch only
+npm run android:emulator
+```
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm test` | Jest |
+| `npm run lint` | ESLint |
+| `npm run icons:android` | Generate adaptive icons |
+| `npm run metro:clean-cache` | Clear Metro cache |
+
+## Data
+
+- Storage: local SQLite, migrations in `shared/db/migrations/`.
+- Media: relative paths in the app sandbox (`media/avatars`, `media/voice`, `media/images`).
+- Timestamps in DB: UTC; display in device local time.
+- Backup: `licka-backup-*.zip` (JSON + media) or a copy in Google Drive `appDataFolder`.
+
+## License
+
+MIT. Copyright (c) 2026 Iurii Karpenkov.
