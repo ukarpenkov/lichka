@@ -137,4 +137,4 @@ npm run android:emulator
 
 ## License
 
-MIT. Copyright (c) 2026 Iurii Karpenkov.
+MIT. Copyright (c) 2026 Yuri Karpenkov.
