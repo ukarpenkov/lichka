@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
 import { Pressable as GesturePressable } from 'react-native-gesture-handler';
-import Animated, { FadeInUp, FadeOutDown, Layout } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme, useLocale, spacing } from '../../shared/config';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { Text, AlarmClockIcon } from '../../shared/ui';
@@ -16,8 +16,6 @@ type MessageLineProps = {
   highlighted?: boolean;
   /** First-seen mount only — false after remount (e.g. keyboard tree churn). */
   animateEnter?: boolean;
-  /** Off while keyboard reflow so Layout spring cannot feedback-loop. */
-  animateLayout?: boolean;
   onLongPress: (message: Message) => void;
   onImagePress?: (data: { uri: string; width: number; height: number }) => void;
 };
@@ -67,7 +65,6 @@ export function MessageLine({
   message,
   highlighted,
   animateEnter = true,
-  animateLayout = true,
   onLongPress,
   onImagePress,
 }: MessageLineProps) {
@@ -123,18 +120,7 @@ export function MessageLine({
     .join(' ');
 
   return (
-    <Animated.View
-      entering={
-        animateEnter
-          ? FadeInUp.springify().damping(18).stiffness(220)
-          : undefined
-      }
-      exiting={FadeOutDown.duration(200)}
-      layout={
-        animateLayout
-          ? Layout.springify().damping(20).stiffness(200)
-          : undefined
-      }>
+    <Animated.View entering={animateEnter ? FadeIn.duration(180) : undefined}>
       <GesturePressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}

@@ -454,7 +454,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 12,
   },
   inputWrapper: {

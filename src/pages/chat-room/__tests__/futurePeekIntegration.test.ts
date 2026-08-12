@@ -1,6 +1,7 @@
 import { canActivatePeekGesture } from '../../../features/chat-future-peek';
 import {
   canListScroll,
+  isInvertedListAtVisualBottom,
   isScrollAtBottom,
   shouldAttachNativeScrollGesture,
   shouldStickToBottomOnLayoutShrink,
@@ -57,6 +58,12 @@ describe('future peek gesture integration gates', () => {
     expect(canListScroll(900, 400)).toBe(true);
     expect(shouldAttachNativeScrollGesture(true)).toBe(true);
     expect(isScrollAtBottom(500, 900, 400)).toBe(true);
+    expect(canActivatePeekGesture(true, true, false)).toBe(true);
+  });
+
+  it('should treat inverted remount at offset 0 as latest messages above the composer', () => {
+    expect(isInvertedListAtVisualBottom(0, 900, 400)).toBe(true);
+    expect(isInvertedListAtVisualBottom(0, 700, 120)).toBe(true);
     expect(canActivatePeekGesture(true, true, false)).toBe(true);
   });
 });

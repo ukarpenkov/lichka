@@ -26,7 +26,7 @@ export const KEYBOARD_COMPOSER_GAP = 16;
  * Фиксированный отступ между последним сообщением и верхней кромкой MessageComposer.
  * Не зависит от клавиатуры: композер — flex-sibling под списком, а не оверлей.
  */
-export const MESSAGE_LIST_BOTTOM_GAP = 8;
+export const MESSAGE_LIST_BOTTOM_GAP = 4;
 
 /**
  * `paddingBottom` для `chatArea` на Android при открытой клавиатуре

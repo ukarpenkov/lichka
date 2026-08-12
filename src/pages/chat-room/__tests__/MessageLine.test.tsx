@@ -191,12 +191,11 @@ describe('MessageLine', () => {
     expect(getByText(/\(изм\.\)/)).toBeTruthy();
   });
 
-  it('should render without enter/layout animation when gated off', () => {
+  it('should render without enter animation when gated off', () => {
     const { getByText } = render(
       <MessageLine
         message={createMessage({ body: 'Static row' })}
         animateEnter={false}
-        animateLayout={false}
         onLongPress={onLongPress}
       />,
     );

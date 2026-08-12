@@ -37,9 +37,13 @@ jest.mock('react-native-gesture-handler', () => {
         mockListMount();
         return mockListUnmount;
       }, []);
+      ReactModule.useImperativeHandle(ref, () => ({
+        scrollToEnd: jest.fn(),
+        scrollToOffset: jest.fn(),
+        scrollToIndex: jest.fn(),
+      }));
       return ReactModule.createElement(ReactNative.View, {
         ...props,
-        ref,
         testID: 'history-list',
       });
     },
@@ -262,5 +266,44 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     expect(mockListUnmount).not.toHaveBeenCalled();
 
     addListener.mockRestore();
+  });
+
+  it('should keep flexGrow on list content when overflow flips scrollability', () => {
+    const screen = render(<ChatRoomScreen />);
+    const list = screen.getByTestId('history-list');
+
+    const flatten = (style: unknown) =>
+      Array.isArray(style)
+        ? Object.assign({}, ...style.filter(Boolean))
+        : (style as Record<string, unknown> | undefined);
+
+    expect(flatten(list.props.contentContainerStyle)?.flexGrow).toBe(1);
+    expect(flatten(list.props.contentContainerStyle)?.justifyContent).toBe(
+      'flex-end',
+    );
+    expect(list.props.inverted).toBe(true);
+    expect(list.props.maintainVisibleContentPosition).toBeUndefined();
+
+    act(() => {
+      list.props.onLayout?.({ nativeEvent: { layout: { height: 400 } } });
+      list.props.onContentSizeChange(0, 1000);
+    });
+
+    const overflowing = screen.getByTestId('history-list');
+    expect(flatten(overflowing.props.contentContainerStyle)?.flexGrow).toBe(1);
+    expect(flatten(overflowing.props.contentContainerStyle)?.justifyContent).toBe(
+      'flex-end',
+    );
+    expect(overflowing.props.scrollEnabled).toBe(true);
+
+    act(() => {
+      overflowing.props.onContentSizeChange(0, 300);
+    });
+
+    const short = screen.getByTestId('history-list');
+    expect(flatten(short.props.contentContainerStyle)?.flexGrow).toBe(1);
+    expect(flatten(short.props.contentContainerStyle)?.justifyContent).toBe(
+      'flex-end',
+    );
   });
 });

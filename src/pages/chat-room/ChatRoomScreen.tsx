@@ -11,7 +11,6 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import Animated, {
-  useSharedValue,
   useAnimatedScrollHandler,
   FadeIn,
   FadeOut,
@@ -67,24 +66,24 @@ import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
 import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
+import { buildHistoryListItems, type HistoryListItem } from './historyListItems';
 import {
-  canListScroll,
+  getInvertedListContentFillStyle,
   getListPointerEvents,
   getNonScrollableListContentStyle,
-  isScrollAtBottom,
+  isInvertedListAtVisualBottom,
+  isInvertedListAtVisualTop,
   isScrollAtTop,
+  nextCanListScroll,
   shouldAttachNativeScrollGesture,
   shouldEnableHistoryListScroll,
-  shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
 type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
 
-type ListItem =
-  | { kind: 'date'; key: string; date: string }
-  | { kind: 'message'; key: string; message: Message };
+type ListItem = HistoryListItem;
 
 const REFRESH_INTERVAL = 30_000;
 const FUTURE_REFRESH_INTERVAL = 15_000;
@@ -96,30 +95,16 @@ const AnimatedFlatList = Animated.createAnimatedComponent(
 function wrapHistoryNativeScroll(
   canScroll: boolean,
   gesture: ReturnType<typeof useFuturePeekEntryGesture>['nativeGesture'],
+  inertGesture: ReturnType<typeof Gesture.Manual>,
   child: React.ReactElement,
 ): React.ReactElement {
-  if (!shouldAttachNativeScrollGesture(canScroll)) return child;
-  return <GestureDetector gesture={gesture}>{child}</GestureDetector>;
-}
-
-function getDayKey(iso: string): string {
-  return iso.slice(0, 10);
-}
-
-function buildListItems(messages: Message[]): ListItem[] {
-  const items: ListItem[] = [];
-  let prevDay = '';
-
-  for (const msg of messages) {
-    const day = getDayKey(msg.createdAt);
-    if (day !== prevDay) {
-      items.push({ kind: 'date', key: `date-${day}`, date: msg.createdAt });
-      prevDay = day;
-    }
-    items.push({ kind: 'message', key: msg.id, message: msg });
-  }
-
-  return items;
+  // Always keep GestureDetector as parent so FlatList is not remounted when
+  // canScroll flips (attach/detach used to recreate the whole list forever).
+  return (
+    <GestureDetector gesture={canScroll ? gesture : inertGesture}>
+      {child}
+    </GestureDetector>
+  );
 }
 
 export function ChatRoomScreen() {
@@ -157,6 +142,8 @@ export function ChatRoomScreen() {
   const [historyCanScroll, setHistoryCanScroll] = useState(false);
   const [futureCanScroll, setFutureCanScroll] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const keyboardOpenRef = useRef(false);
+  keyboardOpenRef.current = keyboardOpen;
   /** Android only: JS-driven pad so Yoga relayouts FlatList (Reanimated pad did not). */
   const [androidKeyboardPad, setAndroidKeyboardPad] = useState(0);
   const {
@@ -167,52 +154,56 @@ export function ChatRoomScreen() {
     openKey: viewerOpenKey,
   } = useImageViewer();
 
-  const scrollY = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
   const futureListRef = useRef<FlatList<Message>>(null);
   const scrollToMessageId = useRef(false);
   const scrolledToMessageRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const historyScrollOffsetRef = useRef(0);
-  const suppressScrollToBottomRef = useRef(false);
-  const listMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
+  const historyOffsetRef = useRef(0);
+  const historyMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
+  const futureMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  /** Keys that already played enter animation — survives FlatList remount. */
+  /** Keys that already played enter animation — survives layout churn. */
   const animatedItemKeysRef = useRef<Set<string>>(new Set());
   /** Inert gesture: keeps GestureDetector in the tree without claiming vertical pans. */
   const keyboardPassthroughGesture = useMemo(() => Gesture.Manual(), []);
 
   const updateHistoryEdges = useCallback(
     (offsetY: number, contentHeight: number, layoutHeight: number) => {
-      historyScrollOffsetRef.current = offsetY;
-      listMetricsRef.current = { contentHeight, layoutHeight };
-      const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
-      const nextTop = isScrollAtTop(offsetY);
-      const nextCanScroll = canListScroll(contentHeight, layoutHeight);
+      historyOffsetRef.current = offsetY;
+      historyMetricsRef.current = { contentHeight, layoutHeight };
+      const nextBottom = isInvertedListAtVisualBottom(
+        offsetY,
+        contentHeight,
+        layoutHeight,
+      );
+      const nextTop = isInvertedListAtVisualTop(offsetY, contentHeight, layoutHeight);
       setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
       setAtTop((prev) => (prev === nextTop ? prev : nextTop));
-      setHistoryCanScroll((prev) => (prev === nextCanScroll ? prev : nextCanScroll));
+      setHistoryCanScroll((prev) => {
+        const nextCanScroll = nextCanListScroll(prev, contentHeight, layoutHeight);
+        return prev === nextCanScroll ? prev : nextCanScroll;
+      });
     },
     [],
   );
 
   const updateFutureEdges = useCallback(
     (offsetY: number, contentHeight: number, layoutHeight: number) => {
-      listMetricsRef.current = { contentHeight, layoutHeight };
-      const nextBottom = isScrollAtBottom(offsetY, contentHeight, layoutHeight);
+      futureMetricsRef.current = { contentHeight, layoutHeight };
       const nextTop = isScrollAtTop(offsetY);
-      const nextCanScroll = canListScroll(contentHeight, layoutHeight);
-      setAtBottom((prev) => (prev === nextBottom ? prev : nextBottom));
       setAtTop((prev) => (prev === nextTop ? prev : nextTop));
-      setFutureCanScroll((prev) => (prev === nextCanScroll ? prev : nextCanScroll));
+      setFutureCanScroll((prev) => {
+        const nextCanScroll = nextCanListScroll(prev, contentHeight, layoutHeight);
+        return prev === nextCanScroll ? prev : nextCanScroll;
+      });
     },
     [],
   );
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
       runOnJS(updateHistoryEdges)(
         event.contentOffset.y,
         event.contentSize.height,
@@ -289,36 +280,27 @@ export function ChatRoomScreen() {
     setMenuMessage(message);
   }, []);
 
-  const listItems = useMemo(() => buildListItems(messages), [messages]);
+  const listItems = useMemo(() => buildHistoryListItems(messages), [messages]);
 
   const enterFuture = useCallback(() => {
-    historyScrollOffsetRef.current = scrollY.value;
-    suppressScrollToBottomRef.current = true;
     Keyboard.dismiss();
     setMenuMessage(null);
     timelineModeRef.current = 'future';
     setTimelineMode('future');
     loadFuture();
     setAtTop(true);
-  }, [loadFuture, scrollY]);
+  }, [loadFuture]);
 
   const exitFuture = useCallback(() => {
-    suppressScrollToBottomRef.current = true;
     setMenuMessage(null);
     timelineModeRef.current = 'history';
     setTimelineMode('history');
     if (mode === 'future') {
       navigation.setParams({ mode: 'history' });
     }
-    const offset = historyScrollOffsetRef.current;
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset, animated: false });
-        setTimeout(() => {
-          suppressScrollToBottomRef.current = false;
-        }, 100);
-      }, 50);
-    });
+    // Inverted list remounts at offset 0 = visual bottom (latest / composer).
+    historyOffsetRef.current = 0;
+    setAtBottom(true);
   }, [mode, navigation]);
 
   const handleBack = useCallback(() => {
@@ -355,20 +337,6 @@ export function ChatRoomScreen() {
     onCommit: exitFuture,
   });
 
-  const scrollToBottom = useCallback((animated = false) => {
-    if (scrollToMessageId.current) return;
-    if (suppressScrollToBottomRef.current) return;
-    if (timelineMode !== 'history') return;
-    flatListRef.current?.scrollToEnd({ animated });
-  }, [timelineMode]);
-
-  useEffect(() => {
-    if (timelineMode !== 'history') return;
-    if (listItems.length === 0) return;
-    const timer = setTimeout(() => scrollToBottom(false), 50);
-    return () => clearTimeout(timer);
-  }, [listItems, scrollToBottom, timelineMode]);
-
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardOpen(true);
@@ -380,13 +348,10 @@ export function ChatRoomScreen() {
           getAndroidChatAreaKeyboardPad(e.endCoordinates.height, tabBarHeight),
         );
       }
-      // Keep peek armed while layout shrinks; then pin to end (no animated scroll —
-      // animated scroll + item Layout springs can feedback-loop).
-      setAtBottom(true);
-      setTimeout(() => scrollToBottom(false), 100);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
+      entryPeekResetRef.current?.();
       if (Platform.OS === 'android') {
         setAndroidKeyboardPad(0);
       }
@@ -395,7 +360,7 @@ export function ChatRoomScreen() {
       showSub.remove();
       hideSub.remove();
     };
-  }, [scrollToBottom, tabBarHeight]);
+  }, [tabBarHeight]);
 
   useEffect(() => {
     scrolledToMessageRef.current = null;
@@ -476,12 +441,18 @@ export function ChatRoomScreen() {
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      // Inverted + reversed data: highest index is toward the visual top.
+      let topDate: string | null = null;
+      let topIndex = -1;
       for (const v of viewableItems) {
-        if (v.isViewable && v.item.kind === 'date') {
-          setStickyDate((v.item as { date: string }).date);
-          return;
+        if (!v.isViewable || v.item?.kind !== 'date') continue;
+        const index = v.index ?? -1;
+        if (index >= topIndex) {
+          topIndex = index;
+          topDate = (v.item as { date: string }).date;
         }
       }
+      if (topDate) setStickyDate(topDate);
     },
     [],
   );
@@ -604,10 +575,9 @@ export function ChatRoomScreen() {
       if (!alreadyAnimated) {
         animatedItemKeysRef.current.add(item.key);
       }
-      // Enter only on first sight while keyboard is closed; layout off during IME reflow.
-      const animateEnter = !alreadyAnimated && !keyboardOpen;
-      const animateLayout = !keyboardOpen;
-
+      // Ref: keep renderItem identity stable across keyboard open/close so
+      // inverted cells are not remounted (that replayed enter/exit motion).
+      const animateEnter = !alreadyAnimated && !keyboardOpenRef.current;
       if (item.kind === 'date') {
         return <DateSeparator date={item.date} animateEnter={animateEnter} />;
       }
@@ -616,13 +586,12 @@ export function ChatRoomScreen() {
           message={item.message}
           highlighted={item.message.id === highlightedMessageId}
           animateEnter={animateEnter}
-          animateLayout={animateLayout}
           onLongPress={openMessageMenu}
           onImagePress={open}
         />
       );
     },
-    [open, highlightedMessageId, openMessageMenu, keyboardOpen],
+    [open, highlightedMessageId, openMessageMenu],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -736,13 +705,13 @@ export function ChatRoomScreen() {
                         : undefined
                     }
                     onContentSizeChange={(w, h) => {
-                      updateFutureEdges(0, h, listMetricsRef.current.layoutHeight || h);
+                      updateFutureEdges(0, h, futureMetricsRef.current.layoutHeight || h);
                     }}
                     onLayout={(height) => {
-                      listMetricsRef.current.layoutHeight = height;
+                      futureMetricsRef.current.layoutHeight = height;
                       updateFutureEdges(
                         0,
-                        listMetricsRef.current.contentHeight || height,
+                        futureMetricsRef.current.contentHeight || height,
                         height,
                       );
                     }}
@@ -767,10 +736,9 @@ export function ChatRoomScreen() {
               outside peekHost lets the list grow to content and clips the top.
 
               Keep GestureDetector mounted across keyboard open/close so FlatList
-              (and MessageLine entering animations) are not remounted. While the
-              keyboard is open, swap in an inert Manual gesture — a disabled peek
-              Pan still sits in the Android touch arena and can eat vertical
-              scrolls. Rubber-band is cleared via entryPeek.reset().
+              is not remounted. While the keyboard is open, swap in an inert Manual
+              gesture — a disabled peek Pan still sits in the Android touch arena
+              and can eat vertical scrolls. Rubber-band is cleared via entryPeek.reset().
             */}
             <GestureDetector
               gesture={
@@ -779,32 +747,29 @@ export function ChatRoomScreen() {
             >
               <View style={styles.listContainer}>
                 <Animated.View
-                  style={[
-                    styles.listPane,
-                    keyboardOpen ? null : entryPeek.rubberBandStyle,
-                  ]}
+                  style={[styles.listPane, entryPeek.rubberBandStyle]}
                   accessible
                   accessibilityHint={t.futurePeekA11y}
                 >
                   {wrapHistoryNativeScroll(
-                    // Keep native wrap tied to historyCanScroll only so keyboard
-                    // open/close does not attach/detach and remount FlatList.
+                    // Native vs Manual swap only — GestureDetector stays mounted.
                     historyCanScroll,
                     entryPeek.nativeGesture,
+                    keyboardPassthroughGesture,
                     <AnimatedFlatList
                       ref={flatListRef as any}
                       data={listItems}
+                      inverted
                       renderItem={renderListItem}
                       keyExtractor={keyExtractor}
                       style={styles.list}
-                      contentContainerStyle={
+                      contentContainerStyle={[
+                        styles.listContent,
+                        getInvertedListContentFillStyle(),
                         historyListCanScroll
-                          ? styles.listContent
-                          : [
-                              styles.listContent,
-                              getNonScrollableListContentStyle(),
-                            ]
-                      }
+                          ? null
+                          : getNonScrollableListContentStyle(),
+                      ]}
                       scrollEnabled={historyListCanScroll}
                       pointerEvents={getListPointerEvents(historyListCanScroll)}
                       nestedScrollEnabled={
@@ -816,46 +781,18 @@ export function ChatRoomScreen() {
                       onScroll={scrollHandler}
                       scrollEventThrottle={16}
                       onContentSizeChange={(_w: number, h: number) => {
-                        listMetricsRef.current.contentHeight = h;
                         updateHistoryEdges(
-                          historyScrollOffsetRef.current,
+                          historyOffsetRef.current,
                           h,
-                          listMetricsRef.current.layoutHeight,
+                          historyMetricsRef.current.layoutHeight,
                         );
                       }}
                       onLayout={(e: LayoutChangeEvent) => {
                         const h = e.nativeEvent.layout.height;
-                        const prevLayout = listMetricsRef.current.layoutHeight;
-                        const wasAtBottom = isScrollAtBottom(
-                          historyScrollOffsetRef.current,
-                          listMetricsRef.current.contentHeight,
-                          prevLayout || h,
-                        );
-                        listMetricsRef.current.layoutHeight = h;
-
-                        if (
-                          shouldStickToBottomOnLayoutShrink(
-                            wasAtBottom,
-                            prevLayout,
-                            h,
-                          )
-                        ) {
-                          setAtBottom(true);
-                          flatListRef.current?.scrollToEnd({ animated: false });
-                          updateHistoryEdges(
-                            Math.max(
-                              0,
-                              listMetricsRef.current.contentHeight - h,
-                            ),
-                            listMetricsRef.current.contentHeight,
-                            h,
-                          );
-                          return;
-                        }
-
+                        historyMetricsRef.current.layoutHeight = h;
                         updateHistoryEdges(
-                          historyScrollOffsetRef.current,
-                          listMetricsRef.current.contentHeight,
+                          historyOffsetRef.current,
+                          historyMetricsRef.current.contentHeight || h,
                           h,
                         );
                       }}
@@ -989,7 +926,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   listContent: {
-    paddingTop: 4,
+    // Both ends: inverted paddingTop *or* flex-end paddingBottom is the
+    // composer gap, depending on how the platform applies inversion.
+    paddingTop: MESSAGE_LIST_BOTTOM_GAP,
     paddingBottom: MESSAGE_LIST_BOTTOM_GAP,
   },
 });

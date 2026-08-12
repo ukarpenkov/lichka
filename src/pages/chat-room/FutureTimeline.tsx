@@ -1,15 +1,17 @@
 import React, { forwardRef, useCallback, type ReactElement } from 'react';
 import { View, StyleSheet, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import { FlatList, GestureDetector, type ComposedGesture, type GestureType } from 'react-native-gesture-handler';
+import { FlatList, Gesture, GestureDetector, type ComposedGesture, type GestureType } from 'react-native-gesture-handler';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { AlarmClockIcon, Text, Button, AnimatedPressable } from '../../shared/ui';
-import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { useTheme, useLocale, listRow, radii, formatScheduledWhen, spacing } from '../../shared/config';
 import { hapticLongPress, MESSAGE_LIST_BOTTOM_GAP } from '../../shared/lib';
-import { getNonScrollableListContentStyle } from './scrollEdge';
+import { getListContentFillStyle, getNonScrollableListContentStyle } from './scrollEdge';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
+
+/** Inert stand-in so GestureDetector stays mounted when Native scroll is off. */
+const INERT_SCROLL_GESTURE = Gesture.Manual();
 
 export type FutureTimelineProps = {
   messages: Message[];
@@ -60,32 +62,28 @@ function FutureMessageRow({
   };
 
   return (
-    <Animated.View
-      entering={FadeInUp.springify().damping(20).stiffness(200)}
-      layout={Layout.springify().damping(22).stiffness(180)}>
-      <AnimatedPressable
-        onPress={onPress}
-        onLongPress={handleLongPress}
-        delayLongPress={300}
-        scaleTo={1}
-        pressStyle={{ backgroundColor: colors.surfaceSoft }}
-        style={[styles.row, highlighted ? { backgroundColor: colors.surfaceSoft } : null]}
-        {...(Platform.OS === 'android'
-          ? { android_ripple: { color: colors.surfaceSoft } }
-          : {})}>
-        <View style={[styles.iconWrap, { backgroundColor: colors.surfaceStrong }]}>
-          {Icon ? <Icon size={20} color={colors.ink} /> : null}
-        </View>
-        <View style={styles.content}>
-          <Text variant="title-sm" numberOfLines={1}>
-            {message.body}
-          </Text>
-          <Text variant="body-sm" tone="mutedSoft" style={styles.when}>
-            {timeText}
-          </Text>
-        </View>
-      </AnimatedPressable>
-    </Animated.View>
+    <AnimatedPressable
+      onPress={onPress}
+      onLongPress={handleLongPress}
+      delayLongPress={300}
+      scaleTo={1}
+      pressStyle={{ backgroundColor: colors.surfaceSoft }}
+      style={[styles.row, highlighted ? { backgroundColor: colors.surfaceSoft } : null]}
+      {...(Platform.OS === 'android'
+        ? { android_ripple: { color: colors.surfaceSoft } }
+        : {})}>
+      <View style={[styles.iconWrap, { backgroundColor: colors.surfaceStrong }]}>
+        {Icon ? <Icon size={20} color={colors.ink} /> : null}
+      </View>
+      <View style={styles.content}>
+        <Text variant="title-sm" numberOfLines={1}>
+          {message.body}
+        </Text>
+        <Text variant="body-sm" tone="mutedSoft" style={styles.when}>
+          {timeText}
+        </Text>
+      </View>
+    </AnimatedPressable>
   );
 }
 
@@ -95,8 +93,12 @@ function wrapNativeScroll(
   /** Only compose Native when the list can scroll; otherwise outer pan owns the pane. */
   scrollEnabled = true,
 ): ReactElement {
-  if (!gesture || !scrollEnabled) return child;
-  return <GestureDetector gesture={gesture}>{child}</GestureDetector>;
+  const active = Boolean(gesture && scrollEnabled);
+  return (
+    <GestureDetector gesture={active ? gesture! : INERT_SCROLL_GESTURE}>
+      {child}
+    </GestureDetector>
+  );
 }
 
 export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>(
@@ -165,11 +167,11 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
           </View>
         }
         style={{ flex: 1, backgroundColor: colors.canvas }}
-        contentContainerStyle={
-          scrollEnabled
-            ? styles.listContent
-            : [styles.listContent, getNonScrollableListContentStyle()]
-        }
+        contentContainerStyle={[
+          styles.listContent,
+          getListContentFillStyle(),
+          scrollEnabled ? null : getNonScrollableListContentStyle(),
+        ]}
         onScroll={onScroll}
         scrollEventThrottle={16}
         onContentSizeChange={onContentSizeChange}
