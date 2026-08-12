@@ -6,15 +6,19 @@ import { useLocale, formatDateLabel, spacing } from '../../shared/config';
 
 type DateSeparatorProps = {
   date: string;
+  /** First-seen mount only — false after remount (e.g. keyboard tree churn). */
+  animateEnter?: boolean;
 };
 
 /** Textual day marker for terminal log — no hairline wings. */
-export function DateSeparator({ date }: DateSeparatorProps) {
+export function DateSeparator({ date, animateEnter = true }: DateSeparatorProps) {
   const { locale, t } = useLocale();
   const label = formatDateLabel(date, locale, t);
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={styles.container}>
+    <Animated.View
+      entering={animateEnter ? FadeIn.duration(200) : undefined}
+      style={styles.container}>
       <Text variant="mono-meta" tone="muted">
         {`── ${label} ──`}
       </Text>

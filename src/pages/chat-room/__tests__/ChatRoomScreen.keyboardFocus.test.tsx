@@ -3,6 +3,8 @@ import { act, render } from '@testing-library/react-native';
 
 const mockComposerMount = jest.fn();
 const mockComposerUnmount = jest.fn();
+const mockListMount = jest.fn();
+const mockListUnmount = jest.fn();
 const mockNavigation = {
   addListener: jest.fn(() => jest.fn()),
   goBack: jest.fn(),
@@ -30,15 +32,20 @@ jest.mock('react-native-gesture-handler', () => {
     return gesture;
   };
   const MockFlatList = ReactModule.forwardRef(
-    (props: Record<string, unknown>, ref: React.Ref<unknown>) =>
-      ReactModule.createElement(ReactNative.View, {
+    (props: Record<string, unknown>, ref: React.Ref<unknown>) => {
+      ReactModule.useEffect(() => {
+        mockListMount();
+        return mockListUnmount;
+      }, []);
+      return ReactModule.createElement(ReactNative.View, {
         ...props,
         ref,
         testID: 'history-list',
-      }),
+      });
+    },
   );
   return {
-    Gesture: { Native: chainable, Pan: chainable },
+    Gesture: { Native: chainable, Pan: chainable, Manual: chainable, Tap: chainable },
     GestureDetector: ({ children }: { children: React.ReactNode }) => children,
     FlatList: MockFlatList,
     TextInput: ReactNative.TextInput,
@@ -180,6 +187,8 @@ describe('ChatRoomScreen keyboard focus regression', () => {
   beforeEach(() => {
     mockComposerMount.mockClear();
     mockComposerUnmount.mockClear();
+    mockListMount.mockClear();
+    mockListUnmount.mockClear();
   });
 
   it('should keep the composer mounted when at-bottom state changes', () => {
@@ -219,6 +228,38 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     expect(screen.getByTestId('message-composer')).toBeTruthy();
     expect(mockComposerMount).toHaveBeenCalledTimes(1);
     expect(mockComposerUnmount).not.toHaveBeenCalled();
+
+    addListener.mockRestore();
+  });
+
+  it('should keep the history list mounted when the keyboard opens and closes', () => {
+    const { Keyboard } = require('react-native');
+    let showHandler: ((e?: { endCoordinates: { height: number } }) => void) | undefined;
+    let hideHandler: (() => void) | undefined;
+    const addListener = jest.spyOn(Keyboard, 'addListener').mockImplementation((event, handler) => {
+      if (event === 'keyboardDidShow') {
+        showHandler = handler as typeof showHandler;
+      }
+      if (event === 'keyboardDidHide') {
+        hideHandler = handler as typeof hideHandler;
+      }
+      return { remove: jest.fn() };
+    });
+
+    render(<ChatRoomScreen />);
+    expect(mockListMount).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      showHandler?.({ endCoordinates: { height: 300 } } as never);
+    });
+    expect(mockListMount).toHaveBeenCalledTimes(1);
+    expect(mockListUnmount).not.toHaveBeenCalled();
+
+    act(() => {
+      hideHandler?.();
+    });
+    expect(mockListMount).toHaveBeenCalledTimes(1);
+    expect(mockListUnmount).not.toHaveBeenCalled();
 
     addListener.mockRestore();
   });

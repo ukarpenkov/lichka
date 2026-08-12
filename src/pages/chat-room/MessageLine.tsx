@@ -14,6 +14,10 @@ import type { Message, MessageType } from '../../entities/message';
 type MessageLineProps = {
   message: Message;
   highlighted?: boolean;
+  /** First-seen mount only — false after remount (e.g. keyboard tree churn). */
+  animateEnter?: boolean;
+  /** Off while keyboard reflow so Layout spring cannot feedback-loop. */
+  animateLayout?: boolean;
   onLongPress: (message: Message) => void;
   onImagePress?: (data: { uri: string; width: number; height: number }) => void;
 };
@@ -62,6 +66,8 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent | nul
 export function MessageLine({
   message,
   highlighted,
+  animateEnter = true,
+  animateLayout = true,
   onLongPress,
   onImagePress,
 }: MessageLineProps) {
@@ -118,9 +124,17 @@ export function MessageLine({
 
   return (
     <Animated.View
-      entering={FadeInUp.springify().damping(18).stiffness(220)}
+      entering={
+        animateEnter
+          ? FadeInUp.springify().damping(18).stiffness(220)
+          : undefined
+      }
       exiting={FadeOutDown.duration(200)}
-      layout={Layout.springify().damping(20).stiffness(200)}>
+      layout={
+        animateLayout
+          ? Layout.springify().damping(20).stiffness(200)
+          : undefined
+      }>
       <GesturePressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}

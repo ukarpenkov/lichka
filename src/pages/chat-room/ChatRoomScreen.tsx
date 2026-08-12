@@ -17,7 +17,7 @@ import Animated, {
   FadeOut,
   runOnJS,
 } from 'react-native-reanimated';
-import { FlatList, GestureDetector } from 'react-native-gesture-handler';
+import { FlatList, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -74,6 +74,7 @@ import {
   isScrollAtBottom,
   isScrollAtTop,
   shouldAttachNativeScrollGesture,
+  shouldEnableHistoryListScroll,
   shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
@@ -177,6 +178,10 @@ export function ChatRoomScreen() {
   const listMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Keys that already played enter animation — survives FlatList remount. */
+  const animatedItemKeysRef = useRef<Set<string>>(new Set());
+  /** Inert gesture: keeps GestureDetector in the tree without claiming vertical pans. */
+  const keyboardPassthroughGesture = useMemo(() => Gesture.Manual(), []);
 
   const updateHistoryEdges = useCallback(
     (offsetY: number, contentHeight: number, layoutHeight: number) => {
@@ -258,6 +263,10 @@ export function ChatRoomScreen() {
       };
     }, [chatId, loadData, loadFuture]),
   );
+
+  useEffect(() => {
+    animatedItemKeysRef.current = new Set();
+  }, [chatId]);
 
   useEffect(() => {
     Keyboard.dismiss();
@@ -371,9 +380,10 @@ export function ChatRoomScreen() {
           getAndroidChatAreaKeyboardPad(e.endCoordinates.height, tabBarHeight),
         );
       }
-      // Keep peek armed while layout shrinks; then pin to end.
+      // Keep peek armed while layout shrinks; then pin to end (no animated scroll —
+      // animated scroll + item Layout springs can feedback-loop).
       setAtBottom(true);
-      setTimeout(() => scrollToBottom(true), 100);
+      setTimeout(() => scrollToBottom(false), 100);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
@@ -590,22 +600,38 @@ export function ChatRoomScreen() {
 
   const renderListItem = useCallback(
     ({ item }: { item: ListItem }) => {
+      const alreadyAnimated = animatedItemKeysRef.current.has(item.key);
+      if (!alreadyAnimated) {
+        animatedItemKeysRef.current.add(item.key);
+      }
+      // Enter only on first sight while keyboard is closed; layout off during IME reflow.
+      const animateEnter = !alreadyAnimated && !keyboardOpen;
+      const animateLayout = !keyboardOpen;
+
       if (item.kind === 'date') {
-        return <DateSeparator date={item.date} />;
+        return <DateSeparator date={item.date} animateEnter={animateEnter} />;
       }
       return (
         <MessageLine
           message={item.message}
           highlighted={item.message.id === highlightedMessageId}
+          animateEnter={animateEnter}
+          animateLayout={animateLayout}
           onLongPress={openMessageMenu}
           onImagePress={open}
         />
       );
     },
-    [open, highlightedMessageId, openMessageMenu],
+    [open, highlightedMessageId, openMessageMenu, keyboardOpen],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
+
+  const historyListCanScroll = shouldEnableHistoryListScroll(
+    historyCanScroll,
+    keyboardOpen,
+    Platform.OS,
+  );
 
   if (chat === undefined) {
     return (
@@ -740,166 +766,120 @@ export function ChatRoomScreen() {
               wrapping composer too fights TextInput focus; placing composer
               outside peekHost lets the list grow to content and clips the top.
 
-              When the keyboard is open, skip GestureDetector entirely: a disabled
-              peek pan still sits in the Android touch arena and can eat vertical
-              scrolls. Rubber-band transform is also cleared via entryPeek.reset().
+              Keep GestureDetector mounted across keyboard open/close so FlatList
+              (and MessageLine entering animations) are not remounted. While the
+              keyboard is open, swap in an inert Manual gesture — a disabled peek
+              Pan still sits in the Android touch arena and can eat vertical
+              scrolls. Rubber-band is cleared via entryPeek.reset().
             */}
-            {keyboardOpen ? (
+            <GestureDetector
+              gesture={
+                keyboardOpen ? keyboardPassthroughGesture : entryPeek.gesture
+              }
+            >
               <View style={styles.listContainer}>
-                <View
-                  style={styles.listPane}
+                <Animated.View
+                  style={[
+                    styles.listPane,
+                    keyboardOpen ? null : entryPeek.rubberBandStyle,
+                  ]}
                   accessible
                   accessibilityHint={t.futurePeekA11y}
                 >
-                  <AnimatedFlatList
-                    ref={flatListRef as any}
-                    data={listItems}
-                    renderItem={renderListItem}
-                    keyExtractor={keyExtractor}
-                    style={styles.list}
-                    contentContainerStyle={styles.listContent}
-                    scrollEnabled
-                    keyboardShouldPersistTaps="handled"
-                    nestedScrollEnabled
-                    onViewableItemsChanged={handleViewableItemsChanged}
-                    viewabilityConfig={viewabilityConfig}
-                    onScroll={scrollHandler}
-                    scrollEventThrottle={16}
-                    onContentSizeChange={(_w: number, h: number) => {
-                      listMetricsRef.current.contentHeight = h;
-                      updateHistoryEdges(
-                        historyScrollOffsetRef.current,
-                        h,
-                        listMetricsRef.current.layoutHeight,
-                      );
-                    }}
-                    onLayout={(e: LayoutChangeEvent) => {
-                      const h = e.nativeEvent.layout.height;
-                      const prevLayout = listMetricsRef.current.layoutHeight;
-                      const wasAtBottom = isScrollAtBottom(
-                        historyScrollOffsetRef.current,
-                        listMetricsRef.current.contentHeight,
-                        prevLayout || h,
-                      );
-                      listMetricsRef.current.layoutHeight = h;
-
-                      if (
-                        shouldStickToBottomOnLayoutShrink(wasAtBottom, prevLayout, h)
-                      ) {
-                        setAtBottom(true);
-                        flatListRef.current?.scrollToEnd({ animated: false });
+                  {wrapHistoryNativeScroll(
+                    // Keep native wrap tied to historyCanScroll only so keyboard
+                    // open/close does not attach/detach and remount FlatList.
+                    historyCanScroll,
+                    entryPeek.nativeGesture,
+                    <AnimatedFlatList
+                      ref={flatListRef as any}
+                      data={listItems}
+                      renderItem={renderListItem}
+                      keyExtractor={keyExtractor}
+                      style={styles.list}
+                      contentContainerStyle={
+                        historyListCanScroll
+                          ? styles.listContent
+                          : [
+                              styles.listContent,
+                              getNonScrollableListContentStyle(),
+                            ]
+                      }
+                      scrollEnabled={historyListCanScroll}
+                      pointerEvents={getListPointerEvents(historyListCanScroll)}
+                      nestedScrollEnabled={
+                        Platform.OS === 'android' && keyboardOpen
+                      }
+                      keyboardShouldPersistTaps="handled"
+                      onViewableItemsChanged={handleViewableItemsChanged}
+                      viewabilityConfig={viewabilityConfig}
+                      onScroll={scrollHandler}
+                      scrollEventThrottle={16}
+                      onContentSizeChange={(_w: number, h: number) => {
+                        listMetricsRef.current.contentHeight = h;
                         updateHistoryEdges(
-                          Math.max(0, listMetricsRef.current.contentHeight - h),
+                          historyScrollOffsetRef.current,
+                          h,
+                          listMetricsRef.current.layoutHeight,
+                        );
+                      }}
+                      onLayout={(e: LayoutChangeEvent) => {
+                        const h = e.nativeEvent.layout.height;
+                        const prevLayout = listMetricsRef.current.layoutHeight;
+                        const wasAtBottom = isScrollAtBottom(
+                          historyScrollOffsetRef.current,
+                          listMetricsRef.current.contentHeight,
+                          prevLayout || h,
+                        );
+                        listMetricsRef.current.layoutHeight = h;
+
+                        if (
+                          shouldStickToBottomOnLayoutShrink(
+                            wasAtBottom,
+                            prevLayout,
+                            h,
+                          )
+                        ) {
+                          setAtBottom(true);
+                          flatListRef.current?.scrollToEnd({ animated: false });
+                          updateHistoryEdges(
+                            Math.max(
+                              0,
+                              listMetricsRef.current.contentHeight - h,
+                            ),
+                            listMetricsRef.current.contentHeight,
+                            h,
+                          );
+                          return;
+                        }
+
+                        updateHistoryEdges(
+                          historyScrollOffsetRef.current,
                           listMetricsRef.current.contentHeight,
                           h,
                         );
-                        return;
-                      }
-
-                      updateHistoryEdges(
-                        historyScrollOffsetRef.current,
-                        listMetricsRef.current.contentHeight,
-                        h,
-                      );
-                    }}
-                    onScrollToIndexFailed={(info: any) => {
-                      setTimeout(() => {
-                        flatListRef.current?.scrollToIndex({
-                          index: info.index,
-                          animated: false,
-                          viewPosition: 0.5,
-                        });
-                      }, 200);
-                    }}
-                  />
-                </View>
-              </View>
-            ) : (
-              <GestureDetector gesture={entryPeek.gesture}>
-                <View style={styles.listContainer}>
-                  <Animated.View
-                    style={[styles.listPane, entryPeek.rubberBandStyle]}
-                    accessible
-                    accessibilityHint={t.futurePeekA11y}
-                  >
-                    {wrapHistoryNativeScroll(
-                      historyCanScroll,
-                      entryPeek.nativeGesture,
-                      <AnimatedFlatList
-                        ref={flatListRef as any}
-                        data={listItems}
-                        renderItem={renderListItem}
-                        keyExtractor={keyExtractor}
-                        style={styles.list}
-                        contentContainerStyle={
-                          historyCanScroll
-                            ? styles.listContent
-                            : [styles.listContent, getNonScrollableListContentStyle()]
-                        }
-                        scrollEnabled={historyCanScroll}
-                        pointerEvents={getListPointerEvents(historyCanScroll)}
-                        keyboardShouldPersistTaps="handled"
-                        onViewableItemsChanged={handleViewableItemsChanged}
-                        viewabilityConfig={viewabilityConfig}
-                        onScroll={scrollHandler}
-                        scrollEventThrottle={16}
-                        onContentSizeChange={(_w: number, h: number) => {
-                          listMetricsRef.current.contentHeight = h;
-                          updateHistoryEdges(
-                            historyScrollOffsetRef.current,
-                            h,
-                            listMetricsRef.current.layoutHeight,
-                          );
-                        }}
-                        onLayout={(e: LayoutChangeEvent) => {
-                          const h = e.nativeEvent.layout.height;
-                          const prevLayout = listMetricsRef.current.layoutHeight;
-                          const wasAtBottom = isScrollAtBottom(
-                            historyScrollOffsetRef.current,
-                            listMetricsRef.current.contentHeight,
-                            prevLayout || h,
-                          );
-                          listMetricsRef.current.layoutHeight = h;
-
-                          if (
-                            shouldStickToBottomOnLayoutShrink(wasAtBottom, prevLayout, h)
-                          ) {
-                            setAtBottom(true);
-                            flatListRef.current?.scrollToEnd({ animated: false });
-                            updateHistoryEdges(
-                              Math.max(0, listMetricsRef.current.contentHeight - h),
-                              listMetricsRef.current.contentHeight,
-                              h,
-                            );
-                            return;
-                          }
-
-                          updateHistoryEdges(
-                            historyScrollOffsetRef.current,
-                            listMetricsRef.current.contentHeight,
-                            h,
-                          );
-                        }}
-                        onScrollToIndexFailed={(info: any) => {
-                          setTimeout(() => {
-                            flatListRef.current?.scrollToIndex({
-                              index: info.index,
-                              animated: false,
-                              viewPosition: 0.5,
-                            });
-                          }, 200);
-                        }}
-                      />,
-                    )}
-                  </Animated.View>
+                      }}
+                      onScrollToIndexFailed={(info: any) => {
+                        setTimeout(() => {
+                          flatListRef.current?.scrollToIndex({
+                            index: info.index,
+                            animated: false,
+                            viewPosition: 0.5,
+                          });
+                        }, 200);
+                      }}
+                    />,
+                  )}
+                </Animated.View>
+                {!keyboardOpen ? (
                   <FuturePeekOverlay
                     direction="enter"
                     animatedStyle={entryPeek.overlayStyle}
                     accessibilityLabel={t.futurePeekA11y}
                   />
-                </View>
-              </GestureDetector>
-            )}
+                ) : null}
+              </View>
+            </GestureDetector>
             <MessageComposer
               chatId={chatId}
               onSent={() => {
