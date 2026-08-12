@@ -68,7 +68,6 @@ import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
 import { buildHistoryListItems, type HistoryListItem } from './historyListItems';
 import {
-  getInvertedListContentFillStyle,
   getListPointerEvents,
   getNonScrollableListContentStyle,
   isInvertedListAtVisualBottom,
@@ -77,8 +76,11 @@ import {
   nextCanListScroll,
   shouldAttachNativeScrollGesture,
   shouldEnableHistoryListScroll,
+  shouldStickToBottomOnLayoutExpand,
+  shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
 import { resolveChatRoomBackAction } from './chatRoomBack';
+import { GAP_DEBUG, logGap } from './gapDebug';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
 type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
@@ -91,21 +93,6 @@ const FUTURE_REFRESH_INTERVAL = 15_000;
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
 ) as any;
-
-function wrapHistoryNativeScroll(
-  canScroll: boolean,
-  gesture: ReturnType<typeof useFuturePeekEntryGesture>['nativeGesture'],
-  inertGesture: ReturnType<typeof Gesture.Manual>,
-  child: React.ReactElement,
-): React.ReactElement {
-  // Always keep GestureDetector as parent so FlatList is not remounted when
-  // canScroll flips (attach/detach used to recreate the whole list forever).
-  return (
-    <GestureDetector gesture={canScroll ? gesture : inertGesture}>
-      {child}
-    </GestureDetector>
-  );
-}
 
 export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
@@ -157,6 +144,14 @@ export function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
   const futureListRef = useRef<FlatList<Message>>(null);
   const scrollToMessageId = useRef(false);
+  const listPaneRef = useRef<View>(null);
+  const composerWrapperRef = useRef<View>(null);
+  const lastRowRef = useRef<View>(null);
+  const listContainerRef = useRef<View>(null);
+  const peekHostRef = useRef<View>(null);
+  const chatAreaRef = useRef<View>(null);
+  const androidKeyboardPadRef = useRef(0);
+  androidKeyboardPadRef.current = androidKeyboardPad;
   const scrolledToMessageRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyOffsetRef = useRef(0);
@@ -204,6 +199,7 @@ export function ChatRoomScreen() {
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
+      runOnJS(logGap)('scroll', { offset: event.contentOffset.y });
       runOnJS(updateHistoryEdges)(
         event.contentOffset.y,
         event.contentSize.height,
@@ -211,6 +207,91 @@ export function ChatRoomScreen() {
       );
     },
   });
+
+  const pinInvertedHistoryToTail = useCallback(() => {
+    if (timelineModeRef.current !== 'history') {
+      logGap('pin-tail-skip', { reason: 'not-history' });
+      return;
+    }
+    if (scrollToMessageId.current) {
+      logGap('pin-tail-skip', { reason: 'scrollToMessageId' });
+      return;
+    }
+    logGap('pin-tail', {
+      beforeOffset: historyOffsetRef.current,
+      contentHeight: historyMetricsRef.current.contentHeight,
+      layoutHeight: historyMetricsRef.current.layoutHeight,
+    });
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+    historyOffsetRef.current = 0;
+    setAtBottom(true);
+  }, []);
+
+  const schedulePinInvertedHistoryToTail = useCallback(() => {
+    requestAnimationFrame(() => {
+      pinInvertedHistoryToTail();
+      setTimeout(() => pinInvertedHistoryToTail(), 50);
+    });
+  }, [pinInvertedHistoryToTail]);
+
+  const measureGap = useCallback(
+    (label: string, extra: Record<string, unknown> = {}) => {
+      if (!GAP_DEBUG) return;
+      let listFrame: { y: number; height: number } | null = null;
+      let composerFrame: { y: number; height: number } | null = null;
+      let lastRowBottom: number | null = null;
+      let listContainerFrame: { y: number; height: number } | null = null;
+      let peekHostFrame: { y: number; height: number } | null = null;
+      let chatAreaFrame: { y: number; height: number } | null = null;
+      const report = () => {
+        if (!listFrame || !composerFrame) return;
+        const listBottom = listFrame.y + listFrame.height;
+        const lastRowBottomEdge = lastRowBottom ?? listBottom;
+        logGap(label, {
+          gapLastToComposer: composerFrame.y - lastRowBottomEdge,
+          gapListToComposer: composerFrame.y - listBottom,
+          lastRowMeasured: lastRowBottom !== null,
+          listY: listFrame.y,
+          listHeight: listFrame.height,
+          composerY: composerFrame.y,
+          composerHeight: composerFrame.height,
+          offset: historyOffsetRef.current,
+          contentHeight: historyMetricsRef.current.contentHeight,
+          layoutHeight: historyMetricsRef.current.layoutHeight,
+          androidKeyboardPad: androidKeyboardPadRef.current,
+          listContainerFrame,
+          peekHostFrame,
+          chatAreaFrame,
+          ...extra,
+        });
+      };
+      listPaneRef.current?.measureInWindow((_x, y, _w, h) => {
+        listFrame = { y, height: h };
+        report();
+      });
+      composerWrapperRef.current?.measureInWindow((_x, y, _w, h) => {
+        composerFrame = { y, height: h };
+        report();
+      });
+      lastRowRef.current?.measureInWindow((_x, y, _w, h) => {
+        lastRowBottom = y + h;
+        report();
+      });
+      listContainerRef.current?.measureInWindow((_x, y, _w, h) => {
+        listContainerFrame = { y, height: h };
+        report();
+      });
+      peekHostRef.current?.measureInWindow((_x, y, _w, h) => {
+        peekHostFrame = { y, height: h };
+        report();
+      });
+      chatAreaRef.current?.measureInWindow((_x, y, _w, h) => {
+        chatAreaFrame = { y, height: h };
+        report();
+      });
+    },
+    [],
+  );
 
   const loadData = useCallback(() => {
     setChat(getChatById(chatId) ?? null);
@@ -348,6 +429,12 @@ export function ChatRoomScreen() {
           getAndroidChatAreaKeyboardPad(e.endCoordinates.height, tabBarHeight),
         );
       }
+      schedulePinInvertedHistoryToTail();
+      logGap('keyboardDidShow', {
+        kbHeight: e.endCoordinates.height,
+        tabBarHeight,
+      });
+      setTimeout(() => measureGap('kb-show+250ms'), 250);
     });
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
@@ -355,12 +442,22 @@ export function ChatRoomScreen() {
       if (Platform.OS === 'android') {
         setAndroidKeyboardPad(0);
       }
+      const wasAtBottom = isInvertedListAtVisualBottom(
+        historyOffsetRef.current,
+        historyMetricsRef.current.contentHeight,
+        historyMetricsRef.current.layoutHeight,
+      );
+      logGap('keyboardDidHide', { wasAtBottom });
+      if (wasAtBottom) {
+        schedulePinInvertedHistoryToTail();
+      }
+      setTimeout(() => measureGap('kb-hide+250ms'), 250);
     });
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, [tabBarHeight]);
+  }, [tabBarHeight, schedulePinInvertedHistoryToTail, measureGap]);
 
   useEffect(() => {
     scrolledToMessageRef.current = null;
@@ -412,6 +509,7 @@ export function ChatRoomScreen() {
         animated: true,
         viewPosition: 0.5,
       });
+      scrollToMessageId.current = false;
     }, 200);
     return () => clearTimeout(timer);
   }, [messageId, focusNonce, listItems, timelineMode, pulseHighlight]);
@@ -483,6 +581,7 @@ export function ChatRoomScreen() {
           animated: true,
           viewPosition: 0.5,
         });
+        scrollToMessageId.current = false;
       }, 200);
     },
     [listItems, pulseHighlight, timelineMode],
@@ -570,7 +669,7 @@ export function ChatRoomScreen() {
   );
 
   const renderListItem = useCallback(
-    ({ item }: { item: ListItem }) => {
+    ({ item, index }: { item: ListItem; index: number }) => {
       const alreadyAnimated = animatedItemKeysRef.current.has(item.key);
       if (!alreadyAnimated) {
         animatedItemKeysRef.current.add(item.key);
@@ -578,20 +677,33 @@ export function ChatRoomScreen() {
       // Ref: keep renderItem identity stable across keyboard open/close so
       // inverted cells are not remounted (that replayed enter/exit motion).
       const animateEnter = !alreadyAnimated && !keyboardOpenRef.current;
-      if (item.kind === 'date') {
-        return <DateSeparator date={item.date} animateEnter={animateEnter} />;
+      const content =
+        item.kind === 'date' ? (
+          <DateSeparator date={item.date} animateEnter={animateEnter} />
+        ) : (
+          <MessageLine
+            message={item.message}
+            highlighted={item.message.id === highlightedMessageId}
+            animateEnter={animateEnter}
+            onLongPress={openMessageMenu}
+            onImagePress={open}
+          />
+        );
+      if (GAP_DEBUG && index === 0) {
+        return (
+          <View
+            ref={lastRowRef}
+            collapsable={false}
+            onLayout={() => {
+              setTimeout(() => measureGap('last-row-layout'), 0);
+            }}>
+            {content}
+          </View>
+        );
       }
-      return (
-        <MessageLine
-          message={item.message}
-          highlighted={item.message.id === highlightedMessageId}
-          animateEnter={animateEnter}
-          onLongPress={openMessageMenu}
-          onImagePress={open}
-        />
-      );
+      return content;
     },
-    [open, highlightedMessageId, openMessageMenu],
+    [open, highlightedMessageId, openMessageMenu, measureGap],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);
@@ -727,36 +839,31 @@ export function ChatRoomScreen() {
           </Animated.View>
         </GestureDetector>
       ) : (
-        <View style={styles.chatArea}>
-          <View style={styles.peekHost}>
+        <View ref={chatAreaRef} collapsable={false} style={styles.chatArea}>
+          <View ref={peekHostRef} collapsable={false} style={styles.peekHost}>
             {/*
-              List + composer stay siblings inside peekHost so FlatList gets a
-              bounded flex height. Only the list is wrapped by entry-peek pan —
-              wrapping composer too fights TextInput focus; placing composer
-              outside peekHost lets the list grow to content and clips the top.
+              List and composer are siblings inside peekHost so the FlatList gets
+              a bounded flex height.
 
-              Keep GestureDetector mounted across keyboard open/close so FlatList
-              is not remounted. While the keyboard is open, swap in an inert Manual
-              gesture — a disabled peek Pan still sits in the Android touch arena
-              and can eat vertical scrolls. Rubber-band is cleared via entryPeek.reset().
+              The list is NOT wrapped by any RNGH gesture: a GestureDetector
+              around the FlatList (even an inert Manual gesture) eats native
+              vertical scrolls on Android (RN 0.85 + RNGH 2.31). The Future peek
+              pan lives on the composer instead — pull DOWN from the bottom of
+              the chat when the history is at the newest message.
             */}
             <GestureDetector
               gesture={
                 keyboardOpen ? keyboardPassthroughGesture : entryPeek.gesture
               }
             >
-              <View style={styles.listContainer}>
+              <View ref={listContainerRef} collapsable={false} style={styles.listContainer}>
                 <Animated.View
+                  ref={listPaneRef}
                   style={[styles.listPane, entryPeek.rubberBandStyle]}
                   accessible
                   accessibilityHint={t.futurePeekA11y}
                 >
-                  {wrapHistoryNativeScroll(
-                    // Native vs Manual swap only — GestureDetector stays mounted.
-                    historyCanScroll,
-                    entryPeek.nativeGesture,
-                    keyboardPassthroughGesture,
-                    <AnimatedFlatList
+                  <AnimatedFlatList
                       ref={flatListRef as any}
                       data={listItems}
                       inverted
@@ -765,16 +872,13 @@ export function ChatRoomScreen() {
                       style={styles.list}
                       contentContainerStyle={[
                         styles.listContent,
-                        getInvertedListContentFillStyle(),
                         historyListCanScroll
                           ? null
                           : getNonScrollableListContentStyle(),
                       ]}
                       scrollEnabled={historyListCanScroll}
                       pointerEvents={getListPointerEvents(historyListCanScroll)}
-                      nestedScrollEnabled={
-                        Platform.OS === 'android' && keyboardOpen
-                      }
+                      nestedScrollEnabled={Platform.OS === 'android'}
                       keyboardShouldPersistTaps="handled"
                       onViewableItemsChanged={handleViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}
@@ -786,15 +890,48 @@ export function ChatRoomScreen() {
                           h,
                           historyMetricsRef.current.layoutHeight,
                         );
+                        logGap('list-onContentSizeChange', {
+                          contentHeight: h,
+                          layoutHeight: historyMetricsRef.current.layoutHeight,
+                          offset: historyOffsetRef.current,
+                        });
                       }}
                       onLayout={(e: LayoutChangeEvent) => {
                         const h = e.nativeEvent.layout.height;
+                        const prevLayout = historyMetricsRef.current.layoutHeight;
+                        const wasAtBottom = isInvertedListAtVisualBottom(
+                          historyOffsetRef.current,
+                          historyMetricsRef.current.contentHeight,
+                          prevLayout || h,
+                        );
                         historyMetricsRef.current.layoutHeight = h;
+
+                        if (
+                          shouldStickToBottomOnLayoutShrink(
+                            wasAtBottom,
+                            prevLayout,
+                            h,
+                          ) ||
+                          shouldStickToBottomOnLayoutExpand(
+                            wasAtBottom,
+                            prevLayout,
+                            h,
+                          )
+                        ) {
+                          pinInvertedHistoryToTail();
+                        }
+
                         updateHistoryEdges(
                           historyOffsetRef.current,
                           historyMetricsRef.current.contentHeight || h,
                           h,
                         );
+                        logGap('list-onLayout', {
+                          prevLayout,
+                          layoutHeight: h,
+                          wasAtBottom,
+                        });
+                        setTimeout(() => measureGap('list-onLayout+0ms'), 0);
                       }}
                       onScrollToIndexFailed={(info: any) => {
                         setTimeout(() => {
@@ -803,10 +940,10 @@ export function ChatRoomScreen() {
                             animated: false,
                             viewPosition: 0.5,
                           });
+                          scrollToMessageId.current = false;
                         }, 200);
                       }}
-                    />,
-                  )}
+                    />
                 </Animated.View>
                 {!keyboardOpen ? (
                   <FuturePeekOverlay
@@ -816,14 +953,21 @@ export function ChatRoomScreen() {
                   />
                 ) : null}
               </View>
+            <GestureDetector
+              gesture={
+                keyboardOpen ? keyboardPassthroughGesture : entryPeek.gesture
+              }
+            >
+              <View ref={composerWrapperRef} collapsable={false}>
+                <MessageComposer
+                  chatId={chatId}
+                  onSent={() => {
+                    loadData();
+                    loadFuture();
+                  }}
+                />
+              </View>
             </GestureDetector>
-            <MessageComposer
-              chatId={chatId}
-              onSent={() => {
-                loadData();
-                loadFuture();
-              }}
-            />
           </View>
           {Platform.OS === 'android' && androidKeyboardPad > 0 ? (
             <View style={{ height: androidKeyboardPad }} />
@@ -926,9 +1070,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   listContent: {
-    // Both ends: inverted paddingTop *or* flex-end paddingBottom is the
-    // composer gap, depending on how the platform applies inversion.
+    // inverted: paddingTop is the visual bottom gap above the composer.
+    // No flexGrow — it expands content height and leaves a keyboard-sized
+    // hole above the composer on Android inverted lists.
     paddingTop: MESSAGE_LIST_BOTTOM_GAP,
-    paddingBottom: MESSAGE_LIST_BOTTOM_GAP,
   },
 });

@@ -268,7 +268,7 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     addListener.mockRestore();
   });
 
-  it('should keep flexGrow on list content when overflow flips scrollability', () => {
+  it('should not flex-grow inverted history content when overflow flips scrollability', () => {
     const screen = render(<ChatRoomScreen />);
     const list = screen.getByTestId('history-list');
 
@@ -277,10 +277,8 @@ describe('ChatRoomScreen keyboard focus regression', () => {
         ? Object.assign({}, ...style.filter(Boolean))
         : (style as Record<string, unknown> | undefined);
 
-    expect(flatten(list.props.contentContainerStyle)?.flexGrow).toBe(1);
-    expect(flatten(list.props.contentContainerStyle)?.justifyContent).toBe(
-      'flex-end',
-    );
+    expect(flatten(list.props.contentContainerStyle)?.flexGrow).toBeUndefined();
+    expect(flatten(list.props.contentContainerStyle)?.justifyContent).toBeUndefined();
     expect(list.props.inverted).toBe(true);
     expect(list.props.maintainVisibleContentPosition).toBeUndefined();
 
@@ -290,10 +288,7 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     });
 
     const overflowing = screen.getByTestId('history-list');
-    expect(flatten(overflowing.props.contentContainerStyle)?.flexGrow).toBe(1);
-    expect(flatten(overflowing.props.contentContainerStyle)?.justifyContent).toBe(
-      'flex-end',
-    );
+    expect(flatten(overflowing.props.contentContainerStyle)?.flexGrow).toBeUndefined();
     expect(overflowing.props.scrollEnabled).toBe(true);
 
     act(() => {
@@ -301,9 +296,6 @@ describe('ChatRoomScreen keyboard focus regression', () => {
     });
 
     const short = screen.getByTestId('history-list');
-    expect(flatten(short.props.contentContainerStyle)?.flexGrow).toBe(1);
-    expect(flatten(short.props.contentContainerStyle)?.justifyContent).toBe(
-      'flex-end',
-    );
+    expect(flatten(short.props.contentContainerStyle)?.flexGrow).toBeUndefined();
   });
 });

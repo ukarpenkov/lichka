@@ -111,18 +111,6 @@ export function getListContentFillStyle(): { flexGrow: number } {
   return { flexGrow: 1 };
 }
 
-/**
- * Inverted history: leftover flexGrow space otherwise sits above the composer
- * and changes with keyboard height. flex-end keeps the tail on the composer
- * so the gap stays `MESSAGE_LIST_BOTTOM_GAP` open or closed.
- */
-export function getInvertedListContentFillStyle(): {
-  flexGrow: number;
-  justifyContent: 'flex-end';
-} {
-  return { flexGrow: 1, justifyContent: 'flex-end' };
-}
-
 /** Content container: fill viewport but don't steal touches outside message rows. */
 export function getNonScrollableListContentStyle(): {
   pointerEvents: 'box-none';

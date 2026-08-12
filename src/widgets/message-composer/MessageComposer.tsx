@@ -26,7 +26,6 @@ import {
   hapticLongPress,
   hapticSuccess,
   playSendSound,
-  useKeyboardHeight,
   generateId,
   pickAndCompressImage,
   saveImage,
@@ -54,7 +53,6 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function MessageComposer({ chatId, onSent }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
-  const keyboardHeight = useKeyboardHeight();
   const [body, setBody] = useState('');
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
@@ -89,12 +87,6 @@ export function MessageComposer({ chatId, onSent }: Props) {
 
   const recRowAnimatedStyle = useAnimatedStyle(() => ({
     opacity: recOpacity.value,
-  }));
-
-  // Зазор над клавиатурой задаётся paddingBottom chatArea в ChatRoomScreen —
-  // без translateY, чтобы композер не наезжал на список сообщений.
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    paddingBottom: keyboardHeight.value > 0 ? 0 : 12,
   }));
 
   const triggerHapticTap = useCallback(() => {
@@ -329,7 +321,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   if (isRecording) {
     return (
     <Animated.View
-      style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
+      style={[styles.container, { backgroundColor: colors.canvas }]}>
       <Animated.View style={[styles.recordingRow, recRowAnimatedStyle]}>
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
@@ -356,7 +348,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
   return (
     <>
     <Animated.View
-      style={[styles.container, containerAnimatedStyle, { backgroundColor: colors.canvas }]}>
+      style={[styles.container, { backgroundColor: colors.canvas }]}>
       {imagePreview ? (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: imagePreview.uri }} style={styles.imagePreview} />
@@ -455,7 +447,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 4,
-    paddingBottom: 12,
+    paddingBottom: 4,
   },
   inputWrapper: {
     flexDirection: 'row',

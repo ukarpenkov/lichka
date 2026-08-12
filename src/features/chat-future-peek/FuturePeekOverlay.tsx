@@ -85,7 +85,7 @@ export function FuturePeekOverlay({
 const styles = StyleSheet.create({
   /** Sits above the list rubber-band; must NOT be clipped by listPane. */
   layer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 20,
     alignItems: 'center',
   },

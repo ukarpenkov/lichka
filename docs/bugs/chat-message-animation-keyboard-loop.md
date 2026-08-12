@@ -24,7 +24,7 @@
 
 Offset 0 после remount / клавиатуры / Future **и есть** хвост у ввода. `scrollToEnd` для пина больше не нужен.
 
-`flexGrow` + inverted на Android оставлял leftover над композером (разный при open/close клавиатуры). `justifyContent: 'flex-end'` прижимает хвост. `maintainVisibleContentPosition` и `FadeOutDown` на строках убраны — закрытие клавиатуры больше не анимирует ленту.
+`flexGrow` + inverted на Android оставлял leftover над композером. Убран flexGrow; хвост держится нативным inverted + `scrollToOffset(0)` при keyboard/layout. `FadeOutDown` на строках убраны.
 
 ### Изменённые файлы
 - `src/pages/chat-room/historyListItems.ts`

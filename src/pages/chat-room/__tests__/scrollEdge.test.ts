@@ -1,6 +1,5 @@
 import {
   canListScroll,
-  getInvertedListContentFillStyle,
   getListContentFillStyle,
   getListPointerEvents,
   getNonScrollableListContentStyle,
@@ -83,11 +82,8 @@ describe('scrollEdge', () => {
     expect('flexGrow' in getNonScrollableListContentStyle()).toBe(false);
   });
 
-  it('should pin inverted short content to the composer so leftover space is not a keyboard-sized gap', () => {
-    expect(getInvertedListContentFillStyle()).toEqual({
-      flexGrow: 1,
-      justifyContent: 'flex-end',
-    });
+  it('should not put flexGrow on inverted history content (native inverted pins short content)', () => {
+    expect('flexGrow' in getNonScrollableListContentStyle()).toBe(false);
   });
 
   it('should treat inverted offset 0 as the visual bottom (latest above composer)', () => {
