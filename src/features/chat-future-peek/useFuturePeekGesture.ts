@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Gesture } from 'react-native-gesture-handler';
+import { Gesture, type GestureType } from 'react-native-gesture-handler';
 import {
   runOnJS,
   useAnimatedStyle,
@@ -38,6 +38,12 @@ export type UseFuturePeekGestureOptions = {
 
 export type FuturePeekGestureApi = {
   gesture: ReturnType<typeof Gesture.Pan>;
+  /**
+   * Handler ref of the pan. Pass to the nested FlatList/ScrollView as
+   * `simultaneousHandlers` so the native scroll gesture does not cancel the
+   * peek pan (on Android the ScrollView intercepts every vertical drag).
+   */
+  gestureRef: { current: GestureType | undefined };
   /** Attach to the nested list only while it can scroll. */
   nativeGesture: ReturnType<typeof Gesture.Native>;
   pullDistance: SharedValue<number>;
@@ -110,48 +116,34 @@ export function useFuturePeekGesture({
 
   const gestureEnabled = canActivatePeekGesture(enabled, atEdge, busy);
 
+  const gestureRef = useRef<GestureType | undefined>(undefined);
+
   const nativeGesture = useMemo(() => Gesture.Native(), []);
 
   const gesture = useMemo(() => {
     // Enter (inverted history at the newest message): pull UP — the native
     // scroll moves toward the newest in that direction, so at the tail it is
     // overscroll-only. Exit (future list at the top): pull DOWN.
-    const activeOffset =
-      direction === 'enter'
-        ? ([-1000, -PEEK_ACTIVE_OFFSET_Y] as [number, number])
-        : ([PEEK_ACTIVE_OFFSET_Y, 1000] as [number, number]);
+    // RNGH activeOffsetY semantics: a range is the zone where NO activation
+    // happens; moving outside activates. A negative single value (Start) fires
+    // on dy < value (pull up), a positive one (End) on dy > value (pull down).
+    const activeOffsetY =
+      direction === 'enter' ? -PEEK_ACTIVE_OFFSET_Y : PEEK_ACTIVE_OFFSET_Y;
 
     const pan = Gesture.Pan()
       .enabled(gestureEnabled)
-      .activeOffsetY(activeOffset)
-      .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X]);
+      .activeOffsetY(activeOffsetY)
+      .failOffsetX([-PEEK_FAIL_OFFSET_X, PEEK_FAIL_OFFSET_X])
+      .withRef(gestureRef);
 
     return pan
-      .onTouchesMove((e) => {
-        if (__DEV__) {
-          runOnJS(console.log)('[PEEK] touchesMove', e.allTouches[0]?.absoluteY);
-        }
-      })
       .onBegin(() => {
-        if (__DEV__) {
-          runOnJS(console.log)('[PEEK] begin', direction);
-        }
         if (busySV.value === 1 || atEdgeSV.value !== 1) return;
         thresholdFiredSV.value = 0;
         pastThreshold.value = 0;
         phase.value = 'idle';
       })
       .onUpdate((event) => {
-        if (__DEV__) {
-          runOnJS(console.log)(
-            '[PEEK] update',
-            event.translationY,
-            'edge',
-            atEdgeSV.value,
-            'busy',
-            busySV.value,
-          );
-        }
         if (busySV.value === 1 || atEdgeSV.value !== 1) {
           pullDistance.value = 0;
           pastThreshold.value = 0;
@@ -244,6 +236,7 @@ export function useFuturePeekGesture({
 
   return {
     gesture,
+    gestureRef,
     nativeGesture,
     pullDistance,
     pastThreshold,

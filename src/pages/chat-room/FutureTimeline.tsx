@@ -28,6 +28,8 @@ export type FutureTimelineProps = {
   /** Native scroll gesture for simultaneous Future peek exit pan.
    * Pass only when the list can scroll; omit for short/empty content. */
   nativeScrollGesture?: ComposedGesture | GestureType;
+  /** Keep the exit pan alive while the native list scroll gesture is active. */
+  simultaneousHandlers?: { current: GestureType | undefined };
 };
 
 const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent> = {
@@ -115,6 +117,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
       onContentSizeChange,
       onLayout,
       nativeScrollGesture,
+      simultaneousHandlers,
     },
     ref,
   ) {
@@ -159,6 +162,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
         renderItem={renderItem}
         scrollEnabled={scrollEnabled}
         pointerEvents={listPointerEvents}
+        simultaneousHandlers={simultaneousHandlers}
         ListHeaderComponent={
           <View style={styles.listHeader} accessibilityElementsHidden>
             <Text variant="mono-meta" tone="muted">

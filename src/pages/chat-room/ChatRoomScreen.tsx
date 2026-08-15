@@ -811,6 +811,7 @@ export function ChatRoomScreen() {
                     onScroll={handleFutureScroll}
                     scrollEnabled={futureCanScroll}
                     listPointerEvents={getListPointerEvents(futureCanScroll)}
+                    simultaneousHandlers={exitPeek.gestureRef}
                     nativeScrollGesture={
                       shouldAttachNativeScrollGesture(futureCanScroll)
                         ? exitPeek.nativeGesture
@@ -842,14 +843,12 @@ export function ChatRoomScreen() {
         <View ref={chatAreaRef} collapsable={false} style={styles.chatArea}>
           <View ref={peekHostRef} collapsable={false} style={styles.peekHost}>
             {/*
-              List and composer are siblings inside peekHost so the FlatList gets
-              a bounded flex height.
-
-              The list is NOT wrapped by any RNGH gesture: a GestureDetector
-              around the FlatList (even an inert Manual gesture) eats native
-              vertical scrolls on Android (RN 0.85 + RNGH 2.31). The Future peek
-              pan lives on the composer instead — pull DOWN from the bottom of
-              the chat when the history is at the newest message.
+              List + composer stay siblings inside peekHost so FlatList gets a
+              bounded flex height. Only the list is wrapped by the entry-peek
+              pan — wrapping the composer fights TextInput focus. While the
+              keyboard is open, swap in an inert Manual gesture — a disabled
+              peek Pan still sits in the Android touch arena and can eat
+              vertical scrolls.
             */}
             <GestureDetector
               gesture={
@@ -879,6 +878,7 @@ export function ChatRoomScreen() {
                       scrollEnabled={historyListCanScroll}
                       pointerEvents={getListPointerEvents(historyListCanScroll)}
                       nestedScrollEnabled={Platform.OS === 'android'}
+                      simultaneousHandlers={entryPeek.gestureRef}
                       keyboardShouldPersistTaps="handled"
                       onViewableItemsChanged={handleViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}
@@ -953,21 +953,16 @@ export function ChatRoomScreen() {
                   />
                 ) : null}
               </View>
-            <GestureDetector
-              gesture={
-                keyboardOpen ? keyboardPassthroughGesture : entryPeek.gesture
-              }
-            >
-              <View ref={composerWrapperRef} collapsable={false}>
-                <MessageComposer
-                  chatId={chatId}
-                  onSent={() => {
-                    loadData();
-                    loadFuture();
-                  }}
-                />
-              </View>
             </GestureDetector>
+            <View ref={composerWrapperRef} collapsable={false}>
+              <MessageComposer
+                chatId={chatId}
+                onSent={() => {
+                  loadData();
+                  loadFuture();
+                }}
+              />
+            </View>
           </View>
           {Platform.OS === 'android' && androidKeyboardPad > 0 ? (
             <View style={{ height: androidKeyboardPad }} />

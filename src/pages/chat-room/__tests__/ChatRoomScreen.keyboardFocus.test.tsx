@@ -135,6 +135,7 @@ jest.mock('../../../features/edit-message', () => ({
 
 const mockPeekGesture = () => ({
   gesture: {},
+  gestureRef: { current: undefined },
   nativeGesture: {},
   rubberBandStyle: {},
   overlayStyle: {},
