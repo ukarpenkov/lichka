@@ -3,6 +3,7 @@ import {
   getRelativePanTranslation,
   getSingleTapAction,
   isImageZoomed,
+  shouldApplyPinchUpdate,
 } from '../viewerGestureState';
 
 describe('viewerGestureState', () => {
@@ -11,6 +12,12 @@ describe('viewerGestureState', () => {
       containerTranslateY: 0,
       overlayOpacity: 1,
     });
+  });
+
+  it('applies pinch zoom updates only while two fingers are on screen', () => {
+    expect(shouldApplyPinchUpdate(2)).toBe(true);
+    expect(shouldApplyPinchUpdate(1)).toBe(false);
+    expect(shouldApplyPinchUpdate(0)).toBe(false);
   });
 
   it('continues pan from the pinch end without reapplying previous movement', () => {

@@ -12,6 +12,11 @@ export function getPinchStartDismissState(): {
   };
 }
 
+export function shouldApplyPinchUpdate(numberOfPointers: number): boolean {
+  'worklet';
+  return numberOfPointers >= 2;
+}
+
 export function isImageZoomed(scale: number): boolean {
   'worklet';
   return scale > MIN_SCALE + RESTING_SCALE_EPSILON;

@@ -25,6 +25,7 @@ import {
   getRelativePanTranslation,
   getSingleTapAction,
   isImageZoomed,
+  shouldApplyPinchUpdate,
 } from './viewerGestureState';
 
 const MIN_SCALE = 1;
@@ -290,6 +291,9 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
       panEventStartY.value = panEventTranslationY.value;
     })
     .onUpdate((e) => {
+      if (!shouldApplyPinchUpdate(e.numberOfPointers)) {
+        return;
+      }
       const next = focalZoomTranslation(
         pinchStartScale.value,
         pinchStartTranslateX.value,
@@ -368,6 +372,24 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
     .onUpdate((e) => {
       panEventTranslationX.value = e.translationX;
       panEventTranslationY.value = e.translationY;
+
+      if (isPinching.value && e.numberOfPointers < 2) {
+        isPinching.value = false;
+        const clamped = clampTranslation(
+          imageTranslateX.value,
+          imageTranslateY.value,
+          scale.value,
+          frameWidth.value,
+          frameHeight.value,
+        );
+        imageTranslateX.value = clamped.x;
+        imageTranslateY.value = clamped.y;
+        panStartTranslateX.value = clamped.x;
+        panStartTranslateY.value = clamped.y;
+        panEventStartX.value = e.translationX;
+        panEventStartY.value = e.translationY;
+        return;
+      }
 
       if (isPinching.value) {
         return;
