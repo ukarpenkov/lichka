@@ -145,17 +145,19 @@ describe('Future Peek MVP acceptance', () => {
     });
   });
 
-  describe('6b. Keyboard open → entry not activatable', () => {
-    it('should disable peek while keyboard is open to protect composer focus', () => {
+  describe('6b. Keyboard open → entry still activatable', () => {
+    it('should keep peek armed while the keyboard is open (pan is list-only and simultaneous with scroll)', () => {
       const atBottom = true;
       const keyboardOpen = true;
       const searchVisible = false;
-      const enabled = atBottom && !searchVisible && !keyboardOpen;
+      // Entry pan wraps only the list and is simultaneous with the native
+      // scroll gesture, so the keyboard must not disarm it.
+      const enabled = atBottom && !searchVisible;
       expect(keyboardOpen).toBe(true);
-      expect(canActivatePeekGesture(enabled, atBottom, false)).toBe(false);
+      expect(canActivatePeekGesture(enabled, atBottom, false)).toBe(true);
     });
 
-    it('should stick to bottom when keyboard shrinks viewport so peek re-arms after dismiss', () => {
+    it('should stick to bottom when keyboard shrinks viewport so peek stays armed', () => {
       const wasAtBottom = isScrollAtBottom(400, 600, 200);
       expect(wasAtBottom).toBe(true);
       expect(shouldStickToBottomOnLayoutShrink(wasAtBottom, 200, 80)).toBe(true);

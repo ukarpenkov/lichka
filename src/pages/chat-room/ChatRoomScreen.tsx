@@ -16,7 +16,7 @@ import Animated, {
   FadeOut,
   runOnJS,
 } from 'react-native-reanimated';
-import { FlatList, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { FlatList, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -161,8 +161,6 @@ export function ChatRoomScreen() {
   const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Keys that already played enter animation — survives layout churn. */
   const animatedItemKeysRef = useRef<Set<string>>(new Set());
-  /** Inert gesture: keeps GestureDetector in the tree without claiming vertical pans. */
-  const keyboardPassthroughGesture = useMemo(() => Gesture.Manual(), []);
 
   const updateHistoryEdges = useCallback(
     (offsetY: number, contentHeight: number, layoutHeight: number) => {
@@ -404,8 +402,10 @@ export function ChatRoomScreen() {
   }, [navigation, exitFuture]);
 
   const entryPeek = useFuturePeekEntryGesture({
-    // Keep peek off the composer while typing: pan + keyboard lift fights TextInput focus.
-    enabled: timelineMode === 'history' && !searchVisible && !keyboardOpen,
+    // The pan wraps only the list (not the composer) and is simultaneous with
+    // the native scroll gesture, so it can stay armed while the keyboard is
+    // open — the swipe up at the tail enters Future and dismisses the keyboard.
+    enabled: timelineMode === 'history' && !searchVisible,
     atBottom,
     onCommit: enterFuture,
   });
@@ -845,16 +845,12 @@ export function ChatRoomScreen() {
             {/*
               List + composer stay siblings inside peekHost so FlatList gets a
               bounded flex height. Only the list is wrapped by the entry-peek
-              pan — wrapping the composer fights TextInput focus. While the
-              keyboard is open, swap in an inert Manual gesture — a disabled
-              peek Pan still sits in the Android touch arena and can eat
-              vertical scrolls.
+              pan — wrapping the composer fights TextInput focus. The pan is
+              simultaneous with the list's native scroll gesture
+              (simultaneousHandlers below), so vertical scrolls are never
+              eaten, with or without the keyboard.
             */}
-            <GestureDetector
-              gesture={
-                keyboardOpen ? keyboardPassthroughGesture : entryPeek.gesture
-              }
-            >
+            <GestureDetector gesture={entryPeek.gesture}>
               <View ref={listContainerRef} collapsable={false} style={styles.listContainer}>
                 <Animated.View
                   ref={listPaneRef}
@@ -945,13 +941,11 @@ export function ChatRoomScreen() {
                       }}
                     />
                 </Animated.View>
-                {!keyboardOpen ? (
-                  <FuturePeekOverlay
-                    direction="enter"
-                    animatedStyle={entryPeek.overlayStyle}
-                    accessibilityLabel={t.futurePeekA11y}
-                  />
-                ) : null}
+                <FuturePeekOverlay
+                  direction="enter"
+                  animatedStyle={entryPeek.overlayStyle}
+                  accessibilityLabel={t.futurePeekA11y}
+                />
               </View>
             </GestureDetector>
             <View ref={composerWrapperRef} collapsable={false}>
