@@ -1,6 +1,7 @@
 import type { LocaleBundle } from './types';
 
 export const ru: LocaleBundle = {
+  nativeName: 'Русский',
   dictionary: {
     // Common
     cancel: 'Отмена',

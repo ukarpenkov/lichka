@@ -170,6 +170,8 @@ export interface DateLocaleConfig {
 
 /** Everything a single language needs: strings, month names, date rules. */
 export interface LocaleBundle {
+  /** Language name in its own language ("Русский", "English"). */
+  nativeName: string;
   dictionary: LocaleDictionary;
   monthsFull: string[];
   monthsShort: string[];

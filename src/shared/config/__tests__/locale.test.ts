@@ -91,6 +91,14 @@ describe('locale', () => {
         expect(bundle.date.localeTag).toBeTruthy();
       }
     });
+
+    it('should provide a non-empty native language name per locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        const bundle = getLocaleBundle(locale);
+        expect(typeof bundle.nativeName).toBe('string');
+        expect(bundle.nativeName.length).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('SUPPORTED_LOCALES', () => {

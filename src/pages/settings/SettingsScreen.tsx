@@ -1,11 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, View, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
-import { useTheme, getTheme, useLocale, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing, radii, monoWeight } from '../../shared/config';
+import { useTheme, getTheme, useLocale, getLocaleBundle, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
@@ -49,7 +49,7 @@ function importErrorMessage(t: LocaleDictionary, e: unknown): string {
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { colors } = useTheme();
-  const { t, setLocale: setAppLocale } = useLocale();
+  const { t, setLocale: setAppLocale, locale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [dialog, setDialog] = useState<{
     title?: string;
@@ -179,27 +179,27 @@ export function SettingsScreen() {
           {t.sectionLanguage.toUpperCase()}
         </Text>
         <View>
-          <SettingsRow label={t.interfaceLanguage} icon={Languages}>
-            <View style={styles.localeToggle}>
-              {SUPPORTED_LOCALES.map((loc) => (
-                <Pressable
-                  key={loc}
-                  onPress={() => handleLocaleChange(loc)}
-                  style={[
-                    styles.localePill,
-                    {
-                      backgroundColor: settings.locale === loc ? colors.ink : 'transparent',
-                      borderColor: colors.ink,
-                    },
-                  ]}>
-                  <Text
-                    variant="caption"
-                    tone={settings.locale === loc ? 'onInk' : 'ink'}
-                    style={styles.localeLabel}>
-                    {loc.toUpperCase()}
-                  </Text>
-                </Pressable>
-              ))}
+          <SettingsRow
+            label={t.interfaceLanguage}
+            icon={Languages}
+            onPress={() => {
+              setDialog({
+                title: t.interfaceLanguage,
+                buttons: [
+                  { text: t.cancel, style: 'cancel' },
+                  ...SUPPORTED_LOCALES.map((loc) => ({
+                    text:
+                      (loc === locale ? '✓ ' : '') + getLocaleBundle(loc).nativeName,
+                    onPress: () => handleLocaleChange(loc),
+                  })),
+                ],
+              });
+            }}>
+            <View style={styles.localeValue}>
+              <Text variant="body" tone="muted">
+                {locale.toUpperCase()}
+              </Text>
+              <ChevronRight size={18} color={colors.muted} />
             </View>
           </SettingsRow>
         </View>
@@ -404,18 +404,9 @@ const styles = StyleSheet.create({
   firstSectionLabel: {
     paddingTop: spacing.sm,
   },
-  localeToggle: {
+  localeValue: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  localePill: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  localeLabel: {
-    ...monoWeight('semiBold'),
+    alignItems: 'center',
+    gap: 8,
   },
 });
