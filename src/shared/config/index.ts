@@ -30,11 +30,11 @@ export { withAlpha } from '../lib/color';
 export {
   type Locale,
   type LocaleDictionary,
-  ru,
-  en,
+  type LocaleBundle,
   dictionaries,
   SUPPORTED_LOCALES,
   getDictionary,
+  getLocaleBundle,
   getSystemLocale,
 } from './locale';
 export { LocaleProvider, useLocale } from './LocaleProvider';

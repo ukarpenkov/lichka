@@ -1,36 +1,19 @@
-import type { Locale, LocaleDictionary } from './locale';
-
-/** Full month names in genitive case (for "29 мая" style) */
-const MONTHS_FULL: Record<Locale, string[]> = {
-  ru: [
-    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-  ],
-  en: [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ],
-};
-
-/** Short month names (for calendar rings, search results) */
-const MONTHS_SHORT: Record<Locale, string[]> = {
-  ru: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
-  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-};
+import { getLocaleBundle, type Locale, type LocaleDictionary } from './locale';
 
 /** Get short month labels for the current locale */
 export function getMonthLabels(locale: Locale): string[] {
-  return MONTHS_SHORT[locale];
+  return getLocaleBundle(locale).monthsShort;
 }
 
 /** Get full month names for the current locale */
 export function getFullMonthNames(locale: Locale): string[] {
-  return MONTHS_FULL[locale];
+  return getLocaleBundle(locale).monthsFull;
 }
 
 /**
  * Format a date label for chat separators.
- * Returns "Сегодня"/"Today", "Вчера"/"Yesterday", "29 мая"/"May 29", or "29 мая 2025"/"May 29, 2025"
+ * Returns "Сегодня"/"Today", "Вчера"/"Yesterday", or a locale-formatted date
+ * (e.g. "29 мая"/"May 29", "29 de mayo"/"29. Mai").
  */
 export function formatDateLabel(iso: string, locale: Locale, t: LocaleDictionary): string {
   const d = new Date(iso);
@@ -52,22 +35,17 @@ export function formatDateLabel(iso: string, locale: Locale, t: LocaleDictionary
 
   if (isYesterday) return t.yesterday;
 
-  const months = MONTHS_FULL[locale];
+  const { monthsFull, date: cfg } = getLocaleBundle(locale);
   const day = d.getDate();
-  const month = months[d.getMonth()];
+  const month = monthsFull[d.getMonth()];
+  const dayMonth = cfg.dayFirst
+    ? `${day}${cfg.dayMonthJoin}${month}`
+    : `${month}${cfg.dayMonthJoin}${day}`;
 
-  if (locale === 'ru') {
-    if (d.getFullYear() === now.getFullYear()) {
-      return `${day} ${month}`;
-    }
-    return `${day} ${month} ${d.getFullYear()}`;
-  }
-
-  // English: "May 29" / "May 29, 2025"
   if (d.getFullYear() === now.getFullYear()) {
-    return `${month} ${day}`;
+    return dayMonth;
   }
-  return `${month} ${day}, ${d.getFullYear()}`;
+  return `${dayMonth}${cfg.yearJoin}${d.getFullYear()}`;
 }
 
 /**
@@ -91,10 +69,11 @@ export function formatScheduledAt(iso: string, locale: Locale): string {
   const hh = d.getHours().toString().padStart(2, '0');
   const mi = d.getMinutes().toString().padStart(2, '0');
 
-  if (locale === 'ru') {
-    return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
-  }
-  return `${mm}/${dd}/${yyyy} ${hh}:${mi}`;
+  const { numericSeparator, numericDayFirst } = getLocaleBundle(locale).date;
+  const dayMonth = numericDayFirst
+    ? `${dd}${numericSeparator}${mm}`
+    : `${mm}${numericSeparator}${dd}`;
+  return `${dayMonth}${numericSeparator}${yyyy} ${hh}:${mi}`;
 }
 
 /**
@@ -121,7 +100,7 @@ export function formatRelativeDate(iso: string, locale: Locale, t: LocaleDiction
 
   if (isTomorrow) return t.tomorrow;
 
-  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
+  const { localeTag } = getLocaleBundle(locale).date;
   return d.toLocaleDateString(localeTag, {
     day: 'numeric',
     month: 'long',
@@ -164,7 +143,7 @@ export function formatScheduledWhen(
     date.getFullYear() === tomorrow.getFullYear();
   if (isTomorrow) return `${t.tomorrow} ${time}`;
 
-  const localeTag = locale === 'ru' ? 'ru-RU' : 'en-US';
+  const { localeTag } = getLocaleBundle(locale).date;
   return (
     date.toLocaleDateString(localeTag, {
       day: 'numeric',
@@ -199,5 +178,5 @@ export function formatInterval(minutes: number, t: LocaleDictionary): string {
  * Format short month name for search results.
  */
 export function formatShortMonth(date: Date, locale: Locale): string {
-  return MONTHS_SHORT[locale][date.getMonth()];
+  return getLocaleBundle(locale).monthsShort[date.getMonth()];
 }

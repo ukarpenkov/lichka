@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
-import { useTheme, getTheme, useLocale, type LocaleDictionary, spacing, radii, monoWeight } from '../../shared/config';
+import { useTheme, getTheme, useLocale, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing, radii, monoWeight } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
@@ -74,9 +74,9 @@ export function SettingsScreen() {
   );
 
   const handleLocaleChange = useCallback(
-    (newLocale: string) => {
+    (newLocale: Locale) => {
       updateSettings({ locale: newLocale });
-      setAppLocale(newLocale as any);
+      setAppLocale(newLocale);
       setSettings(getSettings());
     },
     [setAppLocale],
@@ -181,7 +181,7 @@ export function SettingsScreen() {
         <View>
           <SettingsRow label={t.interfaceLanguage} icon={Languages}>
             <View style={styles.localeToggle}>
-              {['ru', 'en'].map((loc) => (
+              {SUPPORTED_LOCALES.map((loc) => (
                 <Pressable
                   key={loc}
                   onPress={() => handleLocaleChange(loc)}
@@ -406,6 +406,7 @@ const styles = StyleSheet.create({
   },
   localeToggle: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   localePill: {

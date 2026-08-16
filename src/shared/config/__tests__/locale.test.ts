@@ -1,33 +1,32 @@
 import {
-  ru,
-  en,
   dictionaries,
   SUPPORTED_LOCALES,
   getDictionary,
+  getLocaleBundle,
   getSystemLocale,
+  type Locale,
   type LocaleDictionary,
 } from '../locale';
 
+const EXPECTED_LOCALES: Locale[] = ['ru', 'en', 'es', 'de', 'fr', 'pt'];
+
 describe('locale', () => {
   describe('dictionaries', () => {
-    it('should have ru and en dictionaries', () => {
-      expect(dictionaries.ru).toBeDefined();
-      expect(dictionaries.en).toBeDefined();
-    });
-
     it('should have all supported locales in dictionaries', () => {
       for (const locale of SUPPORTED_LOCALES) {
         expect(dictionaries[locale]).toBeDefined();
       }
     });
 
-    it('should have matching keys in ru and en', () => {
-      const ruKeys = Object.keys(ru).sort();
-      const enKeys = Object.keys(en).sort();
-      expect(ruKeys).toEqual(enKeys);
+    it('should have matching keys across all locales', () => {
+      const enKeys = Object.keys(dictionaries.en).sort();
+      for (const locale of EXPECTED_LOCALES) {
+        const keys = Object.keys(dictionaries[locale]).sort();
+        expect(keys).toEqual(enKeys);
+      }
     });
 
-    it('should have all required string keys', () => {
+    it('should have all required string keys in every locale', () => {
       const requiredKeys: (keyof LocaleDictionary)[] = [
         'cancel', 'save', 'done', 'error', 'loading', 'delete', 'edit', 'copy',
         'today', 'yesterday', 'tomorrow',
@@ -41,74 +40,84 @@ describe('locale', () => {
         'version',
       ];
 
-      for (const key of requiredKeys) {
-        expect(typeof ru[key]).toBe('string');
-        expect((ru[key] as string).length).toBeGreaterThan(0);
-        expect(typeof en[key]).toBe('string');
-        expect((en[key] as string).length).toBeGreaterThan(0);
+      for (const locale of EXPECTED_LOCALES) {
+        const dict = dictionaries[locale];
+        for (const key of requiredKeys) {
+          expect(typeof dict[key]).toBe('string');
+          expect((dict[key] as string).length).toBeGreaterThan(0);
+        }
       }
     });
 
-    it('should have working template functions', () => {
-      expect(ru.deleteChatConfirm('Test')).toContain('Test');
-      expect(en.deleteChatConfirm('Test')).toContain('Test');
+    it('should have working template functions in every locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        const dict = dictionaries[locale];
 
-      expect(ru.everyNMin(5)).toContain('5');
-      expect(en.everyNMin(5)).toContain('5');
-
-      expect(ru.voiceMessage(10)).toBe('[voice:10]');
-      expect(en.voiceMessage(10)).toBe('[voice:10]');
-
-      expect(ru.exportDone('/path')).toContain('/path');
-      expect(en.exportDone('/path')).toContain('/path');
-
-      expect(ru.chatsAdded(3)).toContain('3');
-      expect(en.chatsAdded(3)).toContain('3');
+        expect(dict.deleteChatConfirm('Test')).toContain('Test');
+        expect(dict.everyNMin(5)).toContain('5');
+        expect(dict.voiceMessage(10)).toBe('[voice:10]');
+        expect(dict.exportDone('/path')).toContain('/path');
+        expect(dict.chatsAdded(3)).toContain('3');
+        expect(dict.mediaRestored(7)).toContain('7');
+      }
     });
 
-    it('should have working image template functions', () => {
-      expect(ru.imageMessage(1920, 1080)).toBe('[image:1920x1080]');
-      expect(en.imageMessage(800, 600)).toBe('[image:800x600]');
+    it('should have working image template functions in every locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        const dict = dictionaries[locale];
+        expect(dict.imageMessage(1920, 1080)).toBe('[image:1920x1080]');
+      }
     });
 
-    it('should have all image-related keys as strings', () => {
+    it('should have all image-related keys as strings in every locale', () => {
       const imageStringKeys = ['attachImage', 'imagePreview', 'removeImage', 'imagePickError'] as const;
 
-      for (const key of imageStringKeys) {
-        expect(typeof ru[key]).toBe('string');
-        expect((ru[key] as string).length).toBeGreaterThan(0);
-        expect(typeof en[key]).toBe('string');
-        expect((en[key] as string).length).toBeGreaterThan(0);
+      for (const locale of EXPECTED_LOCALES) {
+        const dict = dictionaries[locale];
+        for (const key of imageStringKeys) {
+          expect(typeof dict[key]).toBe('string');
+          expect((dict[key] as string).length).toBeGreaterThan(0);
+        }
+      }
+    });
+  });
+
+  describe('bundles', () => {
+    it('should provide 12 full and short month names per locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        const bundle = getLocaleBundle(locale);
+        expect(bundle.monthsFull).toHaveLength(12);
+        expect(bundle.monthsShort).toHaveLength(12);
+        expect(bundle.date.localeTag).toBeTruthy();
       }
     });
   });
 
   describe('SUPPORTED_LOCALES', () => {
-    it('should contain ru and en', () => {
-      expect(SUPPORTED_LOCALES).toContain('ru');
-      expect(SUPPORTED_LOCALES).toContain('en');
+    it('should contain all expected locales', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        expect(SUPPORTED_LOCALES).toContain(locale);
+      }
     });
 
-    it('should have exactly 2 locales', () => {
-      expect(SUPPORTED_LOCALES).toHaveLength(2);
+    it('should have exactly 6 locales', () => {
+      expect(SUPPORTED_LOCALES).toHaveLength(6);
     });
   });
 
   describe('getDictionary', () => {
-    it('should return ru dictionary for "ru"', () => {
-      expect(getDictionary('ru')).toBe(ru);
-    });
-
-    it('should return en dictionary for "en"', () => {
-      expect(getDictionary('en')).toBe(en);
+    it('should return the matching dictionary for each locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        expect(getDictionary(locale)).toBe(dictionaries[locale]);
+      }
     });
 
     it('should fallback to en for unknown locale', () => {
-      expect(getDictionary('fr')).toBe(en);
+      expect(getDictionary('xx')).toBe(dictionaries.en);
     });
 
     it('should fallback to en for empty string', () => {
-      expect(getDictionary('')).toBe(en);
+      expect(getDictionary('')).toBe(dictionaries.en);
     });
   });
 
