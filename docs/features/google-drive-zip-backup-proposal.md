@@ -1,6 +1,6 @@
 # Google Drive Backup в ZIP (с медиа)
 
-**Статус:** draft
+**Статус:** implemented
 
 ## Название фичи
 Ручной бэкап в Google Drive по кнопке в Настройках: ZIP с медиа вместо JSON-only.

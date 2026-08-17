@@ -40,7 +40,7 @@
 | 5. [А] downloadBackup + Settings restore | [x] 2026-08-17 |
 | 6. [А] Локализация Drive ZIP | [x] 2026-08-17 |
 | 7. [А] Тесты google-drive | [x] 2026-08-17 |
-| 8. [М] Ручная проверка на устройстве | |
+| 8. [М] Ручная проверка на устройстве | [x] 2026-08-17 (Save+Restore OK; медиа — доп. проверка) |
 
 ---
 
@@ -349,7 +349,9 @@ index.ts — без ломания лишних экспортов.
 
 ## Шаг 8. [М] Ручная проверка на устройстве
 
-**Статус:**  
+**Статус:** [x] 2026-08-17 — Save OK (POST и PATCH 200), Restore OK (zip merge/replace, Xiaomi debug, truloveu@gmail.com). Restore медиа с реальными вложениями — проверить отдельно при следующем полном тесте.
+
+Подробности найденных багов — `docs/bugs/google-drive-backup-developer-error-patch-403.md`.
 
 ### Когда начинать
 После шагов 2–7 и **полного rebuild** приложения (clean/reinstall лучше после смены OAuth).
@@ -370,7 +372,8 @@ Sign-In: OK / DEVELOPER_ERROR / другой код
 ```
 
 Частые проблемы:
-- `DEVELOPER_ERROR` / `10` → неверный SHA-1 или package ≠ `com.lichka` → вернуться к шагу 1.
+- `DEVELOPER_ERROR` / `10` → неверный SHA-1 или package ≠ `com.lichka` → вернуться к шагу 1. Также возникает, если Web-клиент в другом проекте, чем Android-клиент: на Android уже не нужен (scope-only sign-in, `webClientId` только iOS), но для iOS надо починить в GCP.
+- Повторный save после успешного → 403 `fieldNotWritable` (parents) — исправлено, см. `docs/bugs/google-drive-backup-developer-error-patch-403.md`.
 - `Sign in cancelled` → норм, пользователь закрыл диалог.
 - Аккаунт не в Test users → access denied на consent.
 

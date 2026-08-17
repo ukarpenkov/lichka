@@ -145,6 +145,7 @@ export function SettingsScreen() {
         }, 300);
         setSettings(getSettings());
       } catch (e: unknown) {
+        console.error('[google-drive] performDriveImport failed:', e instanceof Error ? e.message : String(e));
         setTimeout(() => {
           setDialog({
             title: t.error,
@@ -251,6 +252,7 @@ export function SettingsScreen() {
                 setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
+                console.error('[google-drive] save backup error:', e?.message, e?.code ?? '', JSON.stringify(e ?? {}));
                 setDialog({ title: t.error, message: t.backupFailed, buttons: [{ text: t.done }] });
               }
             }}
@@ -304,6 +306,7 @@ export function SettingsScreen() {
                   setDialog({ title: t.noBackup, message: t.noBackupMessage, buttons: [{ text: t.done }] });
                   return;
                 }
+                console.error('[google-drive] restore backup error:', e?.message, e?.code ?? '', JSON.stringify(e ?? {}));
                 setDialog({ title: t.error, message: t.restoreFailed, buttons: [{ text: t.done }] });
               }
             }}

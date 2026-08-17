@@ -26,11 +26,13 @@ function okJson(body: unknown) {
 }
 
 function okText(content: string) {
+  const bytes = new TextEncoder().encode(content);
   return {
     ok: true,
     status: 200,
     json: jest.fn().mockResolvedValue(null),
     text: jest.fn().mockResolvedValue(content),
+    arrayBuffer: jest.fn().mockResolvedValue(bytes.buffer),
   };
 }
 
@@ -75,7 +77,7 @@ describe('uploadBackup', () => {
     expect(RNFS.unlink).toHaveBeenCalledWith('/mock/caches/licka-backup-tmp.zip');
   });
 
-  it('PATCHes existing file when licka-backup.zip already in Drive', async () => {
+  it('PATCHes existing file without parents metadata when licka-backup.zip already in Drive', async () => {
     mockFetch
       .mockResolvedValueOnce(okJson({ files: [{ id: 'existing-id' }] }))
       .mockResolvedValueOnce(okJson({ id: 'existing-id' }));
@@ -85,6 +87,8 @@ describe('uploadBackup', () => {
     const [url, init] = mockFetch.mock.calls[1];
     expect(url).toContain('/upload/drive/v3/files/existing-id?uploadType=multipart');
     expect(init.method).toBe('PATCH');
+    expect(init.body).toContain('"name":"licka-backup.zip"');
+    expect(init.body).not.toContain('parents');
   });
 
   it('throws BACKUP_TOO_LARGE and cleans temp ZIP when archive exceeds limit', async () => {
@@ -108,7 +112,7 @@ describe('uploadBackup', () => {
 });
 
 describe('downloadBackup', () => {
-  it('returns kind zip and writes downloaded file to cache when zip exists', async () => {
+  it('returns kind zip and writes downloaded binary to cache when zip exists', async () => {
     mockFetch
       .mockResolvedValueOnce(okJson({ files: [{ id: 'zip-id' }] }))
       .mockResolvedValueOnce(okText('zip-bytes'));
@@ -119,13 +123,13 @@ describe('downloadBackup', () => {
     expect(result.path).toMatch(/\/mock\/caches\/lichka-drive-restore-.*\.zip$/);
 
     const [listUrl] = mockFetch.mock.calls[0];
-    expect(listUrl).toContain("name='licka-backup.zip'");
+    expect(listUrl).toContain("name%3D'licka-backup.zip'");
 
     const [mediaUrl, mediaInit] = mockFetch.mock.calls[1];
     expect(mediaUrl).toContain('/drive/v3/files/zip-id?alt=media');
     expect(mediaInit.headers.Authorization).toBe('Bearer token-1');
 
-    expect(RNFS.writeFile).toHaveBeenCalledWith(result.path, 'zip-bytes', 'utf8');
+    expect(RNFS.writeFile).toHaveBeenCalledWith(result.path, 'emlwLWJ5dGVz', 'base64');
   });
 
   it('falls back to legacy JSON when only licka-backup.json exists', async () => {
@@ -140,7 +144,7 @@ describe('downloadBackup', () => {
     expect(result.path).toMatch(/\/mock\/caches\/lichka-drive-restore-.*\.json$/);
 
     const [jsonListUrl] = mockFetch.mock.calls[1];
-    expect(jsonListUrl).toContain("name='licka-backup.json'");
+    expect(jsonListUrl).toContain("name%3D'licka-backup.json'");
   });
 
   it('throws NO_BACKUP when neither zip nor json present', async () => {
