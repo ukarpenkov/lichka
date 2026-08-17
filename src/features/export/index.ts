@@ -1,5 +1,5 @@
 export { exportToJSON } from './exportToJSON';
-export { exportToZIP } from './exportToZIP';
+export { exportToZIP, type ExportToZIPOptions } from './exportToZIP';
 export {
   buildExportData,
   EXPORT_SCHEMA_VERSION,

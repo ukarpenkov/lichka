@@ -32,14 +32,14 @@
 
 | Шаг | Статус |
 |-----|--------|
-| 0. [М] GCP проект, Drive API, consent screen | почти готово (см. handoff) |
-| 1. [М] SHA-1 + OAuth Web/Android clients | в процессе — Android форма, Web ещё нет |
-| 2. [А] webClientId в `googleSignIn.ts` | |
-| 3. [А] Temp ZIP export для Drive | |
-| 4. [А] uploadBackup → ZIP | |
-| 5. [А] downloadBackup + Settings restore | |
-| 6. [А] Локализация Drive ZIP | |
-| 7. [А] Тесты google-drive | |
+| 0. [М] GCP проект, Drive API, consent screen | [x] 2026-08-17 |
+| 1. [М] SHA-1 + OAuth Web/Android clients | [x] 2026-08-17 |
+| 2. [А] webClientId в `googleSignIn.ts` | [x] 2026-08-17 |
+| 3. [А] Temp ZIP export для Drive | [x] 2026-08-17 |
+| 4. [А] uploadBackup → ZIP | [x] 2026-08-17 |
+| 5. [А] downloadBackup + Settings restore | [x] 2026-08-17 |
+| 6. [А] Локализация Drive ZIP | [x] 2026-08-17 |
+| 7. [А] Тесты google-drive | [x] 2026-08-17 |
 | 8. [М] Ручная проверка на устройстве | |
 
 ---
@@ -72,18 +72,22 @@
 
 ## Шаг 0. [М] GCP: проект, Drive API, OAuth consent
 
-**Статус:**  
+**Статус:** [x] готово (2026-08-17)
+
+> **Консоль обновлена (2026):** OAuth consent теперь в **Google Auth platform** (console.developers.google.com), а не в старом «APIs & Services → OAuth consent screen». Вход: https://me.developers.google.com/.
 
 ### Что делает человек
-1. Открыть [Google Cloud Console](https://console.cloud.google.com/).
-2. Создать проект (или выбрать существующий), имя например `lichka`.
-3. **APIs & Services → Library** → найти **Google Drive API** → **Enable**.
-4. **APIs & Services → OAuth consent screen**:
-   - User type: **External** (если личный Google) или Internal (Workspace).
-   - App name: `Lichka`, support email — свой.
-   - Scopes → Add → `https://www.googleapis.com/auth/drive.appdata`.
-   - **Test users** → добавить свой Gmail (пока Publishing status = Testing).
-5. Сохранить.
+1. Войти в https://me.developers.google.com/ (Google Developer Program) → Google Cloud console.
+2. Проект: выбрать существующий `lichka` (или создать).
+3. **Google Drive API → Enable:** открыть https://console.cloud.google.com/flows/enableapi?apiid=drive.googleapis.com и выбрать проект `lichka`.
+4. **Google Auth platform → Branding:** https://console.developers.google.com/auth/branding
+   - Если «Google Auth platform not configured yet» → **Get Started**:
+     - App Information: App name `Lichka`, User support email — свой.
+     - Audience: **External**.
+     - Contact information: email → Next → согласиться с Google API Services: User Data Policy → Continue → **Create**.
+   - Лого 120×120 (опционально): `design/icons/oauth-consent-logo-120.png`.
+5. **Audience → Test users:** https://console.developers.google.com/auth/audience → Add users → свой Gmail → Save (пока Publishing status = Testing).
+6. **Data Access → Scopes:** https://console.developers.google.com/auth/scopes → Add or Remove Scopes → добавить `https://www.googleapis.com/auth/drive.appdata` → Save.
 
 ### Что скинуть в чат
 - `[x] шаг 0 готово` **или**
@@ -102,7 +106,7 @@
 
 ## Шаг 1. [М] SHA-1 + OAuth Client IDs
 
-**Статус:**  
+**Статус:** [x] готово (2026-08-17)
 
 ### Что делает человек
 
@@ -113,17 +117,18 @@ cd android && ./gradlew signingReport
 Нужен SHA-1 из блока **Variant: debug** / **Config: debug** (строка `SHA1:`).
 
 **1b. Web client**
-- Credentials → **Create credentials** → **OAuth client ID**
-- Application type: **Web application**
+- **Google Auth platform → Clients:** https://console.developers.google.com/auth/clients
+- **Create Client** → Application type: **Web application**
 - Имя: `Lichka Web`
+- Authorized JavaScript origins / Redirect URIs — **не нужны** для react-native-google-signin
 - Create → скопировать **Client ID** вида `xxxxx.apps.googleusercontent.com`  
   (Client Secret для нашего Sign-In **не нужен**)
 
 **1c. Android client**
-- Create credentials → OAuth client ID → type **Android**
+- Там же: **Create Client** → Application type: **Android**
 - Name: `Lichka Android Debug`
 - Package name: **`com.lichka`** (как в `android/app/build.gradle`)
-- SHA-1: из 1a
+- SHA-1 certificate fingerprint: из 1a
 - Create
 
 ### Что скинуть в чат (обязательно)
@@ -151,7 +156,7 @@ SHA-1 использовал: <xx:xx:…>
 
 ## Шаг 2. [А] Подставить webClientId
 
-**Статус:**  
+**Статус:** [x] 2026-08-17
 
 ### Промт
 ```

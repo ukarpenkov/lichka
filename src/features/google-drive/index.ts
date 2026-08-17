@@ -1,2 +1,2 @@
 export { getGoogleToken, signOutGoogle } from './googleSignIn';
-export { uploadBackup, downloadBackup } from './googleDrive';
+export { uploadBackup, downloadBackup, type DriveBackupDownload } from './googleDrive';

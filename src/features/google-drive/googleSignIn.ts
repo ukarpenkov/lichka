@@ -1,7 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-// TODO: заменить на реальный webClientId из Google Cloud Console
-const WEB_CLIENT_ID = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
+const WEB_CLIENT_ID = '968016048983-idm80idaavnentgb1rn8fpvu6f8hf7r9.apps.googleusercontent.com';
 
 let configured = false;
 

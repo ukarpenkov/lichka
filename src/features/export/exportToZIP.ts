@@ -41,7 +41,11 @@ async function safeUnlink(path: string): Promise<void> {
   }
 }
 
-export async function exportToZIP(): Promise<string> {
+export type ExportToZIPOptions = {
+  targetDir?: string;
+};
+
+export async function exportToZIP(options: ExportToZIPOptions = {}): Promise<string> {
   const data = buildExportData();
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -62,6 +66,14 @@ export async function exportToZIP(): Promise<string> {
   }
 
   const fileName = `licka-backup-${timestamp}.zip`;
+
+  if (options.targetDir) {
+    const targetPath = `${options.targetDir}/${fileName}`;
+    await zip(stagingDir, targetPath);
+    await safeUnlink(stagingDir);
+    return targetPath;
+  }
+
   const downloadDir = RNFS.DownloadDirectoryPath;
   const externalDir = RNFS.ExternalDirectoryPath;
 

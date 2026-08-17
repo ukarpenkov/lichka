@@ -75,7 +75,6 @@ export const ru: LocaleBundle = {
     exportToFile: 'Экспорт в файл',
     importFromFile: 'Импорт из файла',
     backupSaved: 'Бэкап сохранён в Google Drive',
-    backupSavedNoMedia: 'Бэкап сохранён в Google Drive.\nМедиафайлы (фото, голосовые, аватары) не входят в этот бэкап — для полного архива используйте «Экспорт в файл» (ZIP).',
     backupFailed: 'Не удалось сохранить бэкап',
     restoreTitle: 'Восстановление',
     chooseImportMode: 'Выберите режим импорта:',

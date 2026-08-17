@@ -1,14 +1,34 @@
 import RNFS from 'react-native-fs';
-import { exportToJSON } from '../export';
+import { exportToZIP } from '../export';
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
-const BACKUP_FILE_NAME = 'licka-backup.json';
+const BACKUP_FILE_NAME = 'licka-backup.zip';
+const LEGACY_BACKUP_FILE_NAME = 'licka-backup.json';
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+export type DriveBackupDownload = {
+  path: string;
+  kind: 'zip' | 'json';
+};
+
+async function safeUnlink(path: string): Promise<void> {
+  try {
+    await RNFS.unlink(path);
+  } catch {
+    // temp file cleanup is best-effort
+  }
+}
 
 export async function uploadBackup(token: string): Promise<void> {
-  const filePath = await exportToJSON();
+  const zipPath = await exportToZIP({ targetDir: RNFS.CachesDirectoryPath });
   try {
-    const jsonContent = await RNFS.readFile(filePath, 'utf8');
+    const stat = await RNFS.stat(zipPath);
+    if (stat.size > MAX_UPLOAD_BYTES) {
+      throw new Error('BACKUP_TOO_LARGE');
+    }
+
+    const zipBase64 = await RNFS.readFile(zipPath, 'base64');
 
     const metadata = {
       name: BACKUP_FILE_NAME,
@@ -21,11 +41,12 @@ export async function uploadBackup(token: string): Promise<void> {
       `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
       `${JSON.stringify(metadata)}\r\n` +
       `--${boundary}\r\n` +
-      `Content-Type: application/json\r\n\r\n` +
-      `${jsonContent}\r\n` +
+      `Content-Type: application/zip\r\n` +
+      `Content-Transfer-Encoding: base64\r\n\r\n` +
+      `${zipBase64}\r\n` +
       `--${boundary}--`;
 
-    const existingId = await findExistingFile(token);
+    const existingId = await findExistingFile(token, BACKUP_FILE_NAME);
 
     const url = existingId
       ? `${DRIVE_UPLOAD}/files/${existingId}?uploadType=multipart`
@@ -45,20 +66,22 @@ export async function uploadBackup(token: string): Promise<void> {
       throw new Error(`Upload failed: ${response.status} ${text}`);
     }
   } finally {
-    try {
-      await RNFS.unlink(filePath);
-    } catch {
-      // temp file cleanup is best-effort
-    }
+    await safeUnlink(zipPath);
   }
 }
 
-export async function downloadBackup(token: string): Promise<string> {
-  const fileId = await findExistingFile(token);
+export async function downloadBackup(token: string): Promise<DriveBackupDownload> {
+  const zipId = await findExistingFile(token, BACKUP_FILE_NAME);
+  const jsonId = zipId ? null : await findExistingFile(token, LEGACY_BACKUP_FILE_NAME);
 
+  const fileId = zipId ?? jsonId;
   if (!fileId) {
     throw new Error('NO_BACKUP');
   }
+
+  const kind: 'zip' | 'json' = zipId ? 'zip' : 'json';
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const destPath = `${RNFS.CachesDirectoryPath}/lichka-drive-restore-${timestamp}.${kind}`;
 
   const response = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -68,12 +91,15 @@ export async function downloadBackup(token: string): Promise<string> {
     throw new Error(`Download failed: ${response.status}`);
   }
 
-  return response.text();
+  const content = await response.text();
+  await RNFS.writeFile(destPath, content, 'utf8');
+
+  return { path: destPath, kind };
 }
 
-async function findExistingFile(token: string): Promise<string | null> {
+async function findExistingFile(token: string, name: string): Promise<string | null> {
   const response = await fetch(
-    `${DRIVE_API}/files?spaces=appDataFolder&orderBy=modifiedTime desc&pageSize=1&q=name='${BACKUP_FILE_NAME}'`,
+    `${DRIVE_API}/files?spaces=appDataFolder&orderBy=modifiedTime desc&pageSize=1&q=name='${name}'`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
 

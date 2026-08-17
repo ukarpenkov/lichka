@@ -75,7 +75,6 @@ export const de: LocaleBundle = {
     exportToFile: 'In Datei exportieren',
     importFromFile: 'Aus Datei importieren',
     backupSaved: 'Sicherung in Google Drive gespeichert',
-    backupSavedNoMedia: 'Sicherung in Google Drive gespeichert.\nMediendateien (Fotos, Sprachnachrichten, Avatare) sind nicht enthalten — für ein vollständiges Archiv „In Datei exportieren“ (ZIP) verwenden.',
     backupFailed: 'Sicherung konnte nicht gespeichert werden',
     restoreTitle: 'Wiederherstellung',
     chooseImportMode: 'Importmodus wählen:',

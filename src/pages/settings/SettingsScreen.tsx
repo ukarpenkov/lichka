@@ -7,7 +7,7 @@ import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, getLocaleBundle, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult } from '../../features';
+import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult, type DriveBackupDownload } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
@@ -127,6 +127,38 @@ export function SettingsScreen() {
     [t],
   );
 
+  const performDriveImport = useCallback(
+    async (backup: DriveBackupDownload, mode: 'merge' | 'replace') => {
+      try {
+        let summary: ImportSummary;
+        if (backup.kind === 'zip') {
+          const result: ZipImportResult = await importFromZIP(backup.path, mode);
+          summary = result;
+        } else {
+          const json = await RNFS.readFile(backup.path, 'utf8');
+          summary = importFromJSON(json, mode);
+        }
+
+        const message = formatImportResult(t, summary);
+        setTimeout(() => {
+          setDialog({ title: t.restoreComplete, message, buttons: [{ text: t.done }] });
+        }, 300);
+        setSettings(getSettings());
+      } catch (e: unknown) {
+        setTimeout(() => {
+          setDialog({
+            title: t.error,
+            message: importErrorMessage(t, e),
+            buttons: [{ text: t.done }],
+          });
+        }, 300);
+      } finally {
+        await RNFS.unlink(backup.path).catch(() => {});
+      }
+    },
+    [t],
+  );
+
   if (!settings) {
     return (
       <Screen>
@@ -216,7 +248,7 @@ export function SettingsScreen() {
               try {
                 const token = await getGoogleToken();
                 await uploadBackup(token);
-                setDialog({ title: t.done, message: t.backupSavedNoMedia, buttons: [{ text: t.done }] });
+                setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
               } catch (e: any) {
                 if (e?.code === 'SIGN_IN_CANCELLED') return;
                 setDialog({ title: t.error, message: t.backupFailed, buttons: [{ text: t.done }] });
@@ -229,82 +261,40 @@ export function SettingsScreen() {
             onPress={async () => {
               try {
                 const token = await getGoogleToken();
-                const json = await downloadBackup(token);
+                const backup = await downloadBackup(token);
+
+                const modeDialog = (mode: 'merge' | 'replace') =>
+                  setTimeout(() => {
+                    setDialog({
+                      title: t.replaceAllConfirm,
+                      message: t.replaceAllWarning,
+                      buttons: [
+                        { text: t.cancel, style: 'cancel' },
+                        {
+                          text: t.replace,
+                          style: 'destructive',
+                          onPress: () => performDriveImport(backup, mode),
+                        },
+                      ],
+                    });
+                  }, 300);
 
                 setDialog({
                   title: t.restoreTitle,
-                  message: `${t.driveRestoreNoMedia}\n\n${t.chooseImportMode}`,
+                  message:
+                    backup.kind === 'json'
+                      ? `${t.driveRestoreNoMedia}\n\n${t.chooseImportMode}`
+                      : t.chooseImportMode,
                   buttons: [
                     { text: t.cancel, style: 'cancel' },
                     {
                       text: t.merge,
-                      onPress: () => {
-                        try {
-                          const result = importFromJSON(json, 'merge');
-                          const parts: string[] = [];
-                          if (result.chatsAdded > 0) parts.push(t.chatsAdded(result.chatsAdded));
-                          if (result.chatsUpdated > 0) parts.push(t.chatsUpdated(result.chatsUpdated));
-                          if (result.messagesAdded > 0) parts.push(t.messagesAdded(result.messagesAdded));
-                          if (result.messagesUpdated > 0) parts.push(t.messagesUpdated(result.messagesUpdated));
-                          if (result.settingsImported) parts.push(t.settingsImported);
-                          setTimeout(() => {
-                            setDialog({
-                              title: t.restoreComplete,
-                              message: parts.length > 0 ? parts.join('\n') : t.noNewData,
-                              buttons: [{ text: t.done }],
-                            });
-                          }, 300);
-                          setSettings(getSettings());
-                        } catch (e: unknown) {
-                          setTimeout(() => {
-                            setDialog({
-                              title: t.error,
-                              message: importErrorMessage(t, e),
-                              buttons: [{ text: t.done }],
-                            });
-                          }, 300);
-                        }
-                      },
+                      onPress: () => performDriveImport(backup, 'merge'),
                     },
                     {
                       text: t.replaceAll,
                       style: 'destructive',
-                      onPress: () => {
-                        setTimeout(() => {
-                          setDialog({
-                            title: t.replaceAllConfirm,
-                            message: t.replaceAllWarning,
-                            buttons: [
-                              { text: t.cancel, style: 'cancel' },
-                              {
-                                text: t.replace,
-                                style: 'destructive',
-                                onPress: () => {
-                                  try {
-                                    const result = importFromJSON(json, 'replace');
-                                    setTimeout(() => {
-                                      setDialog({
-                                        title: t.restoreComplete,
-                                        message: `${t.chatsAdded(result.chatsAdded)}, ${t.messagesAdded(result.messagesAdded)}${result.settingsImported ? `, ${t.settingsImported}` : ''}`,
-                                        buttons: [{ text: t.done }],
-                                      });
-                                    }, 300);
-                                    setSettings(getSettings());
-                                  } catch (e: unknown) {
-                                    setTimeout(() => {
-                                      setDialog({
-                                        title: t.error,
-                                        message: importErrorMessage(t, e),
-                                        buttons: [{ text: t.done }],
-                                      });
-                                    }, 300);
-                                  }
-                                },
-                              },
-                            ],
-                          });
-                        }, 300);
-                      },
+                      onPress: () => modeDialog('replace'),
                     },
                   ],
                 });

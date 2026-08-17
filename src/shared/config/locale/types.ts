@@ -71,7 +71,6 @@ export interface LocaleDictionary {
   exportToFile: string;
   importFromFile: string;
   backupSaved: string;
-  backupSavedNoMedia: string;
   backupFailed: string;
   restoreTitle: string;
   chooseImportMode: string;

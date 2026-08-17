@@ -158,4 +158,27 @@ describe('exportToZIP', () => {
     expect(zip).toHaveBeenCalledTimes(2);
     expect((zip as jest.Mock).mock.calls[1][1]).toBe(path);
   });
+
+  it('writes to targetDir without touching Download or External', async () => {
+    mockGetChats.mockReturnValue([chat('chat-1', null)]);
+    mockGetMessagesByChatId.mockReturnValue([message()]);
+
+    const path = await exportToZIP({ targetDir: '/mock/cache' });
+
+    expect(path).toMatch(/\/mock\/cache\/licka-backup-.*\.zip$/);
+    expect(zip).toHaveBeenCalledTimes(1);
+    expect((zip as jest.Mock).mock.calls[0][1]).toBe(path);
+    expect((zip as jest.Mock).mock.calls[0][1]).not.toMatch(/\/mock\/download/);
+    expect((zip as jest.Mock).mock.calls[0][1]).not.toMatch(/\/mock\/external/);
+  });
+
+  it('cleans up staging dir when zipping into targetDir', async () => {
+    mockGetChats.mockReturnValue([chat('chat-1', null)]);
+    mockGetMessagesByChatId.mockReturnValue([message()]);
+
+    await exportToZIP({ targetDir: '/mock/cache' });
+
+    const unlinkCalls = (RNFS.unlink as jest.Mock).mock.calls.map((c: string[]) => c[0]);
+    expect(unlinkCalls.some((p) => /lichka-export-staging-/.test(p))).toBe(true);
+  });
 });
