@@ -159,7 +159,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     const path = editChat?.avatarPath;
     if (path && isThemePixelFileAvatar(path) && !iconAvatar) {
       let alive = true;
-      void getThemeTintedAvatarDataUri(path, { background, text })
+      getThemeTintedAvatarDataUri(path, { background, text })
         .then((uri) => {
           if (alive) setAvatarUri(uri);
         })
@@ -226,7 +226,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         }
         const asset = response.assets?.[0];
         if (asset?.uri) {
-          void applyPixelAvatar(asset.uri, asset.base64);
+          applyPixelAvatar(asset.uri, asset.base64);
         }
       },
     );
@@ -384,8 +384,8 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
                     styles.saveButton,
                     {
                       backgroundColor: text,
-                      opacity: !canSave || saving || processingAvatar ? 0.4 : 1,
                     },
+                    (!canSave || saving || processingAvatar) && styles.saveButtonDisabled,
                   ]}
                 />
               </View>
@@ -491,5 +491,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
+  },
+  saveButtonDisabled: {
+    opacity: 0.4,
   },
 });

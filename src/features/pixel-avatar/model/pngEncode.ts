@@ -9,10 +9,9 @@ type UpngApi = {
 
 /** Metro/Hermes: default import from CJS may be undefined or nested. */
 function getUpng(): UpngApi {
-  const mod = UPNGImport as unknown as UpngApi & { default?: UpngApi };
+  const mod = UPNGImport as unknown as Partial<UpngApi> & { default?: Partial<UpngApi> };
   const api = (mod?.encode ? mod : mod?.default) as UpngApi | undefined;
   if (!api?.encode) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('upng-js') as UpngApi;
   }
   return api;

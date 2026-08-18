@@ -6,6 +6,7 @@ jest.mock('react-native/Libraries/Components/Clipboard/Clipboard', () => ({
   },
 }));
 
+// eslint-disable-next-line @react-native/no-deep-imports
 import ClipboardModule from 'react-native/Libraries/Components/Clipboard/Clipboard';
 import { setClipboardString } from '../clipboard';
 

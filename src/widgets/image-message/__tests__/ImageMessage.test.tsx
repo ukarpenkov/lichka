@@ -1,6 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { ImageMessage } from '../ImageMessage';
+import type { Message } from '../../../entities/message';
 
 jest.mock('../../../shared/lib/mediaPath', () => {
   const actual = jest.requireActual('../../../shared/lib/mediaPath');
@@ -14,19 +15,18 @@ beforeEach(() => {
   jest.restoreAllMocks();
 });
 
-const createMessage = (overrides: Partial<{
-  type: string;
-  body: string;
-  payload: string;
-}> = {}) => ({
+const createMessage = (overrides: Partial<Message> = {}): Message => ({
   id: 'msg-1',
   chatId: 'chat-1',
   type: overrides.type ?? 'image',
   body: overrides.body ?? '',
-  scheduledAt: null,
-  intervalMinutes: null,
-  enabled: false,
-  payload: overrides.payload ?? JSON.stringify({ uri: 'media/images/1.jpg', width: 800, height: 600 }),
+  scheduledAt: overrides.scheduledAt ?? null,
+  intervalMinutes: overrides.intervalMinutes ?? null,
+  enabled: overrides.enabled ?? false,
+  payload:
+    overrides.payload !== undefined
+      ? overrides.payload
+      : JSON.stringify({ uri: 'media/images/1.jpg', width: 800, height: 600 }),
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 });
@@ -181,12 +181,10 @@ describe('ImageMessage', () => {
     expect(frames.length).toBeGreaterThan(0);
     expect(UNSAFE_getByType(Svg)).toBeTruthy();
     expect(
-      UNSAFE_getAllByType(Stop).map(
-        (stop: { props: { offset: string; stopOpacity: number } }) => ({
-          offset: stop.props.offset,
-          opacity: stop.props.stopOpacity,
-        }),
-      ),
+      UNSAFE_getAllByType(Stop).map((stop) => ({
+        offset: stop.props.offset,
+        opacity: stop.props.stopOpacity,
+      })),
     ).toEqual([
       { offset: '0%', opacity: 0 },
       { offset: '35%', opacity: 0 },

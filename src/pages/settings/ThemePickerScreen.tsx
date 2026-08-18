@@ -39,10 +39,10 @@ export function ThemePickerScreen() {
             {
               backgroundColor: item.background,
               borderColor: isActive ? text : text + '20',
-              borderWidth: isActive ? 2 : 1,
             },
+            isActive ? styles.cardActive : styles.cardInactive,
           ]}>
-          <Text variant="title-sm" style={{ color: item.text, flex: 1 }}>
+          <Text variant="title-sm" style={[styles.title, { color: item.text }]}>
             {item.name}
           </Text>
           {isActive && <Check size={18} color={item.text} />}
@@ -75,5 +75,14 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  cardActive: {
+    borderWidth: 2,
+  },
+  cardInactive: {
+    borderWidth: 1,
+  },
+  title: {
+    flex: 1,
   },
 });

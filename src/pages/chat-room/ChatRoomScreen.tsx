@@ -730,7 +730,7 @@ export function ChatRoomScreen() {
       <View style={[styles.empty, { backgroundColor: colors.canvas }]}>
         <View style={{ height: insets.top }} />
         <View style={styles.loadingCenter}>
-          <Text variant="body-sm" tone="muted" style={{ textAlign: 'center' }}>
+          <Text variant="body-sm" tone="muted" style={styles.centerText}>
             {t.chatNotFound}
           </Text>
         </View>
@@ -1019,6 +1019,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  centerText: {
+    textAlign: 'center',
   },
   headerShell: {
     zIndex: 30,

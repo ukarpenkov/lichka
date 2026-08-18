@@ -34,6 +34,7 @@ function parseUri(payload: string | null): string | null {
 function idToSeed(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
+    // eslint-disable-next-line no-bitwise
     hash = (hash * 31 + id.charCodeAt(i)) | 0;
   }
   return Math.abs(hash);

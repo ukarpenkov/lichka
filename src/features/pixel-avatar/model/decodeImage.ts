@@ -11,10 +11,9 @@ type UpngApi = {
 };
 
 function getUpng(): UpngApi {
-  const mod = UPNGImport as unknown as UpngApi & { default?: UpngApi };
+  const mod = UPNGImport as unknown as Partial<UpngApi> & { default?: Partial<UpngApi> };
   const api = (mod?.decode ? mod : mod?.default) as UpngApi | undefined;
   if (!api?.decode) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('upng-js') as UpngApi;
   }
   return api;

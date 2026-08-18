@@ -11,10 +11,10 @@ jest.mock('../../config', () => {
 });
 
 jest.mock('../pixel', () => {
-  const React = require('react');
+  const { createElement } = require('react');
   return {
     PixelIcon: ({ name, color, size }: { name: string; color: string; size: number }) =>
-      React.createElement('View', { testID: `pixel-${name}`, accessibilityLabel: `${color}:${size}` }),
+      createElement('View', { testID: `pixel-${name}`, accessibilityLabel: `${color}:${size}` }),
     isChatIconAvatar: (path: string) =>
       typeof path === 'string' &&
       !path.includes('/') &&

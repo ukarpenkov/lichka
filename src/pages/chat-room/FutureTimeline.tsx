@@ -104,7 +104,7 @@ function wrapNativeScroll(
 }
 
 export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>(
-  function FutureTimeline(
+  function FutureTimelineComponent(
     {
       messages,
       highlightedMessageId,
@@ -170,7 +170,7 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
             </Text>
           </View>
         }
-        style={{ flex: 1, backgroundColor: colors.canvas }}
+        style={[styles.list, { backgroundColor: colors.canvas }]}
         contentContainerStyle={[
           styles.listContent,
           getListContentFillStyle(),
@@ -196,6 +196,9 @@ export const FutureTimeline = forwardRef<FlatList<Message>, FutureTimelineProps>
 );
 
 const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+  },
   listContent: {
     paddingTop: 0,
     paddingBottom: MESSAGE_LIST_BOTTOM_GAP,

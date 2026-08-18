@@ -28,7 +28,6 @@ export function ChatAvatar({ title, avatarPath, size = 48 }: AvatarProps) {
             height: size,
             borderRadius: radius,
             backgroundColor: background,
-            overflow: 'hidden',
           },
         ]}>
         {tintedUri ? (
@@ -51,5 +50,6 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
 });

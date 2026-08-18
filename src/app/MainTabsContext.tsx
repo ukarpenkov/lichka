@@ -83,6 +83,7 @@ export function useOnTabVisible(
   callback: () => void,
   deps: React.DependencyList = [],
 ) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const cb = useCallback(callback, deps);
   useTabVisible(tabIndex, cb, [cb]);
 }

@@ -87,7 +87,7 @@ describe('buildScheduledWidgetSnapshot', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
       },
     ]);
-    mockGetChat.mockReturnValue(undefined);
+    mockGetChat.mockReturnValue(null);
 
     expect(buildScheduledWidgetSnapshot()[0]).toMatchObject({
       chatTitle: '—',
@@ -110,7 +110,7 @@ describe('buildScheduledWidgetSnapshot', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
       })),
     );
-    mockGetChat.mockReturnValue(undefined);
+    mockGetChat.mockReturnValue(null);
 
     expect(buildScheduledWidgetSnapshot().length).toBe(SCHEDULED_WIDGET_SNAPSHOT_LIMIT);
     expect(buildScheduledWidgetSnapshot(3).length).toBe(3);

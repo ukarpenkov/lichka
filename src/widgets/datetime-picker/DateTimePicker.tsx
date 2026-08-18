@@ -513,13 +513,10 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 <View style={styles.swipeZone}>
                   <Text
                     variant="body"
-                    style={{
-                      fontSize: 16,
-                      ...monoWeight('medium'),
-                      color: `${text}66`,
-                      marginTop: 4,
-                      textAlign: 'center',
-                    }}
+                    style={[
+                      styles.monthLabel,
+                      { ...monoWeight('medium'), color: `${text}66` },
+                    ]}
                   >
                     {monthFull[month]}
                   </Text>
@@ -529,13 +526,8 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
                 <Animated.View style={styles.swipeZone}>
                   <Animated.Text
                     style={[
-                      {
-                        fontSize: 44,
-                        ...monoWeight('bold'),
-                        color: dayActive ? ACCENT : text,
-                        lineHeight: 48,
-                        textAlign: 'center',
-                      },
+                      styles.dayNumber,
+                      { ...monoWeight('bold'), color: dayActive ? ACCENT : text },
                       dayTextStyle,
                     ]}
                   >
@@ -683,6 +675,16 @@ const styles = StyleSheet.create({
   swipeZone: {
     width: '100%',
     alignItems: 'center',
+  },
+  monthLabel: {
+    fontSize: 16,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  dayNumber: {
+    fontSize: 44,
+    lineHeight: 48,
+    textAlign: 'center',
   },
   ringArea: {
     alignItems: 'center',

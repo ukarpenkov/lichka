@@ -53,12 +53,11 @@ export function YearGridModal({
           onPress={() => handleSelect(item)}
         >
           <Text
-            style={{
-              color: active ? '#FFFFFF' : textColor,
-              fontSize: 16,
-              ...monoWeight(active ? 'bold' : 'medium'),
-              textAlign: 'center',
-            }}
+            style={[
+              styles.yearLabel,
+              { ...monoWeight(active ? 'bold' : 'medium'), color: textColor },
+              active && styles.yearLabelActive,
+            ]}
           >
             {item}
           </Text>
@@ -73,13 +72,7 @@ export function YearGridModal({
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={[styles.card, { backgroundColor: background }]}>
           <Text
-            style={{
-              fontSize: 18,
-              ...monoWeight('bold'),
-              color: textColor,
-              textAlign: 'center',
-              marginBottom: 16,
-            }}
+            style={[styles.title, { ...monoWeight('bold'), color: textColor }]}
           >
             Select Year
           </Text>
@@ -125,5 +118,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
+  },
+  yearLabel: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  yearLabelActive: {
+    color: '#FFFFFF',
+  },
+  title: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 16,
   },
 });

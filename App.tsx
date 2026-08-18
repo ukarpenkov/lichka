@@ -69,7 +69,7 @@ function AppContent() {
 
 function App(): React.JSX.Element {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
       <ErrorBoundary>
         <AppInitProvider>
           <AppContent />
@@ -82,6 +82,9 @@ function App(): React.JSX.Element {
 export default App;
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   loading: {
     flex: 1,
     alignItems: 'center',

@@ -327,7 +327,7 @@ export function MessageComposer({ chatId, onSent }: Props) {
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
               <Animated.View style={[styles.recDot, { backgroundColor: colors.destructive }, dotAnimatedStyle]} />
               <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
-              <Text variant="caption" tone="mutedSoft" style={{ marginLeft: 8 }}>
+              <Text variant="caption" tone="mutedSoft" style={styles.cancelHint}>
                 ← {t.cancel}
               </Text>
             </Animated.View>
@@ -489,6 +489,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  cancelHint: {
+    marginLeft: 8,
   },
   recDot: {
     width: 10,

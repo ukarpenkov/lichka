@@ -33,7 +33,7 @@ function PeekDownGuide({
     <View
       style={[
         styles.guideColumn,
-        span != null ? { height: span, flex: 0 } : styles.guideFlex,
+        span != null ? [styles.guideFixed, { height: span }] : styles.guideFlex,
       ]}
     >
       <View style={styles.guideHalf}>
@@ -113,6 +113,9 @@ const styles = StyleSheet.create({
   },
   guideFlex: {
     flex: 1,
+  },
+  guideFixed: {
+    flex: 0,
   },
   guideHalf: {
     flex: 1,

@@ -46,8 +46,8 @@ export function Switch({ value, onValueChange, disabled }: SwitchProps) {
         styles.track,
         {
           backgroundColor: value ? colors.switchTrackOn : colors.switchTrackOff,
-          opacity: disabled ? 0.4 : 1,
         },
+        disabled && styles.trackDisabled,
       ]}
     >
       <Animated.View style={[styles.thumbSlot, thumbStyle]}>
@@ -72,6 +72,9 @@ const styles = StyleSheet.create({
     height: TRACK_H,
     borderRadius: TRACK_H / 2,
     justifyContent: 'center',
+  },
+  trackDisabled: {
+    opacity: 0.4,
   },
   thumbSlot: {
     marginLeft: PAD,

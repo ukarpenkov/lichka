@@ -56,8 +56,8 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
     setCustomText(String(minutes));
   }, []);
 
-  const handleCustomChange = useCallback((text: string) => {
-    const cleaned = text.replace(/[^0-9]/g, '');
+  const handleCustomChange = useCallback((input: string) => {
+    const cleaned = input.replace(/[^0-9]/g, '');
     setCustomText(cleaned);
     setSelected(null);
   }, []);
@@ -94,10 +94,8 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
                     onPress={() => handlePresetPress(preset.value)}
                     style={[
                       styles.presetBtn,
-                      {
-                        borderColor: isActive ? ACCENT : text + '33',
-                        backgroundColor: isActive ? ACCENT + '15' : 'transparent',
-                      },
+                      { borderColor: isActive ? ACCENT : text + '33' },
+                      isActive && styles.presetBtnActive,
                     ]}
                   >
                     <Text
@@ -130,7 +128,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
                   style={[styles.input, { color: text, borderColor: customText ? ACCENT : text + '33' }]}
                   maxLength={4}
                 />
-                <Text variant="caption" style={{ color: `${text}66`, marginLeft: 6 }}>{t.minutes}</Text>
+                <Text variant="caption" style={[styles.unitLabel, { color: `${text}66` }]}>{t.minutes}</Text>
               </View>
             </View>
 
@@ -141,7 +139,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
               </Pressable>
               <Pressable
                 onPress={handleConfirm}
-                style={[styles.btn, { opacity: canConfirm ? 1 : 0.4 }]}
+                style={[styles.btn, !canConfirm && styles.btnDisabled]}
                 disabled={!canConfirm}
               >
                 <Text variant="body" style={{ color: ACCENT, ...monoWeight('bold') }}>{t.done}</Text>
@@ -183,6 +181,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
   },
+  presetBtnActive: {
+    backgroundColor: ACCENT + '15',
+  },
   customRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -192,6 +193,9 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  unitLabel: {
+    marginLeft: 6,
   },
   input: {
     borderWidth: 1,
@@ -212,5 +216,8 @@ const styles = StyleSheet.create({
   btn: {
     paddingVertical: 8,
     paddingHorizontal: 4,
+  },
+  btnDisabled: {
+    opacity: 0.4,
   },
 });

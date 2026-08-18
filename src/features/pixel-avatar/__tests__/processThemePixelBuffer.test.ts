@@ -303,7 +303,6 @@ describe('createThemePixelAvatar', () => {
   });
 
   it('should decode JPEG bytes and produce avatar', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const jpeg = require('jpeg-js') as typeof import('jpeg-js');
     const rgba = softBlob(32);
     const encoded = jpeg.encode({ width: 32, height: 32, data: rgba.data }, 90);

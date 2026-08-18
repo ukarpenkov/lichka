@@ -53,13 +53,7 @@ export function YearPicker({
       <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
         <Text
           variant="body"
-          style={{
-            color: accentColor,
-            ...monoWeight('bold'),
-            fontSize: 16,
-            minWidth: 56,
-            textAlign: 'center',
-          }}
+          style={[styles.yearLabel, { color: accentColor, ...monoWeight('bold') }]}
         >
           {year}
         </Text>
@@ -86,6 +80,11 @@ const styles = StyleSheet.create({
   },
   arrow: {
     padding: 4,
+  },
+  yearLabel: {
+    fontSize: 16,
+    minWidth: 56,
+    textAlign: 'center',
   },
 
 });

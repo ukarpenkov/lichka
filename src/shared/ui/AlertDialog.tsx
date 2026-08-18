@@ -65,8 +65,8 @@ function HardShadowButton({
               {
                 backgroundColor: shadowColor,
                 borderRadius: radii.sm,
-                opacity: pressed ? 0 : 1,
               },
+              pressed && styles.pressedLayer,
             ]}
           />
           <View
@@ -85,7 +85,7 @@ function HardShadowButton({
           >
             <Text
               variant="button"
-              style={{ color: labelColor, textAlign: 'center' }}
+              style={[styles.buttonLabel, { color: labelColor }]}
               numberOfLines={1}
             >
               {btn.text}
@@ -256,6 +256,12 @@ const styles = StyleSheet.create({
     left: hardShadowOffset,
     right: 0,
     bottom: 0,
+  },
+  pressedLayer: {
+    opacity: 0,
+  },
+  buttonLabel: {
+    textAlign: 'center',
   },
   hardShadowFace: {
     alignSelf: 'stretch',

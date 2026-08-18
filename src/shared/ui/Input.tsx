@@ -25,9 +25,8 @@ export function Input({ placeholder, multiline, style, ...rest }: InputProps) {
           color: colors.ink,
           backgroundColor: colors.canvas,
           borderColor: colors.surfaceStrong,
-          height: multiline ? 100 : 44,
-          textAlignVertical: multiline ? 'top' : 'center',
         },
+        multiline ? styles.multiline : styles.single,
         style,
       ]}
       {...rest}
@@ -43,5 +42,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: typography.body.fontSize,
     fontFamily: fonts.regular,
+  },
+  single: {
+    height: 44,
+    textAlignVertical: 'center',
+  },
+  multiline: {
+    height: 100,
+    textAlignVertical: 'top',
   },
 });

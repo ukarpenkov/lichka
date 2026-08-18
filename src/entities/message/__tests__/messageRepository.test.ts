@@ -345,7 +345,7 @@ describe('messageRepository', () => {
       };
 
       mockExecuteSync.mockReturnValue({ rows: [imageRow] });
-      const messages = getScheduledMessages();
+      getScheduledMessages();
 
       const sql = mockExecuteSync.mock.calls[0][0];
       expect(sql).toContain("type IN ('reminder', 'alarm', 'periodic')");

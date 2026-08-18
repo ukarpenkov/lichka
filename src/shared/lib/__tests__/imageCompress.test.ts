@@ -21,7 +21,7 @@ describe('imageCompress', () => {
           mediaType: 'photo',
           maxWidth: 1920,
           maxHeight: 1920,
-          quality: 0.75,
+          quality: 0.7,
         },
         expect.any(Function),
       );

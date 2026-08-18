@@ -70,12 +70,14 @@ jest.mock('@react-navigation/native', () => {
     NavigationContainer: ({ children }) => children,
     useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),
     useRoute: () => ({ params: {} }),
-    useFocusEffect: (cb) => React.useEffect(cb, []),
+    useFocusEffect: (cb) => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      return React.useEffect(() => cb(), []);
+    },
   };
 });
 
 jest.mock('@react-navigation/native-stack', () => {
-  const React = require('react');
   return {
     createNativeStackNavigator: () => ({
       Navigator: ({ children }) => children,
@@ -85,7 +87,6 @@ jest.mock('@react-navigation/native-stack', () => {
 });
 
 jest.mock('@react-navigation/bottom-tabs', () => {
-  const React = require('react');
   return {
     createBottomTabNavigator: () => ({
       Navigator: ({ children }) => children,

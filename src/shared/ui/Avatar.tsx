@@ -62,13 +62,13 @@ export function Avatar({ title, avatarPath, size = 48 }: AvatarProps) {
       <View
         style={[
           styles.icon,
+          styles.iconClip,
           {
             width: size,
             height: size,
             borderRadius: radius,
             // Theme-pixel avatars are opaque theme palette; plate matches theme bg
             backgroundColor: avatarPath.endsWith('.png') ? background : text + '15',
-            overflow: 'hidden',
           },
         ]}>
         <Image
@@ -113,6 +113,9 @@ const styles = StyleSheet.create({
   icon: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconClip: {
+    overflow: 'hidden',
   },
   emoji: {
     alignItems: 'center',

@@ -74,7 +74,7 @@ export function DateTimePickerModal({ visible, value, onConfirm, onCancel }: Pro
                   <Text variant="body">{t.back}</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.btn, { borderColor: `${text}33`, marginLeft: 8 }]}
+                  style={[styles.btn, { borderColor: `${text}33` }, styles.btnGap]}
                   onPress={handleConfirm}>
                   <Text variant="body">{t.done}</Text>
                 </Pressable>
@@ -116,5 +116,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     alignItems: 'center',
+  },
+  btnGap: {
+    marginLeft: 8,
   },
 });

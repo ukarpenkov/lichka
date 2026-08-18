@@ -2,21 +2,23 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { MessageLine, formatLogTime } from '../MessageLine';
 
-jest.mock('../../../widgets/image-message', () => ({
-  ImageMessage: ({ message }: { message: { type: string; body: string; payload: string | null } }) => {
-    const React = require('react');
-    const { Text } = require('react-native');
-    return React.createElement(Text, { testID: 'image-message-content' }, message.body || '[image]');
-  },
-}));
+jest.mock('../../../widgets/image-message', () => {
+  const { createElement } = require('react');
+  const { Text } = require('react-native');
+  return {
+    ImageMessage: ({ message }: { message: { type: string; body: string; payload: string | null } }) =>
+      createElement(Text, { testID: 'image-message-content' }, message.body || '[image]'),
+  };
+});
 
-jest.mock('../../../widgets/voice-message', () => ({
-  VoiceMessage: ({ message }: { message: { type: string; body: string } }) => {
-    const React = require('react');
-    const { Text } = require('react-native');
-    return React.createElement(Text, { testID: 'voice-message-content' }, message.body);
-  },
-}));
+jest.mock('../../../widgets/voice-message', () => {
+  const { createElement } = require('react');
+  const { Text } = require('react-native');
+  return {
+    VoiceMessage: ({ message }: { message: { type: string; body: string } }) =>
+      createElement(Text, { testID: 'voice-message-content' }, message.body),
+  };
+});
 
 jest.mock('../../../shared/lib/haptics', () => ({
   hapticLongPress: jest.fn(),
