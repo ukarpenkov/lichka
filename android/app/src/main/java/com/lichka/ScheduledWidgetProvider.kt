@@ -146,9 +146,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                 inkColor,
                 preferUriPlate,
             )
-            views.setTextColor(R.id.widget_title, inkColor)
             views.setTextColor(R.id.widget_empty, mutedColor)
-            views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_scheduled_title))
             views.setTextViewText(
                 R.id.widget_empty,
                 context.getString(R.string.widget_scheduled_empty),
@@ -166,10 +164,6 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             views.setRemoteAdapter(R.id.widget_list, serviceIntent)
             views.setEmptyView(R.id.widget_list, R.id.widget_empty)
 
-            views.setOnClickPendingIntent(
-                R.id.widget_title,
-                openScheduledPendingIntent(context, appWidgetId, null, 1000 + appWidgetId),
-            )
             views.setOnClickPendingIntent(
                 R.id.widget_root,
                 openScheduledPendingIntent(context, appWidgetId, null, 2000 + appWidgetId),

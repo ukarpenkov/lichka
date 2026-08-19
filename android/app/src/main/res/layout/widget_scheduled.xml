@@ -28,17 +28,6 @@
         android:paddingBottom="16dp">
 
         <TextView
-            android:id="@+id/widget_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:text="@string/widget_scheduled_title"
-            android:textColor="@color/widget_ink"
-            android:textSize="10sp" />
-
-        <TextView
             android:id="@+id/widget_empty"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -53,7 +42,6 @@
             android:id="@+id/widget_list"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="8dp"
             android:layout_weight="1"
             android:divider="@android:color/transparent"
             android:dividerHeight="0dp"
