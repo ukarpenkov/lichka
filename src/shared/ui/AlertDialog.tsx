@@ -1,9 +1,7 @@
 import React from 'react';
 import { Modal, View, Pressable, StyleSheet } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
-import {
-  useTheme,
-} from '../config';
+import { useTheme } from '../config/ThemeProvider';
 import {
   radii,
   hardShadowOffset,
@@ -44,13 +42,14 @@ function HardShadowButton({
 }) {
   const { colors } = useTheme();
   const isDestructive = btn.style === 'destructive';
-  const borderColor = isDestructive ? colors.destructive : shadowColor;
+  const accentColor = isDestructive ? colors.destructive : shadowColor;
   const labelColor =
     btn.style === 'destructive'
       ? colors.destructive
       : btn.style === 'cancel'
         ? colors.muted
         : colors.ink;
+  const styleKey = btn.style ?? 'default';
 
   return (
     <Pressable
@@ -60,21 +59,23 @@ function HardShadowButton({
       {({ pressed }) => (
         <View style={styles.buttonShadowWrap}>
           <View
+            testID={`alert-btn-shadow-${styleKey}`}
             style={[
               styles.hardShadowLayer,
               {
-                backgroundColor: shadowColor,
+                backgroundColor: accentColor,
                 borderRadius: radii.sm,
               },
               pressed && styles.pressedLayer,
             ]}
           />
           <View
+            testID={`alert-btn-face-${styleKey}`}
             style={[
               styles.hardShadowFace,
               {
                 backgroundColor: fill,
-                borderColor,
+                borderColor: accentColor,
                 borderWidth: hardBorderWidth,
                 borderRadius: radii.sm,
                 transform: pressed
