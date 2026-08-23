@@ -79,6 +79,7 @@ import {
   shouldStickToBottomOnLayoutExpand,
   shouldStickToBottomOnLayoutShrink,
 } from './scrollEdge';
+import { resolveStickyDate, sameStickyDay } from './stickyDate';
 import { resolveChatRoomBackAction } from './chatRoomBack';
 import { GAP_DEBUG, logGap } from './gapDebug';
 
@@ -535,22 +536,14 @@ export function ChatRoomScreen() {
     return () => clearTimeout(timer);
   }, [messageId, focusNonce, futureMessages, timelineMode, pulseHighlight]);
 
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  // Low threshold so a date row still counts as on-screen until it has
+  // almost left — sticky must not appear while the inline label is visible.
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1 }).current;
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      // Inverted + reversed data: highest index is toward the visual top.
-      let topDate: string | null = null;
-      let topIndex = -1;
-      for (const v of viewableItems) {
-        if (!v.isViewable || v.item?.kind !== 'date') continue;
-        const index = v.index ?? -1;
-        if (index >= topIndex) {
-          topIndex = index;
-          topDate = (v.item as { date: string }).date;
-        }
-      }
-      if (topDate) setStickyDate(topDate);
+      const next = resolveStickyDate(viewableItems);
+      setStickyDate((prev) => (sameStickyDay(prev, next) ? prev : next));
     },
     [],
   );
@@ -787,7 +780,7 @@ export function ChatRoomScreen() {
             styles.stickyDate,
             { top: headerAreaHeight, backgroundColor: colors.canvas },
           ]}>
-          <DateSeparator date={stickyDate} />
+          <DateSeparator date={stickyDate} animateEnter={false} />
         </Animated.View>
       )}
 
