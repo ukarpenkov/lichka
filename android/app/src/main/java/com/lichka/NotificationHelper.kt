@@ -5,11 +5,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 
 object NotificationHelper {
 
@@ -133,25 +132,19 @@ object NotificationHelper {
             .build()
     }
 
+    /** Fixed-size bitmap: adaptive mipmaps report intrinsic -1 and used to become 1×1. */
     private fun appLargeIcon(context: Context): Bitmap {
-        val drawable =
-            ContextCompat.getDrawable(context, R.mipmap.ic_launcher_round)
-                ?: ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
-                ?: context.packageManager.getApplicationIcon(context.applicationInfo)
-        return drawableToBitmap(drawable)
+        val width =
+            context.resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
+        val height =
+            context.resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_height)
+        return appIconDrawable(context).toBitmap(width, height)
     }
 
-    private fun drawableToBitmap(drawable: Drawable): Bitmap {
-        if (drawable is BitmapDrawable && drawable.bitmap != null) {
-            return drawable.bitmap
-        }
-        val width = drawable.intrinsicWidth.coerceAtLeast(1)
-        val height = drawable.intrinsicHeight.coerceAtLeast(1)
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        return bitmap
+    private fun appIconDrawable(context: Context): Drawable {
+        return ContextCompat.getDrawable(context, R.mipmap.ic_launcher_round)
+            ?: ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+            ?: context.packageManager.getApplicationIcon(context.applicationInfo)
     }
 
     private fun buildSnoozeAction(
