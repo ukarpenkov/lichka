@@ -130,6 +130,44 @@ describe('mainTabsApi', () => {
         focusNonce: 1_700_000_000_000,
       });
     });
+
+    it('should not switch to Scheduled again when api is re-registered', () => {
+      const onFocus = jest.fn();
+      setMainTabsApi({ switchToTab });
+      setScheduledFocusListener(onFocus);
+
+      navigateToScheduled('msg-42');
+      expect(switchToTab).toHaveBeenCalledTimes(1);
+
+      const switchAgain = jest.fn();
+      setMainTabsApi({ switchToTab: switchAgain });
+
+      expect(switchAgain).not.toHaveBeenCalled();
+      expect(switchToTab).toHaveBeenCalledTimes(1);
+    });
+
+    it('should open Scheduled tab and deliver focus when api becomes ready', () => {
+      const onFocus = jest.fn();
+      setScheduledFocusListener(onFocus);
+
+      navigateToScheduled('msg-queued');
+
+      expect(switchToTab).not.toHaveBeenCalled();
+      expect(onFocus).not.toHaveBeenCalled();
+
+      setMainTabsApi({ switchToTab });
+
+      expect(switchToTab).toHaveBeenCalledTimes(1);
+      expect(switchToTab).toHaveBeenCalledWith(SCHEDULED_TAB_INDEX);
+      expect(onFocus).toHaveBeenCalledWith({
+        messageId: 'msg-queued',
+        focusNonce: 1_700_000_000_000,
+      });
+
+      const switchAgain = jest.fn();
+      setMainTabsApi({ switchToTab: switchAgain });
+      expect(switchAgain).not.toHaveBeenCalled();
+    });
   });
 
   describe('openScheduledTab', () => {

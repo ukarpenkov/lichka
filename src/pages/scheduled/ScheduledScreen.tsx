@@ -98,7 +98,14 @@ export function ScheduledScreen() {
     if (appliedFocusNonceRef.current === focusNonce) return;
 
     const index = entries.findIndex((e) => e.message.id === messageId);
-    if (index === -1) return;
+    if (index === -1) {
+      // Stale widget row: list loaded but id is gone. Drop pending so
+      // flushPending cannot snap the pager back to Scheduled.
+      appliedFocusNonceRef.current = focusNonce;
+      pendingFocusIdRef.current = null;
+      consumeScheduledFocus();
+      return;
+    }
 
     appliedFocusNonceRef.current = focusNonce;
     pendingFocusIdRef.current = null;

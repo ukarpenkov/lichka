@@ -239,22 +239,21 @@ function MainTabsPager({
 function MainTabs() {
   const indexSV = useSharedValue(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
   const fromGestureRef = useRef(false);
 
-  const handleIndexChange = useCallback(
-    (index: number, fromGesture: boolean) => {
-      // Повторный тап по активному табу Чаты → список чатов (из ChatRoom / Future).
-      if (!fromGesture && index === activeIndex && index === CHAT_TAB_INDEX) {
-        popChatStackToTop();
-        return;
-      }
-      if (fromGesture) {
-        fromGestureRef.current = true;
-      }
-      setActiveIndex(index);
-    },
-    [activeIndex],
-  );
+  const handleIndexChange = useCallback((index: number, fromGesture: boolean) => {
+    // Повторный тап по активному табу Чаты → список чатов (из ChatRoom / Future).
+    if (!fromGesture && index === activeIndexRef.current && index === CHAT_TAB_INDEX) {
+      popChatStackToTop();
+      return;
+    }
+    if (fromGesture) {
+      fromGestureRef.current = true;
+    }
+    setActiveIndex(index);
+  }, []);
 
   // Программный переход (тап по иконке / вызов API) — анимируем shared value.
   useEffect(() => {

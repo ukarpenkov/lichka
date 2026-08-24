@@ -59,13 +59,15 @@ function flushPending() {
     api.switchToTab(0);
     openChatRoom(p.chatId, p.messageId, p.mode);
   }
-  if (api && pendingScheduledFocus) {
+  // Tab switch is one-shot. pendingScheduledFocus only delivers row highlight
+  // and must not call switchToTab again — otherwise a later setMainTabsApi
+  // (e.g. after a user swipe) snaps the pager back to Scheduled.
+  if (api && pendingOpenScheduledTab) {
     pendingOpenScheduledTab = false;
     api.switchToTab(SCHEDULED_TAB_INDEX);
-    scheduledFocusListener?.(pendingScheduledFocus);
-  } else if (api && pendingOpenScheduledTab) {
-    pendingOpenScheduledTab = false;
-    api.switchToTab(SCHEDULED_TAB_INDEX);
+  }
+  if (scheduledFocusListener && pendingScheduledFocus) {
+    scheduledFocusListener(pendingScheduledFocus);
   }
 }
 
@@ -132,10 +134,11 @@ export function navigateToScheduled(messageId: string) {
     focusNonce: Date.now(),
   };
   pendingScheduledFocus = payload;
-  pendingOpenScheduledTab = false;
   if (api) {
     api.switchToTab(SCHEDULED_TAB_INDEX);
     scheduledFocusListener?.(payload);
+  } else {
+    pendingOpenScheduledTab = true;
   }
 }
 
