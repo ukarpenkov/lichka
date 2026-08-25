@@ -9,7 +9,7 @@ import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
 import { useTheme } from '../../shared/config';
 import { spacing } from '../../shared/config/tokens';
-import { Clock, ChevronRight } from '../../shared/ui/pixel';
+import { Clock, ChevronLeft, ChevronRight } from '../../shared/ui/pixel';
 import type { PeekDirection } from './peekGestureState';
 
 /** Vertical budget from under icons toward compose (enter). Arrow sits at 50%. */
@@ -21,14 +21,18 @@ export type FuturePeekOverlayProps = {
   accessibilityLabel?: string;
 };
 
-function PeekDownGuide({
+function PeekGuide({
   color,
+  arrow,
   span,
 }: {
   color: string;
-  /** Fixed height; arrow at mid. Omit → fill parent height. */
+  arrow: 'up' | 'down';
+  /** Fixed height; omit → fill parent height. */
   span?: number;
 }) {
+  const isUp = arrow === 'up';
+
   return (
     <View
       style={[
@@ -36,13 +40,49 @@ function PeekDownGuide({
         span != null ? [styles.guideFixed, { height: span }] : styles.guideFlex,
       ]}
     >
-      <View style={styles.guideHalf}>
-        <View style={[styles.line, { backgroundColor: color }]} />
-        <View style={styles.arrowWrap}>
-          <ChevronRight color={color} size={14} />
-        </View>
+      {isUp ? (
+        <>
+          <View
+            testID="future-peek-guide-up"
+            style={[styles.arrowWrap, styles.arrowUp]}
+          >
+            <ChevronRight color={color} size={14} />
+          </View>
+          <View style={[styles.line, { backgroundColor: color }]} />
+        </>
+      ) : (
+        <>
+          <View style={styles.guideHalf}>
+            <View style={[styles.line, { backgroundColor: color }]} />
+            <View
+              testID="future-peek-guide-down"
+              style={[styles.arrowWrap, styles.arrowDown]}
+            >
+              <ChevronRight color={color} size={14} />
+            </View>
+          </View>
+          <View style={styles.guideHalf} />
+        </>
+      )}
+    </View>
+  );
+}
+
+function TimeIcons({
+  color,
+  pointing,
+}: {
+  color: string;
+  pointing: 'left' | 'right';
+}) {
+  const TimeArrow = pointing === 'left' ? ChevronLeft : ChevronRight;
+
+  return (
+    <View style={styles.icons} testID="future-peek-icons">
+      <Clock color={color} size={22} />
+      <View testID={`future-peek-chevron-${pointing}`}>
+        <TimeArrow color={color} size={18} />
       </View>
-      <View style={styles.guideHalf} />
     </View>
   );
 }
@@ -58,24 +98,28 @@ export function FuturePeekOverlay({
   return (
     <View
       pointerEvents="none"
+      testID={`future-peek-overlay-${direction}`}
       style={[styles.layer, isEnter ? styles.anchorEnter : styles.anchorExit]}
     >
       <Animated.View
         accessible
         accessibilityRole="image"
         accessibilityLabel={accessibilityLabel}
+        testID="future-peek-cluster"
         style={[styles.cluster, animatedStyle]}
       >
-        <View style={styles.icons}>
-          <Clock color={text} size={22} />
-          <ChevronRight color={text} size={18} />
-        </View>
         {isEnter ? (
-          <PeekDownGuide color={text} span={PEEK_ENTER_GUIDE_SPAN} />
+          <>
+            <TimeIcons color={text} pointing="right" />
+            <PeekGuide color={text} arrow="down" span={PEEK_ENTER_GUIDE_SPAN} />
+          </>
         ) : (
-          <View style={styles.exitGuideSlot}>
-            <PeekDownGuide color={text} />
-          </View>
+          <>
+            <View testID="future-peek-exit-guide" style={styles.exitGuideSlot}>
+              <PeekGuide color={text} arrow="up" />
+            </View>
+            <TimeIcons color={text} pointing="left" />
+          </>
         )}
       </Animated.View>
     </View>
@@ -127,7 +171,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   arrowWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowDown: {
     transform: [{ rotate: '90deg' }],
+  },
+  arrowUp: {
+    transform: [{ rotate: '-90deg' }],
   },
   exitGuideSlot: {
     height: 160,
