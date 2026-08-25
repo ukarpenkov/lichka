@@ -36,6 +36,35 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+/** Commit target from the last known pan offset, not event.translationX.
+ *  On cancel RNGH may zero the event; gestureX still holds the visual swipe.
+ *  Large cancelled pans therefore switch tabs instead of snapping to startIndex. */
+export function resolvePagerSwipeTarget(
+  startIndex: number,
+  gestureX: number,
+  velocityX: number,
+  width: number,
+  pageCount: number,
+): number {
+  'worklet';
+  const distance = Math.abs(gestureX);
+  const distanceThreshold = clamp(
+    width * SWIPE_DISTANCE_RATIO,
+    SWIPE_MIN_DISTANCE,
+    SWIPE_DISTANCE_MAX,
+  );
+  const isFastSwipe =
+    distance >= SWIPE_MIN_DISTANCE &&
+    Math.abs(velocityX) >= SWIPE_VELOCITY_THRESHOLD;
+  const shouldSwitch = distance >= distanceThreshold || isFastSwipe;
+
+  let target = startIndex;
+  if (shouldSwitch) {
+    target += gestureX < 0 ? 1 : -1;
+  }
+  return clamp(target, 0, pageCount - 1);
+}
+
 export function SwipeablePager({
   index,
   onIndexChange,
@@ -83,28 +112,23 @@ export function SwipeablePager({
         const maxGesture = startIndexSV.value * widthSV.value;
         gestureXSV.value = clamp(event.translationX, minGesture, maxGesture);
       })
-      .onEnd((event) => {
+      .onFinalize((event, success) => {
+        // onEnd is skipped when the pan is cancelled (list scrollToIndex, failOffsetY).
+        // Commit from gestureXSV so a large cancelled swipe still switches tabs.
+        if (gesturingSV.value !== 1) {
+          return;
+        }
+        const velocityX = success ? event.velocityX : 0;
+        const target = resolvePagerSwipeTarget(
+          startIndexSV.value,
+          gestureXSV.value,
+          velocityX,
+          widthSV.value,
+          count,
+        );
+
         const currentTranslate = -indexSV.value * widthSV.value + gestureXSV.value;
         const currentVisualIndex = -currentTranslate / widthSV.value;
-        const distance = Math.abs(gestureXSV.value);
-        const distanceThreshold = clamp(
-          widthSV.value * SWIPE_DISTANCE_RATIO,
-          SWIPE_MIN_DISTANCE,
-          SWIPE_DISTANCE_MAX,
-        );
-        const isFastSwipe =
-          distance >= SWIPE_MIN_DISTANCE &&
-          Math.abs(event.velocityX) >= SWIPE_VELOCITY_THRESHOLD;
-        const shouldSwitch = distance >= distanceThreshold || isFastSwipe;
-
-        let target = startIndexSV.value;
-        if (shouldSwitch) {
-          target += gestureXSV.value < 0 ? 1 : -1;
-        }
-        target = clamp(target, 0, count - 1);
-
-        // Плавно передаём управление от жеста к пружинной анимации индекса:
-        // фиксируем текущее визуальное положение, затем пружиним к целевому индексу.
         indexSV.value = currentVisualIndex;
         gestureXSV.value = 0;
         gesturingSV.value = 0;

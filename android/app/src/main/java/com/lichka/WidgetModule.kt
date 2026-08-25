@@ -6,6 +6,7 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class WidgetModule(reactContext: ReactApplicationContext) :
@@ -29,6 +30,10 @@ class WidgetModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getInitialOpenTarget(promise: Promise) {
+        if (openConsumed) {
+            promise.resolve(null)
+            return
+        }
         val target =
             pendingOpenTarget
                 ?: reactApplicationContext.currentActivity
@@ -39,6 +44,10 @@ class WidgetModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun getInitialWidgetMessageId(promise: Promise) {
+        if (openConsumed) {
+            promise.resolve(null)
+            return
+        }
         val messageId =
             if (pendingOpenTarget != null) {
                 pendingOpenMessageId
@@ -52,9 +61,8 @@ class WidgetModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun consumeInitialWidgetOpen() {
-        clearPendingOpen()
-        reactApplicationContext.currentActivity?.intent?.removeExtra(EXTRA_OPEN_TARGET)
-        reactApplicationContext.currentActivity?.intent?.removeExtra(EXTRA_MESSAGE_ID)
+        markWidgetOpenConsumed()
+        stripWidgetOpenExtrasFromActivity()
     }
 
     @ReactMethod
@@ -82,7 +90,29 @@ class WidgetModule(reactContext: ReactApplicationContext) :
         reactContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
             .emit("onWidgetOpen", payload)
-        clearPendingOpen()
+        // Same consume as JS: pending + extras must not survive for a late getInitial*.
+        consumeInitialWidgetOpen()
+    }
+
+    private fun stripWidgetOpenExtrasFromActivity() {
+        val activity = reactApplicationContext.currentActivity ?: return
+        val apply =
+            Runnable {
+                val intent = activity.intent ?: return@Runnable
+                if (!intent.hasExtra(EXTRA_OPEN_TARGET) && !intent.hasExtra(EXTRA_MESSAGE_ID)) {
+                    return@Runnable
+                }
+                // removeExtra in-place is unreliable; replace the Activity intent.
+                val cleaned = Intent(intent)
+                cleaned.removeExtra(EXTRA_OPEN_TARGET)
+                cleaned.removeExtra(EXTRA_MESSAGE_ID)
+                activity.intent = cleaned
+            }
+        if (UiThreadUtil.isOnUiThread()) {
+            apply.run()
+        } else {
+            UiThreadUtil.runOnUiThread(apply)
+        }
     }
 
     companion object {
@@ -97,18 +127,28 @@ class WidgetModule(reactContext: ReactApplicationContext) :
         @Volatile
         private var pendingOpenMessageId: String? = null
 
+        @Volatile
+        private var openConsumed = false
+
         @JvmStatic
         fun captureWidgetOpen(intent: Intent?) {
             if (intent == null) return
             val target = intent.getStringExtra(EXTRA_OPEN_TARGET) ?: return
             pendingOpenTarget = target
             pendingOpenMessageId = intent.getStringExtra(EXTRA_MESSAGE_ID)
+            openConsumed = false
+        }
+
+        @JvmStatic
+        fun markWidgetOpenConsumed() {
+            openConsumed = true
+            pendingOpenTarget = null
+            pendingOpenMessageId = null
         }
 
         @JvmStatic
         fun clearPendingOpen() {
-            pendingOpenTarget = null
-            pendingOpenMessageId = null
+            markWidgetOpenConsumed()
         }
     }
 }

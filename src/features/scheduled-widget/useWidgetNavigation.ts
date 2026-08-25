@@ -27,11 +27,20 @@ export function useWidgetNavigation() {
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
+    let cancelled = false;
+    let handled = false;
+
+    const openOnce = (openTarget: string, messageId?: string | null) => {
+      if (cancelled || handled) return;
+      handled = true;
+      consumeInitialWidgetOpen();
+      onOpen(openTarget, messageId);
+    };
+
     Promise.all([getInitialWidgetOpenTarget(), getInitialWidgetMessageId()]).then(
       ([openTarget, messageId]) => {
         if (openTarget) {
-          consumeInitialWidgetOpen();
-          onOpen(openTarget, messageId);
+          openOnce(openTarget, messageId);
         }
       },
     );
@@ -41,10 +50,13 @@ export function useWidgetNavigation() {
       'onWidgetOpen',
       (event: { openTarget: string; messageId?: string }) => {
         if (event.openTarget) {
-          onOpen(event.openTarget, event.messageId);
+          openOnce(event.openTarget, event.messageId);
         }
       },
     );
-    return () => sub.remove();
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
   }, [onOpen]);
 }

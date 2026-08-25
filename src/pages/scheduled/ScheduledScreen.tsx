@@ -12,11 +12,12 @@ import {
 import { getChatById } from '../../entities/chat';
 import { cancelNotification } from '../../features/notifications';
 import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
-import { useTabVisible } from '../../app/MainTabsContext';
+import { useMainTabs, useTabVisible } from '../../app/MainTabsContext';
 import {
   navigateToChat,
   setScheduledFocusListener,
   consumeScheduledFocus,
+  SCHEDULED_TAB_INDEX,
   type ScheduledFocusPayload,
 } from '../../app/mainTabsApi';
 
@@ -34,6 +35,7 @@ const HIGHLIGHT_MS = 1000;
 export function ScheduledScreen() {
   const { colors } = useTheme();
   const { t } = useLocale();
+  const { activeIndex } = useMainTabs();
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
@@ -44,9 +46,13 @@ export function ScheduledScreen() {
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listRef = useRef<FlatList<ScheduledEntry>>(null);
   const pendingFocusIdRef = useRef<string | null>(null);
   const appliedFocusNonceRef = useRef<number | null>(null);
+  const pendingScrollIndexRef = useRef<number | null>(null);
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
 
   const loadEntries = useCallback(() => {
     disableFiredMessages();
@@ -89,46 +95,65 @@ export function ScheduledScreen() {
         clearTimeout(highlightTimerRef.current);
         highlightTimerRef.current = null;
       }
+      if (scrollRetryRef.current) {
+        clearTimeout(scrollRetryRef.current);
+        scrollRetryRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
-    const messageId = pendingFocusIdRef.current;
-    if (!messageId || entries.length === 0) return;
-    if (appliedFocusNonceRef.current === focusNonce) return;
+    if (activeIndex === SCHEDULED_TAB_INDEX) return;
+    if (scrollRetryRef.current) {
+      clearTimeout(scrollRetryRef.current);
+      scrollRetryRef.current = null;
+    }
+  }, [activeIndex]);
 
-    const index = entries.findIndex((e) => e.message.id === messageId);
-    if (index === -1) {
-      // Stale widget row: list loaded but id is gone. Drop pending so
-      // flushPending cannot snap the pager back to Scheduled.
+  useEffect(() => {
+    const messageId = pendingFocusIdRef.current;
+    if (messageId && entries.length > 0 && appliedFocusNonceRef.current !== focusNonce) {
+      const index = entries.findIndex((e) => e.message.id === messageId);
       appliedFocusNonceRef.current = focusNonce;
       pendingFocusIdRef.current = null;
       consumeScheduledFocus();
+
+      if (index === -1) {
+        // Stale widget row: list loaded but id is gone.
+        pendingScrollIndexRef.current = null;
+        return;
+      }
+
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+      setHighlightedMessageId(messageId);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedMessageId(null);
+        highlightTimerRef.current = null;
+      }, HIGHLIGHT_MS);
+
+      pendingScrollIndexRef.current = index;
+    }
+
+    if (activeIndex !== SCHEDULED_TAB_INDEX) {
       return;
     }
 
-    appliedFocusNonceRef.current = focusNonce;
-    pendingFocusIdRef.current = null;
-    consumeScheduledFocus();
-
-    if (highlightTimerRef.current) {
-      clearTimeout(highlightTimerRef.current);
+    const scrollIndex = pendingScrollIndexRef.current;
+    if (scrollIndex == null) {
+      return;
     }
-    setHighlightedMessageId(messageId);
-    highlightTimerRef.current = setTimeout(() => {
-      setHighlightedMessageId(null);
-      highlightTimerRef.current = null;
-    }, HIGHLIGHT_MS);
+    pendingScrollIndexRef.current = null;
 
-    const timer = setTimeout(() => {
-      listRef.current?.scrollToIndex({
-        index,
-        animated: true,
-        viewPosition: 0.5,
-      });
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [entries, focusNonce]);
+    // Instant scroll: animated scrollToIndex mid-swipe fails the pager pan
+    // (failOffsetY) and used to spring back to Scheduled.
+    listRef.current?.scrollToIndex({
+      index: scrollIndex,
+      animated: false,
+      viewPosition: 0.5,
+    });
+  }, [entries, focusNonce, activeIndex]);
 
   const handlePress = useCallback((entry: ScheduledEntry) => {
     const nav = getScheduledChatNavigation(entry.message);
@@ -183,7 +208,12 @@ export function ScheduledScreen() {
             />
           )}
           onScrollToIndexFailed={(info) => {
-            setTimeout(() => {
+            if (scrollRetryRef.current) {
+              clearTimeout(scrollRetryRef.current);
+            }
+            scrollRetryRef.current = setTimeout(() => {
+              scrollRetryRef.current = null;
+              if (activeIndexRef.current !== SCHEDULED_TAB_INDEX) return;
               listRef.current?.scrollToIndex({
                 index: info.index,
                 animated: false,
