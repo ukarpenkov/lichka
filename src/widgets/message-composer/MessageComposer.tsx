@@ -37,6 +37,11 @@ import { DocumentDirectoryPath } from 'react-native-fs';
 type Props = {
   chatId: string;
   onSent?: () => void;
+  initialText?: string;
+  initialImageUri?: string;
+  initialImageWidth?: number;
+  initialImageHeight?: number;
+  draftNonce?: number;
 };
 
 type PickerMode = 'reminder' | 'alarm' | null;
@@ -50,7 +55,15 @@ function formatDuration(ms: number): string {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function MessageComposer({ chatId, onSent }: Props) {
+export function MessageComposer({
+  chatId,
+  onSent,
+  initialText,
+  initialImageUri,
+  initialImageWidth,
+  initialImageHeight,
+  draftNonce,
+}: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
   const [body, setBody] = useState('');
@@ -111,6 +124,31 @@ export function MessageComposer({ chatId, onSent }: Props) {
     if (!getSettings().soundEnabled) return;
     playSendSound();
   }, []);
+
+  useEffect(() => {
+    if (draftNonce == null) return;
+
+    if (initialText) {
+      setBody(initialText);
+    }
+
+    if (!initialImageUri) return;
+
+    const applyPreview = (width: number, height: number) => {
+      setImagePreview({ uri: initialImageUri, width, height });
+    };
+
+    if (initialImageWidth && initialImageHeight) {
+      applyPreview(initialImageWidth, initialImageHeight);
+      return;
+    }
+
+    Image.getSize(
+      initialImageUri,
+      (width, height) => applyPreview(width, height),
+      () => applyPreview(0, 0),
+    );
+  }, [draftNonce, initialText, initialImageUri, initialImageWidth, initialImageHeight]);
 
   const sendMessage = useCallback(
     async (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number }) => {
@@ -351,7 +389,11 @@ export function MessageComposer({ chatId, onSent }: Props) {
       style={[styles.container, { backgroundColor: colors.canvas }]}>
       {imagePreview ? (
         <View style={styles.imagePreviewContainer}>
-          <Image source={{ uri: imagePreview.uri }} style={styles.imagePreview} />
+          <Image
+            testID="composer-image-preview"
+            source={{ uri: imagePreview.uri }}
+            style={styles.imagePreview}
+          />
           <Pressable style={styles.removeImageBtn} onPress={handleRemoveImage}>
             <X size={18} color={colors.ink} />
           </Pressable>

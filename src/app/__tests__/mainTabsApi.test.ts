@@ -6,6 +6,7 @@ import {
   setChatStackNavigation,
   setScheduledFocusListener,
   popChatStackToTop,
+  revealChatListForShare,
   __resetMainTabsApiForTests,
   SCHEDULED_TAB_INDEX,
 } from '../mainTabsApi';
@@ -210,6 +211,50 @@ describe('mainTabsApi', () => {
       popChatStackToTop();
 
       expect(popToTop).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('share into chat', () => {
+    it('should pass share draft params so the composer can prefill', () => {
+      readyNav();
+
+      navigateToChat('chat-1', undefined, {
+        shareText: 'https://example.com',
+        shareImageUri: 'file:///cache/a.jpg',
+        shareImageWidth: 100,
+        shareImageHeight: 80,
+      });
+
+      expect(switchToTab).toHaveBeenCalledWith(0);
+      expect(navigate).toHaveBeenCalledWith('ChatRoom', {
+        chatId: 'chat-1',
+        messageId: undefined,
+        focusNonce: 1_700_000_000_000,
+        shareText: 'https://example.com',
+        shareImageUri: 'file:///cache/a.jpg',
+        shareImageWidth: 100,
+        shareImageHeight: 80,
+        shareNonce: 1_700_000_000_000,
+      });
+    });
+
+    it('should reveal chat list and pop nested chat on share pick', () => {
+      readyNav({ name: 'ChatRoom', params: { chatId: 'chat-1' } });
+
+      revealChatListForShare();
+
+      expect(switchToTab).toHaveBeenCalledWith(0);
+      expect(popToTop).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not snap back to chats when api is re-registered after share pick', () => {
+      revealChatListForShare();
+      readyNav();
+      expect(switchToTab).toHaveBeenCalledTimes(1);
+
+      const switchAgain = jest.fn();
+      setMainTabsApi({ switchToTab: switchAgain });
+      expect(switchAgain).not.toHaveBeenCalled();
     });
   });
 });

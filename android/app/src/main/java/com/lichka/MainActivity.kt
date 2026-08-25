@@ -18,6 +18,7 @@ class MainActivity : ReactActivity() {
     super.onCreate(null)
     NotificationModule.captureNotificationOpen(intent)
     WidgetModule.captureWidgetOpen(intent)
+    ShareModule.captureShare(this, intent)
   }
 
   /**
@@ -38,6 +39,7 @@ class MainActivity : ReactActivity() {
     setIntent(intent)
     NotificationModule.captureNotificationOpen(intent)
     WidgetModule.captureWidgetOpen(intent)
+    ShareModule.captureShare(this, intent)
     val reactHost = (application as MainApplication).reactHost
     val reactContext = reactHost?.currentReactContext
 
@@ -59,6 +61,12 @@ class MainActivity : ReactActivity() {
             reactContext.getNativeModule(WidgetModule::class.java) as? WidgetModule
         module?.emitWidgetOpen(openTarget, messageId)
       }
+    }
+
+    if (intent.action == Intent.ACTION_SEND && reactContext != null) {
+      val shareModule =
+          reactContext.getNativeModule(ShareModule::class.java) as? ShareModule
+      shareModule?.emitShareIfPending()
     }
   }
 }

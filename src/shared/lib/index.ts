@@ -34,6 +34,11 @@ export {
   consumeInitialWidgetOpen,
   type ScheduledWidgetSnapshotItem,
 } from './scheduledWidget';
+export {
+  getInitialShare,
+  consumeInitialShare,
+  type NativeSharePayload,
+} from './shareIntent';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { setClipboardString } from './clipboard';
 export { playSendSound, playReminderSound } from './sounds';

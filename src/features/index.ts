@@ -51,3 +51,14 @@ export {
 } from './scheduled-widget';
 
 export { getUnreadCounts, markChatAsRead } from './unread-badges';
+
+export {
+  useShareNavigation,
+  useSharePick,
+  handleShareReceived,
+  beginSharePick,
+  cancelSharePick,
+  completeSharePick,
+  normalizeSharePayload,
+} from './share-into-chat';
+export type { ShareDraft, NativeShareEvent } from './share-into-chat';

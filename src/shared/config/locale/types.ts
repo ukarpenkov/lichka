@@ -29,6 +29,7 @@ export interface LocaleDictionary {
   createFirstChat: string;
   searchMessages: string;
   nothingFound: string;
+  shareChooseChat: string;
 
   // Chat Room
   chatNotFound: string;

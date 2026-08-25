@@ -33,6 +33,7 @@ export const fr: LocaleBundle = {
     createFirstChat: 'Créez votre première discussion',
     searchMessages: 'Rechercher des messages...',
     nothingFound: 'Rien trouvé',
+    shareChooseChat: 'Choisir une discussion',
 
     // Chat Room
     chatNotFound: 'Discussion introuvable',

@@ -12,6 +12,11 @@ export type ChatStackParamList = {
     messageId?: string;
     focusNonce?: number;
     mode?: ChatRoomMode;
+    shareText?: string;
+    shareImageUri?: string;
+    shareImageWidth?: number;
+    shareImageHeight?: number;
+    shareNonce?: number;
   };
 };
 

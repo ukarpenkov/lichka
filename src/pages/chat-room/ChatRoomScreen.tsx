@@ -98,7 +98,17 @@ const AnimatedFlatList = Animated.createAnimatedComponent(
 export function ChatRoomScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<ChatRoomRoute>();
-  const { chatId, messageId, focusNonce, mode } = route.params;
+  const {
+    chatId,
+    messageId,
+    focusNonce,
+    mode,
+    shareText,
+    shareImageUri,
+    shareImageWidth,
+    shareImageHeight,
+    shareNonce,
+  } = route.params;
   const { colors } = useTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
@@ -313,6 +323,17 @@ export function ChatRoomScreen() {
       setTimelineMode('future');
     }
   }, [mode, focusNonce]);
+
+  useEffect(() => {
+    if (shareNonce == null) return;
+    navigation.setParams({
+      shareText: undefined,
+      shareImageUri: undefined,
+      shareImageWidth: undefined,
+      shareImageHeight: undefined,
+      shareNonce: undefined,
+    });
+  }, [shareNonce, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -944,6 +965,11 @@ export function ChatRoomScreen() {
             <View ref={composerWrapperRef} collapsable={false}>
               <MessageComposer
                 chatId={chatId}
+                initialText={shareText}
+                initialImageUri={shareImageUri}
+                initialImageWidth={shareImageWidth}
+                initialImageHeight={shareImageHeight}
+                draftNonce={shareNonce}
                 onSent={() => {
                   loadData();
                   loadFuture();

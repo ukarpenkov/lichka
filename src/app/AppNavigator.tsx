@@ -22,6 +22,7 @@ import { SettingsScreen, ThemePickerScreen } from '../pages/settings';
 import { AlarmScreen } from '../pages/alarm';
 import { useNotificationNavigation } from '../features/notifications';
 import { useWidgetNavigation, syncScheduledWidgetSnapshot } from '../features/scheduled-widget';
+import { useShareNavigation } from '../features/share-into-chat';
 import { SPRING_SNAP } from '../shared/lib/animations';
 
 import { SwipeablePager, PagerTabBar } from './SwipeablePager';
@@ -50,6 +51,7 @@ const SETTINGS_TAB_INDEX = 2;
 function NotificationHandler() {
   useNotificationNavigation();
   useWidgetNavigation();
+  useShareNavigation();
   useEffect(() => {
     syncScheduledWidgetSnapshot();
   }, []);

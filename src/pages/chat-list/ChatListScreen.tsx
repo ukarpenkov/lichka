@@ -3,7 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import Animated, { Layout } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MagicWand, Search } from '../../shared/ui/pixel';
+import { MagicWand, Search, X } from '../../shared/ui/pixel';
 
 import {
   Screen,
@@ -21,6 +21,11 @@ import type { ChatStackParamList } from '../../app/types';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import { ChatForm } from '../../widgets/chat-form';
 import { setChatStackNavigation } from '../../app/mainTabsApi';
+import {
+  useSharePick,
+  completeSharePick,
+  cancelSharePick,
+} from '../../features/share-into-chat';
 
 import { ChatListItem } from './ChatListItem';
 import { ChatContextMenu } from './ChatContextMenu';
@@ -43,6 +48,13 @@ export function ChatListScreen() {
     message?: string;
     buttons?: AlertButton[];
   } | null>(null);
+  const shareDraft = useSharePick();
+
+  useEffect(() => {
+    if (shareDraft) {
+      setSearchVisible(false);
+    }
+  }, [shareDraft]);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,13 +139,21 @@ export function ChatListScreen() {
   return (
     <Screen>
       <PageHeader
-        title={t.chats}
+        title={shareDraft ? t.shareChooseChat : t.chats}
         right={
-          <IconButton
-            icon={Search}
-            size={24}
-            onPress={() => setSearchVisible(true)}
-          />
+          shareDraft ? (
+            <IconButton
+              icon={X}
+              size={24}
+              onPress={cancelSharePick}
+            />
+          ) : (
+            <IconButton
+              icon={Search}
+              size={24}
+              onPress={() => setSearchVisible(true)}
+            />
+          )
         }
       />
 
@@ -152,7 +172,13 @@ export function ChatListScreen() {
             <ChatListItem
               chat={item}
               unreadCount={unreadCounts[item.id] ?? 0}
-              onPress={() => navigation.navigate('ChatRoom', { chatId: item.id })}
+              onPress={() => {
+                if (shareDraft) {
+                  completeSharePick(item.id);
+                  return;
+                }
+                navigation.navigate('ChatRoom', { chatId: item.id });
+              }}
               onLongPress={() => setMenuChat(item)}
             />
           )}

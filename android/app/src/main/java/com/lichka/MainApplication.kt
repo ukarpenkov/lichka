@@ -17,6 +17,7 @@ class MainApplication : Application(), ReactApplication {
           add(NotificationPackage())
           add(ThemePackage())
           add(WidgetPackage())
+          add(SharePackage())
         },
     )
   }

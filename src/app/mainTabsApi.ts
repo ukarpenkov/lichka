@@ -17,13 +17,22 @@ export type MainTabsApi = {
 
 let api: MainTabsApi | null = null;
 
+export type NavigateToChatOptions = {
+  mode?: ChatRoomMode;
+  shareText?: string;
+  shareImageUri?: string;
+  shareImageWidth?: number;
+  shareImageHeight?: number;
+};
+
 type PendingChat = {
   chatId: string;
   messageId?: string;
-  mode?: ChatRoomMode;
-};
+} & NavigateToChatOptions;
 
 let pendingChat: PendingChat | null = null;
+let pendingShareReveal = false;
+let pendingSharePop = false;
 
 export type ScheduledFocusPayload = {
   messageId: string;
@@ -41,6 +50,11 @@ type ChatRoomParams = {
   messageId?: string;
   focusNonce?: number;
   mode?: ChatRoomMode;
+  shareText?: string;
+  shareImageUri?: string;
+  shareImageWidth?: number;
+  shareImageHeight?: number;
+  shareNonce?: number;
 };
 
 type ChatStackNav = {
@@ -53,11 +67,25 @@ type ChatStackNav = {
 let chatStackNav: ChatStackNav | null = null;
 
 function flushPending() {
+  if (api && pendingShareReveal) {
+    pendingShareReveal = false;
+    api.switchToTab(0);
+  }
+  if (chatStackNav && pendingSharePop) {
+    pendingSharePop = false;
+    chatStackNav.popToTop?.();
+  }
   if (api && pendingChat && chatStackNav) {
     const p = pendingChat;
     pendingChat = null;
     api.switchToTab(0);
-    openChatRoom(p.chatId, p.messageId, p.mode);
+    openChatRoom(p.chatId, p.messageId, {
+      mode: p.mode,
+      shareText: p.shareText,
+      shareImageUri: p.shareImageUri,
+      shareImageWidth: p.shareImageWidth,
+      shareImageHeight: p.shareImageHeight,
+    });
   }
   // Tab switch is one-shot. pendingScheduledFocus only delivers row highlight
   // and must not call switchToTab again — otherwise a later setMainTabsApi
@@ -71,14 +99,33 @@ function flushPending() {
   }
 }
 
-function openChatRoom(chatId: string, messageId?: string, mode?: ChatRoomMode) {
+function openChatRoom(
+  chatId: string,
+  messageId?: string,
+  options?: NavigateToChatOptions,
+) {
   if (!chatStackNav) return;
 
   // focusNonce форсирует повторный scroll/highlight при повторном тапе
   // по уведомлению, когда ChatRoom уже открыт с тем же messageId.
   const params: ChatRoomParams = { chatId, messageId, focusNonce: Date.now() };
-  if (mode) {
-    params.mode = mode;
+  if (options?.mode) {
+    params.mode = options.mode;
+  }
+  if (options?.shareText) {
+    params.shareText = options.shareText;
+  }
+  if (options?.shareImageUri) {
+    params.shareImageUri = options.shareImageUri;
+  }
+  if (options?.shareImageWidth) {
+    params.shareImageWidth = options.shareImageWidth;
+  }
+  if (options?.shareImageHeight) {
+    params.shareImageHeight = options.shareImageHeight;
+  }
+  if (options?.shareText || options?.shareImageUri) {
+    params.shareNonce = params.focusNonce;
   }
 
   const current = chatStackNav.getCurrentRoute?.();
@@ -116,14 +163,27 @@ export function popChatStackToTop() {
 export function navigateToChat(
   chatId: string,
   messageId?: string,
-  options?: { mode?: ChatRoomMode },
+  options?: NavigateToChatOptions,
 ) {
-  const mode = options?.mode;
   if (api && chatStackNav) {
     api.switchToTab(0);
-    openChatRoom(chatId, messageId, mode);
+    openChatRoom(chatId, messageId, options);
   } else {
-    pendingChat = { chatId, messageId, mode };
+    pendingChat = { chatId, messageId, ...options };
+  }
+}
+
+/** Share sheet → список чатов (таб Чаты + popToTop). One-shot, как openScheduledTab. */
+export function revealChatListForShare() {
+  if (api) {
+    api.switchToTab(0);
+  } else {
+    pendingShareReveal = true;
+  }
+  if (chatStackNav) {
+    chatStackNav.popToTop?.();
+  } else {
+    pendingSharePop = true;
   }
 }
 
@@ -184,4 +244,6 @@ export function __resetMainTabsApiForTests() {
   pendingScheduledFocus = null;
   scheduledFocusListener = null;
   pendingOpenScheduledTab = false;
+  pendingShareReveal = false;
+  pendingSharePop = false;
 }

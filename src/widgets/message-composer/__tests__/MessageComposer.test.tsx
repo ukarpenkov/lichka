@@ -1,6 +1,6 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { render, waitFor } from '@testing-library/react-native';
+import { Image, StyleSheet } from 'react-native';
 import { MessageComposer } from '../MessageComposer';
 
 const mockCreateMessage = jest.fn();
@@ -174,5 +174,57 @@ describe('MessageComposer', () => {
     const wrapperStyle = StyleSheet.flatten(wrapper.props.style);
     expect(wrapperStyle.flexDirection).toBe('row');
     expect(getByText('>')).toBeTruthy();
+  });
+
+  it('should put shared text into the input without sending', async () => {
+    const { getByDisplayValue } = render(
+      <MessageComposer
+        chatId="chat-1"
+        initialText="https://example.com/note"
+        draftNonce={1}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getByDisplayValue('https://example.com/note')).toBeTruthy();
+    });
+    expect(mockCreateMessage).not.toHaveBeenCalled();
+  });
+
+  it('should attach a shared image as preview without sending', async () => {
+    const { getByTestId } = render(
+      <MessageComposer
+        chatId="chat-1"
+        initialImageUri="file:///cache/share.jpg"
+        initialImageWidth={800}
+        initialImageHeight={600}
+        draftNonce={2}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('composer-image-preview')).toBeTruthy();
+    });
+    expect(mockCreateMessage).not.toHaveBeenCalled();
+  });
+
+  it('should resolve image size when share payload omitted dimensions', async () => {
+    const getSize = jest.spyOn(Image, 'getSize').mockImplementation((_uri, success) => {
+      success(320, 240);
+    });
+
+    const { getByTestId } = render(
+      <MessageComposer
+        chatId="chat-1"
+        initialImageUri="file:///cache/raw.png"
+        draftNonce={3}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getByTestId('composer-image-preview')).toBeTruthy();
+    });
+    expect(getSize).toHaveBeenCalled();
+    getSize.mockRestore();
   });
 });

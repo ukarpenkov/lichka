@@ -33,6 +33,7 @@ export const ru: LocaleBundle = {
     createFirstChat: 'Создайте первый чат',
     searchMessages: 'Поиск по сообщениям...',
     nothingFound: 'Ничего не найдено',
+    shareChooseChat: 'Выберите чат',
 
     // Chat Room
     chatNotFound: 'Чат не найден',
