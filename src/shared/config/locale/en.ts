@@ -160,6 +160,7 @@ export const en: LocaleBundle = {
     'July', 'August', 'September', 'October', 'November', 'December',
   ],
   monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  weekdaysShort: ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'],
   date: {
     dayFirst: false,
     dayMonthJoin: ' ',

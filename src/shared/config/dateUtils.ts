@@ -10,6 +10,11 @@ export function getFullMonthNames(locale: Locale): string[] {
   return getLocaleBundle(locale).monthsFull;
 }
 
+/** Short weekday abbreviation (uppercase), Sunday-first via Date.getDay(). */
+export function getWeekdayShort(date: Date, locale: Locale): string {
+  return getLocaleBundle(locale).weekdaysShort[date.getDay()];
+}
+
 /**
  * Format a date label for chat separators.
  * Returns "Сегодня"/"Today", "Вчера"/"Yesterday", or a locale-formatted date

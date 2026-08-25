@@ -41,6 +41,7 @@ export { LocaleProvider, useLocale } from './LocaleProvider';
 export {
   getMonthLabels,
   getFullMonthNames,
+  getWeekdayShort,
   formatDateLabel,
   formatTime,
   formatScheduledAt,

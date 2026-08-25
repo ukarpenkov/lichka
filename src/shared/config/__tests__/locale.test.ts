@@ -92,6 +92,16 @@ describe('locale', () => {
       }
     });
 
+    it('should provide 7 non-empty weekday abbreviations per locale', () => {
+      for (const locale of EXPECTED_LOCALES) {
+        const { weekdaysShort } = getLocaleBundle(locale);
+        expect(weekdaysShort).toHaveLength(7);
+        for (const label of weekdaysShort) {
+          expect(label.length).toBeGreaterThan(0);
+        }
+      }
+    });
+
     it('should provide a non-empty native language name per locale', () => {
       for (const locale of EXPECTED_LOCALES) {
         const bundle = getLocaleBundle(locale);

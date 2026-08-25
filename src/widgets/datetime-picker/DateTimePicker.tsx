@@ -24,6 +24,7 @@ import {
   useLocale,
   getMonthLabels,
   getFullMonthNames,
+  getWeekdayShort,
   monoWeight,
 } from '../../shared/config';
 import { Text } from '../../shared/ui';
@@ -105,6 +106,10 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const [day, setDay] = useState(value.getDate());
   const [hour, setHour] = useState(value.getHours());
   const [minute, setMinute] = useState(value.getMinutes());
+  const weekdayShort = useMemo(
+    () => getWeekdayShort(new Date(year, month, day), locale),
+    [year, month, day, locale],
+  );
   const [interacting, setInteracting] = useState<'day' | 'month' | null>(null);
   const [yearModalVisible, setYearModalVisible] = useState(false);
 
@@ -524,15 +529,26 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
               </GestureDetector>
               <GestureDetector gesture={daySwipe}>
                 <Animated.View style={styles.swipeZone}>
-                  <Animated.Text
-                    style={[
-                      styles.dayNumber,
-                      { ...monoWeight('bold'), color: dayActive ? ACCENT : text },
-                      dayTextStyle,
-                    ]}
-                  >
-                    {day}
-                  </Animated.Text>
+                  <View style={styles.dayRow}>
+                    <Animated.Text
+                      style={[
+                        styles.dayNumber,
+                        { ...monoWeight('bold'), color: dayActive ? ACCENT : text },
+                        dayTextStyle,
+                      ]}
+                    >
+                      {day}
+                    </Animated.Text>
+                    <Animated.Text
+                      style={[
+                        styles.weekdayLabel,
+                        { ...monoWeight('bold'), color: dayActive ? ACCENT : text },
+                        dayTextStyle,
+                      ]}
+                    >
+                      {weekdayShort}
+                    </Animated.Text>
+                  </View>
                 </Animated.View>
               </GestureDetector>
             </Animated.View>
@@ -685,6 +701,14 @@ const styles = StyleSheet.create({
     fontSize: 44,
     lineHeight: 48,
     textAlign: 'center',
+  },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  weekdayLabel: {
+    fontSize: 16,
+    marginLeft: 8,
   },
   ringArea: {
     alignItems: 'center',

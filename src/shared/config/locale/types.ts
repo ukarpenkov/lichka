@@ -174,5 +174,7 @@ export interface LocaleBundle {
   dictionary: LocaleDictionary;
   monthsFull: string[];
   monthsShort: string[];
+  /** Short weekday names, Sunday-first (index = Date.getDay()). Already uppercase. */
+  weekdaysShort: string[];
   date: DateLocaleConfig;
 }

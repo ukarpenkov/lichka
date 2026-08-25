@@ -1,6 +1,7 @@
 import {
   getMonthLabels,
   getFullMonthNames,
+  getWeekdayShort,
   formatDateLabel,
   formatTime,
   formatScheduledAt,
@@ -59,6 +60,31 @@ describe('dateUtils', () => {
       expect(getFullMonthNames('de')[0]).toBe('Januar');
       expect(getFullMonthNames('fr')[0]).toBe('janvier');
       expect(getFullMonthNames('pt')[0]).toBe('janeiro');
+    });
+  });
+
+  describe('getWeekdayShort', () => {
+    const tuesday = new Date(2026, 7, 25);
+
+    it('should return Russian Tuesday abbreviation for ru', () => {
+      expect(getWeekdayShort(tuesday, 'ru')).toBe('ВТ');
+    });
+
+    it('should return English Tuesday abbreviation for en', () => {
+      expect(getWeekdayShort(tuesday, 'en')).toBe('TU');
+    });
+
+    it('should change abbreviation when locale changes', () => {
+      expect(getWeekdayShort(tuesday, 'es')).toBe('MA');
+      expect(getWeekdayShort(tuesday, 'de')).toBe('DI');
+      expect(getWeekdayShort(tuesday, 'fr')).toBe('MA');
+      expect(getWeekdayShort(tuesday, 'pt')).toBe('TER');
+    });
+
+    it('should return Sunday abbreviation at Date.getDay() index 0', () => {
+      const sunday = new Date(2026, 7, 30);
+      expect(getWeekdayShort(sunday, 'ru')).toBe('ВС');
+      expect(getWeekdayShort(sunday, 'en')).toBe('SU');
     });
   });
 
