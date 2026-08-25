@@ -21,6 +21,13 @@ class WidgetModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
+    fun setWidgetLocaleStrings(emptyText: String, untitledText: String) {
+        val context = reactApplicationContext
+        ScheduledWidgetStorage.saveLocaleStrings(context, emptyText, untitledText)
+        ScheduledWidgetProvider.refreshAll(context)
+    }
+
+    @ReactMethod
     fun getInitialOpenTarget(promise: Promise) {
         val target =
             pendingOpenTarget

@@ -13,6 +13,8 @@ object ScheduledWidgetStorage {
 
     private const val PREFS_NAME = "scheduled_widget_storage"
     private const val KEY_ITEMS = "items"
+    private const val KEY_EMPTY_TEXT = "empty_text"
+    private const val KEY_UNTITLED_TEXT = "untitled_text"
 
     data class Item(
         val messageId: String,
@@ -38,6 +40,27 @@ object ScheduledWidgetStorage {
         } catch (_: Exception) {
             emptyList()
         }
+    }
+
+    /** Persist widget copy from the in-app locale. commit() so refreshAll reads new values. */
+    fun saveLocaleStrings(context: Context, emptyText: String, untitledText: String) {
+        getPrefs(context)
+            .edit()
+            .putString(KEY_EMPTY_TEXT, emptyText)
+            .putString(KEY_UNTITLED_TEXT, untitledText)
+            .commit()
+    }
+
+    fun getEmptyText(context: Context): String {
+        val stored = getPrefs(context).getString(KEY_EMPTY_TEXT, null)
+        return if (!stored.isNullOrBlank()) stored
+        else context.getString(R.string.widget_scheduled_empty)
+    }
+
+    fun getUntitledText(context: Context): String {
+        val stored = getPrefs(context).getString(KEY_UNTITLED_TEXT, null)
+        return if (!stored.isNullOrBlank()) stored
+        else context.getString(R.string.widget_scheduled_untitled)
     }
 
     private fun getPrefs(context: Context): SharedPreferences =

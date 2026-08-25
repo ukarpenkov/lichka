@@ -26,6 +26,17 @@ export function updateScheduledWidgetSnapshot(
   requireWidgetModule().updateScheduledWidgetSnapshot(JSON.stringify(items));
 }
 
+/** Push in-app locale copy so the Android widget is not stuck on Russian strings.xml. */
+export function updateScheduledWidgetLocale(
+  emptyText: string,
+  untitledText: string,
+): void {
+  if (Platform.OS !== 'android') return;
+  const module = NativeModules.WidgetModule;
+  if (!module?.setWidgetLocaleStrings) return;
+  module.setWidgetLocaleStrings(emptyText, untitledText);
+}
+
 export function getInitialWidgetOpenTarget(): Promise<string | null> {
   if (Platform.OS !== 'android') return Promise.resolve(null);
   return requireWidgetModule().getInitialOpenTarget();

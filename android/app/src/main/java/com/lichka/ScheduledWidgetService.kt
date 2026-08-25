@@ -68,7 +68,7 @@ class ScheduledWidgetRemoteViewsFactory(
             if (item.body.isNotBlank()) {
                 item.body
             } else {
-                context.getString(R.string.widget_scheduled_untitled)
+                ScheduledWidgetStorage.getUntitledText(context)
             }
 
         views.setTextViewText(R.id.widget_row_body, body)

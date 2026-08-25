@@ -47,6 +47,7 @@ export interface LocaleDictionary {
   // Scheduled
   scheduled: string;
   noScheduled: string;
+  scheduledUntitled: string;
   everyNMin: (n: number) => string;
 
   // Future Peek

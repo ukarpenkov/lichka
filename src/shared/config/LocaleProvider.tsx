@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import { getDatabase } from '../db';
+import { updateScheduledWidgetLocale } from '../lib/scheduledWidget';
 import {
   type Locale,
   type LocaleDictionary,
@@ -7,6 +9,11 @@ import {
   getSystemLocale,
   SUPPORTED_LOCALES,
 } from './locale';
+
+function pushAndroidWidgetLocale(locale: Locale): void {
+  const dict = dictionaries[locale];
+  updateScheduledWidgetLocale(dict.noScheduled, dict.scheduledUntitled);
+}
 
 const SETTINGS_KEY = 'locale';
 
@@ -46,6 +53,25 @@ function resolveLocale(): Locale {
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(resolveLocale);
 
+  useEffect(() => {
+    pushAndroidWidgetLocale(locale);
+  }, [locale]);
+
+  // Re-push on background so the home-screen widget catches the latest copy even if the
+  // previous native refresh was deferred or dropped while the app was still foregrounded.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onChange = (state: AppStateStatus) => {
+      if (state === 'background' || state === 'inactive') {
+        pushAndroidWidgetLocale(locale);
+      }
+    };
+    const sub = AppState.addEventListener('change', onChange);
+    return () => {
+      sub.remove();
+    };
+  }, [locale]);
+
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     const db = getDatabase();
@@ -53,6 +79,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
       [SETTINGS_KEY, next],
     );
+    pushAndroidWidgetLocale(next);
   }, []);
 
   const value: LocaleContextValue = {

@@ -51,6 +51,7 @@ export const ru: LocaleBundle = {
     // Scheduled
     scheduled: 'Запланировано',
     noScheduled: 'Нет запланированных',
+    scheduledUntitled: 'Напоминание',
     everyNMin: (n) => `каждые ${n} мин`,
 
     // Future Peek

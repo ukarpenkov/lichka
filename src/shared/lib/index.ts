@@ -28,6 +28,7 @@ export {
 } from './notificationChannels';
 export {
   updateScheduledWidgetSnapshot,
+  updateScheduledWidgetLocale,
   getInitialWidgetOpenTarget,
   getInitialWidgetMessageId,
   consumeInitialWidgetOpen,

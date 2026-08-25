@@ -149,7 +149,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_empty, mutedColor)
             views.setTextViewText(
                 R.id.widget_empty,
-                context.getString(R.string.widget_scheduled_empty),
+                ScheduledWidgetStorage.getEmptyText(context),
             )
 
             val serviceIntent =

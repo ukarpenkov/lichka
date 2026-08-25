@@ -51,6 +51,7 @@ export const fr: LocaleBundle = {
     // Scheduled
     scheduled: 'Programmé',
     noScheduled: 'Aucun message programmé',
+    scheduledUntitled: 'Rappel',
     everyNMin: (n) => `toutes les ${n} min`,
 
     // Future Peek
