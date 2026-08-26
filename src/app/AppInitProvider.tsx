@@ -3,6 +3,7 @@ import { runMigrations } from '../shared/db';
 import { registerNotificationChannels, cleanupOrphanMedia } from '../shared/lib';
 import { requestNotificationPermission } from '../features/notifications';
 import { seedDefaultChat } from '../entities/chat';
+import { seedPlayStoreDemo } from '../features/play-store-demo';
 
 type InitState =
   | { status: 'loading' }
@@ -28,6 +29,14 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           throw new Error(
             `Database migration failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+
+        try {
+          seedPlayStoreDemo();
+        } catch (e) {
+          throw new Error(
+            `Play Store demo seed failed: ${e instanceof Error ? e.message : String(e)}`,
           );
         }
 
