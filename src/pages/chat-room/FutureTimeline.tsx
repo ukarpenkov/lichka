@@ -2,7 +2,7 @@ import React, { forwardRef, useCallback, type ReactElement } from 'react';
 import { View, StyleSheet, Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { FlatList, Gesture, GestureDetector, type ComposedGesture, type GestureType } from 'react-native-gesture-handler';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
-import { AlarmClockIcon, Text, Button, AnimatedPressable } from '../../shared/ui';
+import { AlarmClockIcon, Text, Button, AnimatedPressable, LinkifiedText } from '../../shared/ui';
 
 import { useTheme, useLocale, listRow, radii, formatScheduledWhen, spacing } from '../../shared/config';
 import { hapticLongPress, MESSAGE_LIST_BOTTOM_GAP } from '../../shared/lib';
@@ -78,9 +78,7 @@ function FutureMessageRow({
         {Icon ? <Icon size={20} color={colors.ink} /> : null}
       </View>
       <View style={styles.content}>
-        <Text variant="title-sm" numberOfLines={1}>
-          {message.body}
-        </Text>
+        <LinkifiedText variant="title-sm" text={message.body} numberOfLines={1} />
         <Text variant="body-sm" tone="mutedSoft" style={styles.when}>
           {timeText}
         </Text>

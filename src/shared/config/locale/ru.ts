@@ -48,6 +48,8 @@ export const ru: LocaleBundle = {
     messageTypePeriodic: 'периодическое',
     messageTypeImage: 'изображение',
     messageTypeVoice: 'голосовое',
+    openLink: 'Открыть ссылку',
+    linkOpenFailed: 'Не удалось открыть ссылку',
 
     // Scheduled
     scheduled: 'Запланировано',

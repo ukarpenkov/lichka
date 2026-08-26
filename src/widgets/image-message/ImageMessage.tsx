@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { Text } from '../../shared/ui';
+import { LinkifiedText } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
 import { radii, spacing } from '../../shared/config';
 import type { Message } from '../../entities/message';
@@ -128,9 +128,7 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
 
   if (!imageData || !absoluteUri) {
     return (
-      <Text variant="body" style={styles.fallback}>
-        {message.body}
-      </Text>
+      <LinkifiedText variant="body" text={message.body} style={styles.fallback} />
     );
   }
 
@@ -174,9 +172,7 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
         </View>
       </Pressable>
       {hasCaption && (
-        <Text variant="body" style={styles.caption}>
-          {message.body}
-        </Text>
+        <LinkifiedText variant="body" text={message.body} style={styles.caption} />
       )}
     </View>
   );

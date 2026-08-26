@@ -48,6 +48,8 @@ export const pt: LocaleBundle = {
     messageTypePeriodic: 'periódico',
     messageTypeImage: 'imagem',
     messageTypeVoice: 'voz',
+    openLink: 'Abrir link',
+    linkOpenFailed: 'Não foi possível abrir o link',
 
     // Scheduled
     scheduled: 'Programado',

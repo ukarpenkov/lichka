@@ -4,7 +4,7 @@ import { Pressable as GesturePressable } from 'react-native-gesture-handler';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme, useLocale, spacing } from '../../shared/config';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
-import { Text, AlarmClockIcon } from '../../shared/ui';
+import { Text, AlarmClockIcon, LinkifiedText } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { ImageMessage } from '../../widgets/image-message';
 import { hapticLongPress } from '../../shared/lib';
@@ -158,14 +158,13 @@ export function MessageLine({
           ) : isImage ? (
             <ImageMessage message={message} onPress={onImagePress} />
           ) : (
-            <Text variant="body" tone="body" style={styles.body}>
-              {message.body}
+            <LinkifiedText variant="body" tone="body" style={styles.body} text={message.body}>
               {isEdited ? (
                 <Text variant="mono-meta" tone="muted">
                   {` (${t.edited})`}
                 </Text>
               ) : null}
-            </Text>
+            </LinkifiedText>
           )}
           {(isVoice || isImage) && isEdited ? (
             <Text variant="mono-meta" tone="muted" style={styles.editedAlone}>

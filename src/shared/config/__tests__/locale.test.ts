@@ -32,6 +32,8 @@ describe('locale', () => {
         'today', 'yesterday', 'tomorrow',
         'chats', 'deleteChat', 'createFirstChat',
         'shareChooseChat',
+        'openLink',
+        'linkOpenFailed',
         'scheduled', 'noScheduled', 'scheduledUntitled',
         'futureMode', 'futureEmptyTitle', 'futureScheduleCta',
         'futurePeekA11y', 'futureExitA11y',

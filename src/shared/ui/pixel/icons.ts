@@ -25,6 +25,7 @@ export const Pencil = createPixelIcon('interface-essential-pencil-edit-1');
 export const Trash2 = createPixelIcon('interface-essential-bin');
 export const Copy = createPixelIcon('copy');
 export const Paperclip = createPixelIcon('interface-essential-clip-1');
+export const Link = createPixelIcon('interface-essential-link');
 export const Square = createPixelIcon('video-movies-video-square');
 
 // Message types / schedule

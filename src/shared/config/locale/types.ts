@@ -44,6 +44,8 @@ export interface LocaleDictionary {
   messageTypePeriodic: string;
   messageTypeImage: string;
   messageTypeVoice: string;
+  openLink: string;
+  linkOpenFailed: string;
 
   // Scheduled
   scheduled: string;

@@ -4,7 +4,7 @@ import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../..
 import { AlarmClockIcon } from '../../shared/ui';
 import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
-import { Text, AnimatedPressable } from '../../shared/ui';
+import { Text, AnimatedPressable, LinkifiedText } from '../../shared/ui';
 import { useTheme, useLocale, listRow, radii, formatScheduledWhen } from '../../shared/config';
 import { hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
@@ -66,9 +66,7 @@ export function ScheduledItem({
           {Icon ? <Icon size={20} color={colors.ink} /> : null}
         </View>
         <View style={styles.content}>
-          <Text variant="title-sm" numberOfLines={1}>
-            {message.body}
-          </Text>
+          <LinkifiedText variant="title-sm" text={message.body} numberOfLines={1} />
           <View style={styles.meta}>
             {chatTitle ? (
               <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>

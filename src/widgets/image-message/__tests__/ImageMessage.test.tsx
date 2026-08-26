@@ -50,6 +50,13 @@ describe('ImageMessage', () => {
     expect(getByText('My screenshot')).toBeTruthy();
   });
 
+  it('should make a caption URL tappable', () => {
+    const { getByRole } = render(
+      <ImageMessage message={createMessage({ body: 'https://example.com/pic' })} />,
+    );
+    expect(getByRole('link')).toBeTruthy();
+  });
+
   it('does not render caption when body is empty', () => {
     const { queryByText } = render(
       <ImageMessage message={createMessage({ body: '' })} />,

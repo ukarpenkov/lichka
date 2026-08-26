@@ -20,4 +20,8 @@ describe('chatIcons', () => {
     expect(isChatIconAvatar('🔖')).toBe(false);
     expect(isChatIconAvatar('media/avatars/chat-1.jpg')).toBe(false);
   });
+
+  it('should include the pixel link icon used after URLs', () => {
+    expect(isChatIconAvatar('interface-essential-link')).toBe(true);
+  });
 });

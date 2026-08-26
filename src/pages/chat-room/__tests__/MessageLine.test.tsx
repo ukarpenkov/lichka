@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { MessageLine, formatLogTime } from '../MessageLine';
 
 jest.mock('../../../widgets/image-message', () => {
@@ -56,6 +56,10 @@ jest.mock('../../../shared/config/LocaleProvider', () => ({
       messageTypePeriodic: 'периодическое',
       messageTypeImage: 'изображение',
       messageTypeVoice: 'голосовое',
+      openLink: 'Открыть ссылку',
+      error: 'Ошибка',
+      linkOpenFailed: 'Не удалось открыть ссылку',
+      done: 'Готово',
     },
   }),
 }));
@@ -202,5 +206,22 @@ describe('MessageLine', () => {
       />,
     );
     expect(getByText('Static row')).toBeTruthy();
+  });
+
+  it('should show a tappable link after a shared URL and open it on press', async () => {
+    const { Linking } = require('react-native');
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const { getByRole } = render(
+      <MessageLine
+        message={createMessage({ body: 'https://example.com/note' })}
+        onLongPress={onLongPress}
+      />,
+    );
+
+    fireEvent.press(getByRole('link'));
+    await waitFor(() => {
+      expect(openURL).toHaveBeenCalledWith('https://example.com/note');
+    });
+    openURL.mockRestore();
   });
 });

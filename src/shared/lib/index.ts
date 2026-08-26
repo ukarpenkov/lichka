@@ -51,3 +51,10 @@ export {
   PAGER_TAB_BAR_HEIGHT,
 } from './keyboard';
 export { pickAndCompressImage, type CompressedImage } from './imageCompress';
+export {
+  parseMessageLinks,
+  hasMessageLinks,
+  toHttpHref,
+  openExternalUrl,
+  type MessageTextSegment,
+} from './messageLinks';
