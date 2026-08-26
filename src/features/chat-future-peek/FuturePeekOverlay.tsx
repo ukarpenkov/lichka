@@ -5,18 +5,32 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import Animated, { type AnimatedStyle } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  type AnimatedStyle,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import { useTheme } from '../../shared/config';
 import { spacing } from '../../shared/config/tokens';
 import { Clock, ChevronLeft, ChevronRight } from '../../shared/ui/pixel';
-import type { PeekDirection } from './peekGestureState';
+import {
+  getPeekGuideProgress,
+  type PeekDirection,
+} from './peekGestureState';
 
-/** Vertical budget from under icons toward compose (enter). Arrow sits at 50%. */
+/** Vertical guide budgets keep the icon anchors stable while the line grows. */
 export const PEEK_ENTER_GUIDE_SPAN = 72;
+export const PEEK_EXIT_GUIDE_SPAN = 160;
+
+const GUIDE_PIXEL_STEP = 2;
+const GUIDE_OPACITY_LEAD = 2.4;
 
 export type FuturePeekOverlayProps = {
   direction: PeekDirection;
+  pullDistance: SharedValue<number>;
+  /** Threshold-only reveal style for the clock + time arrow. */
   animatedStyle: StyleProp<AnimatedStyle<ViewStyle>>;
   accessibilityLabel?: string;
 };
@@ -25,34 +39,40 @@ function PeekGuide({
   color,
   arrow,
   span,
+  animatedStyle,
 }: {
   color: string;
   arrow: 'up' | 'down';
-  /** Fixed height; omit → fill parent height. */
-  span?: number;
+  span: number;
+  animatedStyle: StyleProp<AnimatedStyle<ViewStyle>>;
 }) {
   const isUp = arrow === 'up';
 
   return (
     <View
-      style={[
-        styles.guideColumn,
-        span != null ? [styles.guideFixed, { height: span }] : styles.guideFlex,
-      ]}
+      testID={`future-peek-guide-slot-${arrow}`}
+      style={[styles.guideSlot, { height: span }]}
     >
-      {isUp ? (
-        <>
-          <View
-            testID="future-peek-guide-up"
-            style={[styles.arrowWrap, styles.arrowUp]}
-          >
-            <ChevronRight color={color} size={14} />
-          </View>
-          <View style={[styles.line, { backgroundColor: color }]} />
-        </>
-      ) : (
-        <>
-          <View style={styles.guideHalf}>
+      <Animated.View
+        testID={`future-peek-guide-track-${arrow}`}
+        style={[
+          styles.guideTrack,
+          isUp ? styles.guideTrackUp : styles.guideTrackDown,
+          animatedStyle,
+        ]}
+      >
+        {isUp ? (
+          <>
+            <View
+              testID="future-peek-guide-up"
+              style={[styles.arrowWrap, styles.arrowUp]}
+            >
+              <ChevronRight color={color} size={14} />
+            </View>
+            <View style={[styles.line, { backgroundColor: color }]} />
+          </>
+        ) : (
+          <>
             <View style={[styles.line, { backgroundColor: color }]} />
             <View
               testID="future-peek-guide-down"
@@ -60,10 +80,9 @@ function PeekGuide({
             >
               <ChevronRight color={color} size={14} />
             </View>
-          </View>
-          <View style={styles.guideHalf} />
-        </>
-      )}
+          </>
+        )}
+      </Animated.View>
     </View>
   );
 }
@@ -89,11 +108,30 @@ function TimeIcons({
 
 export function FuturePeekOverlay({
   direction,
+  pullDistance,
   animatedStyle,
   accessibilityLabel,
 }: FuturePeekOverlayProps) {
   const { text } = useTheme();
   const isEnter = direction === 'enter';
+  const reduceMotion = useReducedMotion();
+  const guideSpan = isEnter ? PEEK_ENTER_GUIDE_SPAN : PEEK_EXIT_GUIDE_SPAN;
+
+  const guideStyle = useAnimatedStyle(() => {
+    const progress = getPeekGuideProgress(pullDistance.value);
+    const growthProgress = reduceMotion && progress > 0 ? 1 : progress;
+    const rawHeight = guideSpan * growthProgress;
+    const steppedHeight =
+      Math.round(rawHeight / GUIDE_PIXEL_STEP) * GUIDE_PIXEL_STEP;
+
+    return {
+      height: Math.min(guideSpan, steppedHeight),
+      opacity:
+        reduceMotion && progress > 0
+          ? 1
+          : Math.min(1, progress * GUIDE_OPACITY_LEAD),
+    };
+  });
 
   return (
     <View
@@ -106,19 +144,37 @@ export function FuturePeekOverlay({
         accessibilityRole="image"
         accessibilityLabel={accessibilityLabel}
         testID="future-peek-cluster"
-        style={[styles.cluster, animatedStyle]}
+        style={styles.cluster}
       >
         {isEnter ? (
           <>
-            <TimeIcons color={text} pointing="right" />
-            <PeekGuide color={text} arrow="down" span={PEEK_ENTER_GUIDE_SPAN} />
+            <Animated.View
+              testID="future-peek-icons-layer"
+              style={[styles.iconsLayer, animatedStyle]}
+            >
+              <TimeIcons color={text} pointing="right" />
+            </Animated.View>
+            <PeekGuide
+              color={text}
+              arrow="down"
+              span={guideSpan}
+              animatedStyle={guideStyle}
+            />
           </>
         ) : (
           <>
-            <View testID="future-peek-exit-guide" style={styles.exitGuideSlot}>
-              <PeekGuide color={text} arrow="up" />
-            </View>
-            <TimeIcons color={text} pointing="left" />
+            <PeekGuide
+              color={text}
+              arrow="up"
+              span={guideSpan}
+              animatedStyle={guideStyle}
+            />
+            <Animated.View
+              testID="future-peek-icons-layer"
+              style={[styles.iconsLayer, animatedStyle]}
+            >
+              <TimeIcons color={text} pointing="left" />
+            </Animated.View>
           </>
         )}
       </Animated.View>
@@ -140,8 +196,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: spacing.xxl,
   },
-  /** Opacity/scale target — sized to content, not full screen (avoids edge clip). */
+  /** Stable layout shell — sized to content, not full screen (avoids edge clip). */
   cluster: {
+    alignItems: 'center',
+  },
+  /** Threshold-only opacity/scale target; the guide remains independent. */
+  iconsLayer: {
     alignItems: 'center',
   },
   icons: {
@@ -151,20 +211,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
-  guideColumn: {
+  guideSlot: {
+    width: 18,
+    position: 'relative',
+  },
+  guideTrack: {
+    position: 'absolute',
     alignItems: 'center',
     width: '100%',
+    overflow: 'hidden',
   },
-  guideFlex: {
-    flex: 1,
+  guideTrackUp: {
+    bottom: 0,
   },
-  guideFixed: {
-    flex: 0,
-  },
-  guideHalf: {
-    flex: 1,
-    alignItems: 'center',
-    width: '100%',
+  guideTrackDown: {
+    top: 0,
   },
   line: {
     width: 2,
@@ -173,15 +234,13 @@ const styles = StyleSheet.create({
   arrowWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: 14,
+    height: 14,
   },
   arrowDown: {
     transform: [{ rotate: '90deg' }],
   },
   arrowUp: {
     transform: [{ rotate: '-90deg' }],
-  },
-  exitGuideSlot: {
-    height: 160,
-    width: '100%',
   },
 });

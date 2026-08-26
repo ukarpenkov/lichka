@@ -23,6 +23,17 @@ export const PEEK_FAIL_OFFSET_X = 28;
 /** Cooldown after commit before another gesture is accepted. */
 export const PEEK_COMMIT_COOLDOWN_MS = 450;
 
+/** Pull distance → clamped visual progress for the progressive guide. */
+export function getPeekGuideProgress(
+  pullDistance: number,
+  threshold?: number,
+): number {
+  'worklet';
+  const fullAt = threshold ?? PEEK_THRESHOLD;
+  if (fullAt <= 0) return pullDistance > 0 ? 1 : 0;
+  return Math.min(1, Math.max(0, pullDistance / fullAt));
+}
+
 /**
  * Signed pan translation → pull distance in the gesture direction.
  * enter: finger up (negative translationY) — overscroll past bottom into future

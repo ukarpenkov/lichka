@@ -845,6 +845,7 @@ export function ChatRoomScreen() {
                 </Animated.View>
                 <FuturePeekOverlay
                   direction="exit"
+                  pullDistance={exitPeek.pullDistance}
                   animatedStyle={exitPeek.overlayStyle}
                   accessibilityLabel={t.futureExitA11y}
                 />
@@ -956,6 +957,7 @@ export function ChatRoomScreen() {
                 </Animated.View>
                 <FuturePeekOverlay
                   direction="enter"
+                  pullDistance={entryPeek.pullDistance}
                   animatedStyle={entryPeek.overlayStyle}
                   accessibilityLabel={t.futurePeekA11y}
                 />

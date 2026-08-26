@@ -3,6 +3,7 @@ import { Gesture, type GestureType } from 'react-native-gesture-handler';
 import {
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   type SharedValue,
@@ -28,10 +29,15 @@ import {
   type PeekPhase,
 } from './peekGestureState';
 
+const PEEK_FLICK_CONFIRM_SPRING = {
+  duration: 140,
+  dampingRatio: 1,
+};
+
 export type UseFuturePeekGestureOptions = {
   direction: PeekDirection;
   enabled: boolean;
-  /** atBottom for enter (pull down), atTop for exit (pull down). */
+  /** atBottom for enter (pull up), atTop for exit (pull down). */
   atEdge: boolean;
   onCommit: () => void;
 };
@@ -66,6 +72,7 @@ export function useFuturePeekGesture({
   atEdge,
   onCommit,
 }: UseFuturePeekGestureOptions): FuturePeekGestureApi {
+  const reduceMotion = useReducedMotion();
   const pullDistance = useSharedValue(0);
   const pastThreshold = useSharedValue(0);
   const phase = useSharedValue<PeekPhase>('idle');
@@ -190,6 +197,28 @@ export function useFuturePeekGesture({
 
         if (shouldCommitPeek(distance, velocity)) {
           busySV.value = 1;
+
+          // A fast flick may commit before reaching the visual threshold.
+          // Give it one short confirmation beat: finish the pixel guide and
+          // reveal the time icons before switching timelines.
+          if (distance < PEEK_THRESHOLD && !reduceMotion) {
+            pastThreshold.value = 1;
+            phase.value = 'armed';
+            pullDistance.value = withSpring(
+              PEEK_THRESHOLD,
+              PEEK_FLICK_CONFIRM_SPRING,
+              (finished) => {
+                if (!finished) return;
+                pullDistance.value = 0;
+                pastThreshold.value = 0;
+                phase.value = 'idle';
+                thresholdFiredSV.value = 0;
+                runOnJS(handleCommit)();
+              },
+            );
+            return;
+          }
+
           pullDistance.value = withSpring(0, SPRING_SNAP);
           pastThreshold.value = 0;
           phase.value = 'idle';
@@ -208,13 +237,14 @@ export function useFuturePeekGesture({
     pastThreshold,
     phase,
     pullDistance,
+    reduceMotion,
     snapBack,
     thresholdFiredSV,
   ]);
 
   const overlayStyle = useAnimatedStyle(() => {
     const armed = pastThreshold.value === 1;
-    // Cluster-only motion (overlay lives outside rubber-band clip).
+    // Time-icon motion (overlay lives outside the rubber-band clip).
     // Enter: rise from compose; exit: drop from under header.
     const hideY = direction === 'enter' ? 18 : -18;
     return {

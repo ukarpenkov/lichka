@@ -4,6 +4,7 @@ export {
   PEEK_VELOCITY_COMMIT,
   PEEK_RUBBER_BAND_MAX,
   PEEK_COMMIT_COOLDOWN_MS,
+  getPeekGuideProgress,
   getPullDistance,
   getPullVelocity,
   applyRubberBand,
@@ -27,5 +28,9 @@ export type {
   FuturePeekGestureApi,
 } from './useFuturePeekGesture';
 
-export { FuturePeekOverlay, PEEK_ENTER_GUIDE_SPAN } from './FuturePeekOverlay';
+export {
+  FuturePeekOverlay,
+  PEEK_ENTER_GUIDE_SPAN,
+  PEEK_EXIT_GUIDE_SPAN,
+} from './FuturePeekOverlay';
 export type { FuturePeekOverlayProps } from './FuturePeekOverlay';

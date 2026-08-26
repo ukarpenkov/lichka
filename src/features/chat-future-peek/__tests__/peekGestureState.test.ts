@@ -3,6 +3,7 @@ import {
   PEEK_THRESHOLD,
   applyRubberBand,
   canActivatePeekGesture,
+  getPeekGuideProgress,
   getPeekPhase,
   getPullDistance,
   getPullVelocity,
@@ -12,6 +13,21 @@ import {
 } from '../peekGestureState';
 
 describe('peekGestureState', () => {
+  describe('getPeekGuideProgress', () => {
+    it('should clamp progressive guide growth to the threshold', () => {
+      expect(getPeekGuideProgress(-10)).toBe(0);
+      expect(getPeekGuideProgress(PEEK_THRESHOLD / 2)).toBe(0.5);
+      expect(getPeekGuideProgress(PEEK_THRESHOLD)).toBe(1);
+      expect(getPeekGuideProgress(PEEK_AUTO_COMMIT)).toBe(1);
+    });
+
+    it('should support a custom threshold without division by zero', () => {
+      expect(getPeekGuideProgress(25, 100)).toBe(0.25);
+      expect(getPeekGuideProgress(1, 0)).toBe(1);
+      expect(getPeekGuideProgress(0, 0)).toBe(0);
+    });
+  });
+
   describe('getPullDistance', () => {
     it('should use negative translationY for enter (pull up)', () => {
       expect(getPullDistance(-40, 'enter')).toBe(40);
