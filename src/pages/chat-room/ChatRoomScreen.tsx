@@ -324,8 +324,7 @@ export function ChatRoomScreen() {
     }
   }, [mode, focusNonce]);
 
-  useEffect(() => {
-    if (shareNonce == null) return;
+  const handleInitialDraftApplied = useCallback(() => {
     navigation.setParams({
       shareText: undefined,
       shareImageUri: undefined,
@@ -333,7 +332,7 @@ export function ChatRoomScreen() {
       shareImageHeight: undefined,
       shareNonce: undefined,
     });
-  }, [shareNonce, navigation]);
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -970,6 +969,7 @@ export function ChatRoomScreen() {
                 initialImageWidth={shareImageWidth}
                 initialImageHeight={shareImageHeight}
                 draftNonce={shareNonce}
+                onInitialDraftApplied={handleInitialDraftApplied}
                 onSent={() => {
                   loadData();
                   loadFuture();

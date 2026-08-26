@@ -15,4 +15,11 @@ describe('shareIntent', () => {
     await expect(getInitialShare()).resolves.toBeNull();
     expect(() => consumeInitialShare()).not.toThrow();
   });
+
+  it('should resolve null on Android when ShareModule is not linked', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
+
+    await expect(getInitialShare()).resolves.toBeNull();
+    expect(() => consumeInitialShare()).not.toThrow();
+  });
 });

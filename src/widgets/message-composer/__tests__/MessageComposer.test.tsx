@@ -177,17 +177,20 @@ describe('MessageComposer', () => {
   });
 
   it('should put shared text into the input without sending', async () => {
+    const onInitialDraftApplied = jest.fn();
     const { getByDisplayValue } = render(
       <MessageComposer
         chatId="chat-1"
         initialText="https://example.com/note"
         draftNonce={1}
+        onInitialDraftApplied={onInitialDraftApplied}
       />,
     );
 
     await waitFor(() => {
       expect(getByDisplayValue('https://example.com/note')).toBeTruthy();
     });
+    expect(onInitialDraftApplied).toHaveBeenCalledTimes(1);
     expect(mockCreateMessage).not.toHaveBeenCalled();
   });
 

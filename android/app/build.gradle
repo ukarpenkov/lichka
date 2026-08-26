@@ -123,14 +123,21 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            if (!hasReleaseSigning) {
+            // Evaluated for every variant. Only fail when a release task is actually requested,
+            // otherwise `assembleDebug` cannot run without a release keystore.
+            def isReleaseTask = gradle.startParameter.taskNames.any {
+                it.toLowerCase().contains('release')
+            }
+            if (!hasReleaseSigning && isReleaseTask) {
                 throw new GradleException(
                     "Release signing is not configured. Create android/keystore.properties " +
                     "or set LICHKA_UPLOAD_* in ~/.gradle/gradle.properties " +
                     "(see docs/release/android-aab-google-play.md)."
                 )
             }
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

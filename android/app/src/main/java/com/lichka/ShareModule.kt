@@ -19,8 +19,12 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 
-class ShareModule(reactContext: ReactApplicationContext) :
+class IncomingShareModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
+
+    init {
+        activeInstance = this
+    }
 
     override fun getName(): String = NAME
 
@@ -83,7 +87,7 @@ class ShareModule(reactContext: ReactApplicationContext) :
     }
 
     companion object {
-        const val NAME = "ShareModule"
+        const val NAME = "IncomingShareModule"
         const val EVENT_SHARE = "onShareReceived"
         private const val INBOX_DIR = "share-inbox"
         private const val MAX_EDGE = 1920
@@ -95,8 +99,24 @@ class ShareModule(reactContext: ReactApplicationContext) :
         @Volatile
         private var shareConsumed = false
 
+        @Volatile
+        private var activeInstance: IncomingShareModule? = null
+
+        @JvmStatic
+        fun emitPendingIfPossible() {
+            activeInstance?.emitShareIfPending()
+        }
+
         @JvmStatic
         fun captureShare(activity: Activity, intent: Intent?) {
+            try {
+                captureShareInner(activity, intent)
+            } catch (_: Exception) {
+                // Broken share extras must never prevent a normal launch.
+            }
+        }
+
+        private fun captureShareInner(activity: Activity, intent: Intent?) {
             if (intent == null || intent.action != Intent.ACTION_SEND) {
                 return
             }

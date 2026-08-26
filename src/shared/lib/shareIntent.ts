@@ -1,13 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { ShareModule } = NativeModules;
-
-function requireShareModule(): NonNullable<typeof ShareModule> {
-  if (!ShareModule) {
-    throw new Error('ShareModule is not linked. Rebuild the native app (android).');
-  }
-  return ShareModule;
-}
+const { IncomingShareModule } = NativeModules;
 
 export type NativeSharePayload = {
   text?: string;
@@ -16,13 +9,18 @@ export type NativeSharePayload = {
   height?: number;
 };
 
-/** Cold-start share extras. No-op on iOS. */
+function getShareModule(): typeof IncomingShareModule | null {
+  if (Platform.OS !== 'android') return null;
+  return IncomingShareModule ?? null;
+}
+
+/** Cold-start share extras. No-op on iOS / if native module is not linked. */
 export function getInitialShare(): Promise<NativeSharePayload | null> {
-  if (Platform.OS !== 'android') return Promise.resolve(null);
-  return requireShareModule().getInitialShare();
+  const mod = getShareModule();
+  if (!mod?.getInitialShare) return Promise.resolve(null);
+  return mod.getInitialShare();
 }
 
 export function consumeInitialShare(): void {
-  if (Platform.OS !== 'android') return;
-  requireShareModule().consumeInitialShare();
+  getShareModule()?.consumeInitialShare?.();
 }

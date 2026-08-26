@@ -37,6 +37,7 @@ import { DocumentDirectoryPath } from 'react-native-fs';
 type Props = {
   chatId: string;
   onSent?: () => void;
+  onInitialDraftApplied?: () => void;
   initialText?: string;
   initialImageUri?: string;
   initialImageWidth?: number;
@@ -58,6 +59,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function MessageComposer({
   chatId,
   onSent,
+  onInitialDraftApplied,
   initialText,
   initialImageUri,
   initialImageWidth,
@@ -79,6 +81,7 @@ export function MessageComposer({
     useVoiceRecorder();
 
   const reduceMotionRef = useRef(false);
+  const appliedDraftNonceRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
@@ -127,12 +130,17 @@ export function MessageComposer({
 
   useEffect(() => {
     if (draftNonce == null) return;
+    if (appliedDraftNonceRef.current === draftNonce) return;
+    appliedDraftNonceRef.current = draftNonce;
 
     if (initialText) {
       setBody(initialText);
     }
 
-    if (!initialImageUri) return;
+    if (!initialImageUri) {
+      onInitialDraftApplied?.();
+      return;
+    }
 
     const applyPreview = (width: number, height: number) => {
       setImagePreview({ uri: initialImageUri, width, height });
@@ -140,6 +148,7 @@ export function MessageComposer({
 
     if (initialImageWidth && initialImageHeight) {
       applyPreview(initialImageWidth, initialImageHeight);
+      onInitialDraftApplied?.();
       return;
     }
 
@@ -148,7 +157,15 @@ export function MessageComposer({
       (width, height) => applyPreview(width, height),
       () => applyPreview(0, 0),
     );
-  }, [draftNonce, initialText, initialImageUri, initialImageWidth, initialImageHeight]);
+    onInitialDraftApplied?.();
+  }, [
+    draftNonce,
+    initialText,
+    initialImageUri,
+    initialImageWidth,
+    initialImageHeight,
+    onInitialDraftApplied,
+  ]);
 
   const sendMessage = useCallback(
     async (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number }) => {

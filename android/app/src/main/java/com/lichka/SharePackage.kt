@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class SharePackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-        listOf(ShareModule(reactContext))
+        listOf(IncomingShareModule(reactContext))
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
         emptyList()

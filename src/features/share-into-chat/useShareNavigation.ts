@@ -31,9 +31,18 @@ export function useShareNavigation() {
       initialHandled = true;
       consumeInitialShare();
       onShare(payload);
+    }).catch(() => {
+      // Native module missing or bridge not ready — ignore.
     });
 
-    const emitter = new NativeEventEmitter(NativeModules.ShareModule);
+    const shareNative = NativeModules.IncomingShareModule;
+    if (!shareNative) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const emitter = new NativeEventEmitter(shareNative);
     const sub = emitter.addListener(
       'onShareReceived',
       (event: NativeSharePayload) => {

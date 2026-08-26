@@ -18,7 +18,7 @@
 
 ## Предлагаемое решение
 
-Android `ACTION_SEND` (intent-filter на `MainActivity`) + native `ShareModule` по тому же паттерну, что уведомления и виджет:
+Android `ACTION_SEND` (intent-filter на `MainActivity`) + native `IncomingShareModule` по тому же паттерну, что уведомления и виджет. Отдельное имя обязательно: `ShareModule` уже занят встроенным исходящим Share в React Native.
 
 | Шаг | Что происходит |
 |-----|----------------|
@@ -34,7 +34,7 @@ Cold start: `getInitialShare()`. Warm start (`singleTask` + `onNewIntent`): со
 
 | Слой | Изменения |
 |------|-----------|
-| Native `android/.../com/lichka/` | `ShareModule`, `SharePackage`; intent-filters; capture в `MainActivity` |
+| Native `android/.../com/lichka/` | `IncomingShareModule`, `SharePackage`; intent-filters; capture в `MainActivity` |
 | `shared/lib` | JS-бридж `shareIntent.ts` |
 | `features/share-into-chat` | нормализация payload, store режима выбора, `useShareNavigation` |
 | `app/mainTabsApi` | `revealChatListForShare()`; params черновика в `navigateToChat` |

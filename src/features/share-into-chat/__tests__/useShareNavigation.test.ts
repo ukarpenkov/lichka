@@ -34,7 +34,7 @@ describe('useShareNavigation', () => {
     jest.clearAllMocks();
     shareHandler = undefined;
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => 'android' });
-    NativeModules.ShareModule = {
+    NativeModules.IncomingShareModule = {
       addListener: jest.fn(),
       removeListeners: jest.fn(),
     };
@@ -54,7 +54,7 @@ describe('useShareNavigation', () => {
 
   afterEach(() => {
     Object.defineProperty(Platform, 'OS', { configurable: true, get: () => originalOS });
-    delete NativeModules.ShareModule;
+    delete NativeModules.IncomingShareModule;
     jest.restoreAllMocks();
   });
 
