@@ -20,7 +20,18 @@ export type { EditFields } from './edit-message';
 export { exportToJSON, exportToZIP } from './export';
 export { importFromJSON, importFromZIP, type ImportMode, type ImportResult, type ZipImportResult } from './import';
 
-export { getGoogleToken, signOutGoogle, uploadBackup, downloadBackup, type DriveBackupDownload } from './google-drive';
+export {
+  getGoogleToken,
+  signOutGoogle,
+  uploadBackup,
+  downloadBackup,
+  saveToGoogleDrive,
+  fetchGoogleDriveBackup,
+  classifyDriveError,
+  isGoogleSignInCancelled,
+  type DriveBackupDownload,
+  type DriveErrorKind,
+} from './google-drive';
 
 export { ImageViewer, useImageViewer } from './image-viewer';
 export type { ImageViewerData } from './image-viewer';

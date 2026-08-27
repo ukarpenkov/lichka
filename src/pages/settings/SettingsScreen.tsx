@@ -7,7 +7,7 @@ import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, getLocaleBundle, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToZIP, importFromJSON, importFromZIP, getGoogleToken, uploadBackup, downloadBackup, type ZipImportResult, type DriveBackupDownload } from '../../features';
+import { exportToZIP, importFromJSON, importFromZIP, saveToGoogleDrive, fetchGoogleDriveBackup, classifyDriveError, type ZipImportResult, type DriveBackupDownload } from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
@@ -37,6 +37,21 @@ function formatImportResult(t: LocaleDictionary, r: ImportSummary): string {
   if (r.settingsImported) parts.push(t.settingsImported);
   if (r.mediaRestored && r.mediaRestored > 0) parts.push(t.mediaRestored(r.mediaRestored));
   return parts.length > 0 ? parts.join('\n') : t.noNewData;
+}
+
+function driveErrorMessage(t: LocaleDictionary, e: unknown, fallback: string): string {
+  switch (classifyDriveError(e)) {
+    case 'developer':
+      return t.driveAuthDeveloper;
+    case 'play_services':
+      return t.driveAuthPlayServices;
+    case 'denied':
+      return t.driveAuthDenied;
+    case 'too_large':
+      return t.backupTooLarge;
+    default:
+      return fallback;
+  }
 }
 
 function importErrorMessage(t: LocaleDictionary, e: unknown): string {
@@ -247,13 +262,17 @@ export function SettingsScreen() {
             icon={Cloud}
             onPress={async () => {
               try {
-                const token = await getGoogleToken();
-                await uploadBackup(token);
+                await saveToGoogleDrive();
                 setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
-              } catch (e: any) {
-                if (e?.code === 'SIGN_IN_CANCELLED') return;
-                console.error('[google-drive] save backup error:', e?.message, e?.code ?? '', JSON.stringify(e ?? {}));
-                setDialog({ title: t.error, message: t.backupFailed, buttons: [{ text: t.done }] });
+              } catch (e: unknown) {
+                const kind = classifyDriveError(e);
+                if (kind === 'cancelled') return;
+                console.error('[google-drive] save backup error:', kind, e instanceof Error ? e.message : e);
+                setDialog({
+                  title: t.error,
+                  message: driveErrorMessage(t, e, t.backupFailed),
+                  buttons: [{ text: t.done }],
+                });
               }
             }}
           />
@@ -262,8 +281,7 @@ export function SettingsScreen() {
             icon={CloudDownload}
             onPress={async () => {
               try {
-                const token = await getGoogleToken();
-                const backup = await downloadBackup(token);
+                const backup = await fetchGoogleDriveBackup();
 
                 const modeDialog = (mode: 'merge' | 'replace') =>
                   setTimeout(() => {
@@ -300,14 +318,19 @@ export function SettingsScreen() {
                     },
                   ],
                 });
-              } catch (e: any) {
-                if (e?.code === 'SIGN_IN_CANCELLED') return;
-                if (e?.message === 'NO_BACKUP') {
+              } catch (e: unknown) {
+                const kind = classifyDriveError(e);
+                if (kind === 'cancelled') return;
+                if (kind === 'no_backup') {
                   setDialog({ title: t.noBackup, message: t.noBackupMessage, buttons: [{ text: t.done }] });
                   return;
                 }
-                console.error('[google-drive] restore backup error:', e?.message, e?.code ?? '', JSON.stringify(e ?? {}));
-                setDialog({ title: t.error, message: t.restoreFailed, buttons: [{ text: t.done }] });
+                console.error('[google-drive] restore backup error:', kind, e instanceof Error ? e.message : e);
+                setDialog({
+                  title: t.error,
+                  message: driveErrorMessage(t, e, t.restoreFailed),
+                  buttons: [{ text: t.done }],
+                });
               }
             }}
           />

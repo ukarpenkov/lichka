@@ -40,6 +40,8 @@ describe('locale', () => {
         'settings', 'sectionTheme', 'sectionSound', 'sectionLanguage',
         'sectionBackup', 'sectionAbout',
         'sound', 'hapticFeedback', 'interfaceLanguage',
+        'backupFailed', 'backupTooLarge', 'driveAuthDeveloper',
+        'driveAuthPlayServices', 'driveAuthDenied',
         'version',
       ];
 

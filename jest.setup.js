@@ -205,10 +205,32 @@ jest.mock('react-native-document-picker', () => ({
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
+    configure: jest.fn(),
     hasPlayServices: jest.fn().mockResolvedValue(true),
-    signIn: jest.fn().mockResolvedValue({ user: { id: 'mock' } }),
-    getTokens: jest.fn().mockResolvedValue({ accessToken: 'mock-token' }),
-    signOut: jest.fn(),
+    hasPreviousSignIn: jest.fn().mockReturnValue(false),
+    getCurrentUser: jest.fn().mockReturnValue(null),
+    signIn: jest.fn().mockResolvedValue({
+      type: 'success',
+      data: {
+        user: { id: 'mock', email: 'mock@test.com' },
+        scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+      },
+    }),
+    addScopes: jest.fn().mockResolvedValue({
+      type: 'success',
+      data: {
+        user: { id: 'mock', email: 'mock@test.com' },
+        scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+      },
+    }),
+    getTokens: jest.fn().mockResolvedValue({ accessToken: 'mock-token', idToken: null }),
+    signOut: jest.fn().mockResolvedValue(null),
+  },
+  statusCodes: {
+    SIGN_IN_CANCELLED: '12501',
+    IN_PROGRESS: 'ASYNC_OP_IN_PROGRESS',
+    PLAY_SERVICES_NOT_AVAILABLE: 'PLAY_SERVICES_NOT_AVAILABLE',
+    SIGN_IN_REQUIRED: '4',
   },
 }));
 

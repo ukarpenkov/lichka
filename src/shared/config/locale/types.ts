@@ -76,6 +76,10 @@ export interface LocaleDictionary {
   importFromFile: string;
   backupSaved: string;
   backupFailed: string;
+  backupTooLarge: string;
+  driveAuthDeveloper: string;
+  driveAuthPlayServices: string;
+  driveAuthDenied: string;
   restoreTitle: string;
   chooseImportMode: string;
   driveRestoreNoMedia: string;

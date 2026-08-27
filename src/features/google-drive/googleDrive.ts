@@ -1,6 +1,20 @@
 import RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
 import { exportToZIP } from '../export';
+import { getGoogleToken, signOutGoogle } from './googleSignIn';
+import { isDriveAuthFailure } from './driveErrors';
+
+export class DriveApiError extends Error {
+  readonly status: number;
+  readonly body: string;
+
+  constructor(status: number, body: string, action: string) {
+    super(`${action} failed: ${status}`);
+    this.name = 'DriveApiError';
+    this.status = status;
+    this.body = body;
+  }
+}
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -72,7 +86,7 @@ export async function uploadBackup(token: string): Promise<void> {
     if (!response.ok) {
       const text = await response.text();
       console.error('[google-drive] upload failed body:', text);
-      throw new Error(`Upload failed: ${response.status} ${text}`);
+      throw new DriveApiError(response.status, text, 'Upload');
     }
   } catch (e: any) {
     console.error('[google-drive] uploadBackup failed:', e?.message, e?.code ?? '');
@@ -110,7 +124,7 @@ export async function downloadBackup(token: string): Promise<DriveBackupDownload
   if (!response.ok) {
     const text = await response.text();
     console.error('[google-drive] downloadBackup: failed body:', text);
-    throw new Error(`Download failed: ${response.status}`);
+    throw new DriveApiError(response.status, text, 'Download');
   }
 
   const content = await response.arrayBuffer();
@@ -136,9 +150,36 @@ async function findExistingFile(token: string, name: string): Promise<string | n
   if (!response.ok) {
     const text = await response.text();
     console.error('[google-drive] list files failed body:', text);
-    throw new Error(`List files failed: ${response.status}`);
+    throw new DriveApiError(response.status, text, 'List files');
   }
 
   const data = await response.json();
   return data.files?.[0]?.id ?? null;
+}
+
+async function withFreshToken<T>(fn: (token: string) => Promise<T>): Promise<T> {
+  const token = await getGoogleToken();
+  try {
+    return await fn(token);
+  } catch (e) {
+    if (!isDriveAuthFailure(e)) {
+      throw e;
+    }
+    console.warn('[google-drive] Drive rejected token, re-authenticating');
+    try {
+      await signOutGoogle();
+    } catch {
+      // best-effort
+    }
+    const nextToken = await getGoogleToken();
+    return fn(nextToken);
+  }
+}
+
+export async function saveToGoogleDrive(): Promise<void> {
+  await withFreshToken(uploadBackup);
+}
+
+export async function fetchGoogleDriveBackup(): Promise<DriveBackupDownload> {
+  return withFreshToken(downloadBackup);
 }

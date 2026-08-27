@@ -10,9 +10,15 @@ jest.mock('../../export', () => ({
   exportToZIP: jest.fn(),
 }));
 
+jest.mock('../googleSignIn', () => ({
+  getGoogleToken: jest.fn(),
+  signOutGoogle: jest.fn(),
+}));
+
 import RNFS from 'react-native-fs';
 import { exportToZIP } from '../../export';
-import { uploadBackup, downloadBackup } from '../googleDrive';
+import { getGoogleToken, signOutGoogle } from '../googleSignIn';
+import { uploadBackup, downloadBackup, saveToGoogleDrive, fetchGoogleDriveBackup } from '../googleDrive';
 
 const mockFetch = jest.fn();
 
@@ -168,5 +174,48 @@ describe('downloadBackup', () => {
     mockFetch.mockResolvedValueOnce(failResponse(403));
 
     await expect(downloadBackup('token-1')).rejects.toThrow('List files failed: 403');
+  });
+});
+
+describe('saveToGoogleDrive / fetchGoogleDriveBackup', () => {
+  beforeEach(() => {
+    (getGoogleToken as jest.Mock).mockResolvedValue('token-1');
+    (signOutGoogle as jest.Mock).mockResolvedValue(undefined);
+  });
+
+  it('saves after signing in', async () => {
+    mockFetch
+      .mockResolvedValueOnce(okJson({ files: [] }))
+      .mockResolvedValueOnce(okJson({ id: 'new-id' }));
+
+    await saveToGoogleDrive();
+
+    expect(getGoogleToken).toHaveBeenCalledTimes(1);
+    expect(mockFetch.mock.calls[1][1].headers.Authorization).toBe('Bearer token-1');
+  });
+
+  it('re-authenticates once when Drive returns 401', async () => {
+    (getGoogleToken as jest.Mock).mockResolvedValueOnce('stale-token').mockResolvedValueOnce('fresh-token');
+    mockFetch
+      .mockResolvedValueOnce(failResponse(401, 'Invalid Credentials'))
+      .mockResolvedValueOnce(okJson({ files: [] }))
+      .mockResolvedValueOnce(okJson({ id: 'new-id' }));
+
+    await saveToGoogleDrive();
+
+    expect(signOutGoogle).toHaveBeenCalled();
+    expect(getGoogleToken).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[2][1].headers.Authorization).toBe('Bearer fresh-token');
+  });
+
+  it('fetches a zip backup after signing in', async () => {
+    mockFetch
+      .mockResolvedValueOnce(okJson({ files: [{ id: 'zip-id' }] }))
+      .mockResolvedValueOnce(okText('zip-bytes'));
+
+    const result = await fetchGoogleDriveBackup();
+
+    expect(result.kind).toBe('zip');
+    expect(getGoogleToken).toHaveBeenCalledTimes(1);
   });
 });
