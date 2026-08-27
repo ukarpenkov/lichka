@@ -92,10 +92,10 @@ const createMessage = (overrides: Partial<{
 const onLongPress = jest.fn();
 
 describe('formatLogTime', () => {
-  it('should format timestamp as [HH:MM:SS]', () => {
-    // Local-timezone dependent — only assert bracket + separators shape via regex on fixed UTC offset mock
-    const stamp = formatLogTime('2026-01-01T12:34:56.000Z');
-    expect(stamp).toMatch(/^\[\d{2}:\d{2}:\d{2}\]$/);
+  it('should format chat timestamp without stored seconds', () => {
+    const timestampWithSeconds = new Date(2026, 0, 1, 12, 34, 56).toISOString();
+
+    expect(formatLogTime(timestampWithSeconds)).toBe('[12:34]');
   });
 });
 
@@ -116,7 +116,7 @@ describe('MessageLine', () => {
     const { getByText } = render(
       <MessageLine message={createMessage()} onLongPress={onLongPress} />,
     );
-    expect(getByText(/^\[\d{2}:\d{2}:\d{2}\]$/)).toBeTruthy();
+    expect(getByText(/^\[\d{2}:\d{2}\]$/)).toBeTruthy();
   });
 
   it('should render ImageMessage for type=image', () => {
@@ -175,12 +175,12 @@ describe('MessageLine', () => {
     const { getByText } = render(
       <MessageLine message={createMessage()} onLongPress={onLongPress} />,
     );
-    const time = getByText(/^\[\d{2}:\d{2}:\d{2}\]$/);
+    const time = getByText(/^\[\d{2}:\d{2}\]$/);
     const flat = Array.isArray(time.props.style)
       ? Object.assign({}, ...time.props.style.filter(Boolean))
       : time.props.style;
     expect(flat.marginTop ?? 0).toBe(0);
-    expect(flat.minWidth).toBe(88);
+    expect(flat.minWidth).toBe(64);
   });
 
   it('should append edited marker after text', () => {

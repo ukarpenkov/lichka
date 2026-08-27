@@ -20,13 +20,12 @@ type MessageLineProps = {
   onImagePress?: (data: { uri: string; width: number; height: number }) => void;
 };
 
-/** Log timestamp: [HH:MM:SS] — tabular mono. */
+/** Chat timestamp: [HH:MM] — stored seconds remain unchanged. */
 export function formatLogTime(iso: string): string {
   const d = new Date(iso);
   const h = d.getHours().toString().padStart(2, '0');
   const m = d.getMinutes().toString().padStart(2, '0');
-  const s = d.getSeconds().toString().padStart(2, '0');
-  return `[${h}:${m}:${s}]`;
+  return `[${h}:${m}]`;
 }
 
 function isVoiceMessage(message: Message): boolean {
@@ -59,7 +58,7 @@ const TYPE_ICON: Record<Exclude<MessageType, 'simple'>, PixelIconComponent | nul
 
 /**
  * Terminal log line — replaces MessageBubble.
- * Pattern: [HH:MM:SS]  [icon?]  text…
+ * Pattern: [HH:MM]  [icon?]  text…
  */
 export function MessageLine({
   message,
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
   time: {
     // Fixed-ish column for wrap indent under text (mono tabular).
     // lineHeight 16 matches typeIcon box — no extra marginTop.
-    minWidth: 88,
+    minWidth: 64,
     lineHeight: 16,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
