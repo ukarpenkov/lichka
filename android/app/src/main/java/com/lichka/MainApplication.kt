@@ -18,6 +18,7 @@ class MainApplication : Application(), ReactApplication {
           add(ThemePackage())
           add(WidgetPackage())
           add(SharePackage())
+          add(ShortcutPackage())
         },
     )
   }

@@ -257,4 +257,34 @@ describe('mainTabsApi', () => {
       expect(switchAgain).not.toHaveBeenCalled();
     });
   });
+
+  describe('launcher shortcut composer focus', () => {
+    it('should pass composerFocusNonce so the input can take keyboard focus', () => {
+      readyNav();
+
+      navigateToChat('saved-messages', undefined, { composerFocus: true });
+
+      expect(switchToTab).toHaveBeenCalledWith(0);
+      expect(navigate).toHaveBeenCalledWith('ChatRoom', {
+        chatId: 'saved-messages',
+        messageId: undefined,
+        focusNonce: 1_700_000_000_000,
+        composerFocusNonce: 1_700_000_000_000,
+      });
+    });
+
+    it('should setParams with composerFocusNonce when Saved is already open', () => {
+      readyNav({ name: 'ChatRoom', params: { chatId: 'saved-messages' } });
+
+      navigateToChat('saved-messages', undefined, { composerFocus: true });
+
+      expect(setParams).toHaveBeenCalledWith({
+        chatId: 'saved-messages',
+        messageId: undefined,
+        focusNonce: 1_700_000_000_000,
+        composerFocusNonce: 1_700_000_000_000,
+      });
+      expect(navigate).not.toHaveBeenCalled();
+    });
+  });
 });

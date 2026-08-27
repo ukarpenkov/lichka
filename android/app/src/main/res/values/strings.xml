@@ -4,4 +4,6 @@
     <string name="widget_scheduled_empty">Нет запланированных</string>
     <string name="widget_scheduled_untitled">Напоминание</string>
     <string name="widget_scheduled_description">Ближайшие напоминания и будильники</string>
+    <string name="shortcut_write_saved_short">Написать</string>
+    <string name="shortcut_write_saved_long">Написать в Saved</string>
 </resources>

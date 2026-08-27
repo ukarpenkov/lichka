@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_write"
+        android:shortcutId="write_saved"
+        android:shortcutLongLabel="@string/shortcut_write_saved_long"
+        android:shortcutShortLabel="@string/shortcut_write_saved_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.lichka.MainActivity"
+            android:targetPackage="com.lichka">
+            <extra
+                android:name="shortcutId"
+                android:value="write_saved" />
+        </intent>
+    </shortcut>
+</shortcuts>

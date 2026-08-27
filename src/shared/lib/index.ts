@@ -39,6 +39,10 @@ export {
   consumeInitialShare,
   type NativeSharePayload,
 } from './shareIntent';
+export {
+  getInitialShortcutId,
+  consumeInitialShortcut,
+} from './launcherShortcut';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { setClipboardString } from './clipboard';
 export { playSendSound, playReminderSound } from './sounds';

@@ -1,0 +1,4 @@
+<resources>
+    <string name="shortcut_write_saved_short">Escribir</string>
+    <string name="shortcut_write_saved_long">Escribir en Saved</string>
+</resources>

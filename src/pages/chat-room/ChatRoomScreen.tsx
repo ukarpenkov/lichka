@@ -108,6 +108,7 @@ export function ChatRoomScreen() {
     shareImageWidth,
     shareImageHeight,
     shareNonce,
+    composerFocusNonce,
   } = route.params;
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -333,6 +334,21 @@ export function ChatRoomScreen() {
       shareNonce: undefined,
     });
   }, [navigation]);
+
+  const handleComposerFocusApplied = useCallback(() => {
+    navigation.setParams({
+      composerFocusNonce: undefined,
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    if (composerFocusNonce == null) return;
+    setSearchVisible(false);
+    if (timelineModeRef.current === 'future') {
+      timelineModeRef.current = 'history';
+      setTimelineMode('history');
+    }
+  }, [composerFocusNonce]);
 
   useFocusEffect(
     useCallback(() => {
@@ -971,7 +987,9 @@ export function ChatRoomScreen() {
                 initialImageWidth={shareImageWidth}
                 initialImageHeight={shareImageHeight}
                 draftNonce={shareNonce}
+                composerFocusNonce={composerFocusNonce}
                 onInitialDraftApplied={handleInitialDraftApplied}
+                onComposerFocusApplied={handleComposerFocusApplied}
                 onSent={() => {
                   loadData();
                   loadFuture();

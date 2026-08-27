@@ -23,6 +23,8 @@ export type NavigateToChatOptions = {
   shareImageUri?: string;
   shareImageWidth?: number;
   shareImageHeight?: number;
+  /** Open the composer and request keyboard focus (launcher shortcut). */
+  composerFocus?: boolean;
 };
 
 type PendingChat = {
@@ -55,6 +57,7 @@ type ChatRoomParams = {
   shareImageWidth?: number;
   shareImageHeight?: number;
   shareNonce?: number;
+  composerFocusNonce?: number;
 };
 
 type ChatStackNav = {
@@ -85,6 +88,7 @@ function flushPending() {
       shareImageUri: p.shareImageUri,
       shareImageWidth: p.shareImageWidth,
       shareImageHeight: p.shareImageHeight,
+      composerFocus: p.composerFocus,
     });
   }
   // Tab switch is one-shot. pendingScheduledFocus only delivers row highlight
@@ -126,6 +130,9 @@ function openChatRoom(
   }
   if (options?.shareText || options?.shareImageUri) {
     params.shareNonce = params.focusNonce;
+  }
+  if (options?.composerFocus) {
+    params.composerFocusNonce = params.focusNonce;
   }
 
   const current = chatStackNav.getCurrentRoute?.();

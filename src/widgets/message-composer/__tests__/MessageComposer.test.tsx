@@ -232,4 +232,26 @@ describe('MessageComposer', () => {
     expect(getSize).toHaveBeenCalled();
     getSize.mockRestore();
   });
+
+  it('should auto-focus the input when composerFocusNonce is set', async () => {
+    const onComposerFocusApplied = jest.fn();
+    const { getByPlaceholderText } = render(
+      <MessageComposer
+        chatId="chat-1"
+        composerFocusNonce={7}
+        onComposerFocusApplied={onComposerFocusApplied}
+      />,
+    );
+
+    expect(getByPlaceholderText('Message...').props.autoFocus).toBe(true);
+    await waitFor(() => {
+      expect(onComposerFocusApplied).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('should not auto-focus the input without composerFocusNonce', () => {
+    const { getByPlaceholderText } = render(<MessageComposer chatId="chat-1" />);
+
+    expect(getByPlaceholderText('Message...').props.autoFocus).toBe(false);
+  });
 });

@@ -17,6 +17,7 @@ export type ChatStackParamList = {
     shareImageWidth?: number;
     shareImageHeight?: number;
     shareNonce?: number;
+    composerFocusNonce?: number;
   };
 };
 

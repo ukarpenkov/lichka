@@ -23,6 +23,7 @@ import { AlarmScreen } from '../pages/alarm';
 import { useNotificationNavigation } from '../features/notifications';
 import { useWidgetNavigation, syncScheduledWidgetSnapshot } from '../features/scheduled-widget';
 import { useShareNavigation } from '../features/share-into-chat';
+import { useLauncherShortcut } from '../features/launcher-shortcut';
 import { SPRING_SNAP } from '../shared/lib/animations';
 
 import { SwipeablePager, PagerTabBar } from './SwipeablePager';
@@ -52,6 +53,7 @@ function NotificationHandler() {
   useNotificationNavigation();
   useWidgetNavigation();
   useShareNavigation();
+  useLauncherShortcut();
   useEffect(() => {
     syncScheduledWidgetSnapshot();
   }, []);

@@ -65,3 +65,10 @@ export {
   normalizeSharePayload,
 } from './share-into-chat';
 export type { ShareDraft, NativeShareEvent } from './share-into-chat';
+
+export {
+  useLauncherShortcut,
+  handleLauncherShortcut,
+  SAVED_MESSAGES_CHAT_ID,
+  SHORTCUT_WRITE_SAVED,
+} from './launcher-shortcut';

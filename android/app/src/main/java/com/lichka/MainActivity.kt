@@ -19,6 +19,7 @@ class MainActivity : ReactActivity() {
     NotificationModule.captureNotificationOpen(intent)
     WidgetModule.captureWidgetOpen(intent)
     IncomingShareModule.captureShare(this, intent)
+    ShortcutModule.captureShortcutOpen(intent)
   }
 
   /**
@@ -40,6 +41,7 @@ class MainActivity : ReactActivity() {
     NotificationModule.captureNotificationOpen(intent)
     WidgetModule.captureWidgetOpen(intent)
     IncomingShareModule.captureShare(this, intent)
+    ShortcutModule.captureShortcutOpen(intent)
     val reactHost = (application as MainApplication).reactHost
     val reactContext = reactHost?.currentReactContext
 
@@ -65,6 +67,13 @@ class MainActivity : ReactActivity() {
 
     if (intent.action == Intent.ACTION_SEND) {
       IncomingShareModule.emitPendingIfPossible()
+    }
+
+    val shortcutId = intent.getStringExtra(ShortcutModule.EXTRA_SHORTCUT_ID)
+    if (shortcutId != null && reactContext != null) {
+      val module =
+          reactContext.getNativeModule(ShortcutModule::class.java) as? ShortcutModule
+      module?.emitShortcutOpen(shortcutId)
     }
   }
 }

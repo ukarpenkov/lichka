@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
+import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image, type TextInput } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -39,11 +39,13 @@ type Props = {
   chatId: string;
   onSent?: () => void;
   onInitialDraftApplied?: () => void;
+  onComposerFocusApplied?: () => void;
   initialText?: string;
   initialImageUri?: string;
   initialImageWidth?: number;
   initialImageHeight?: number;
   draftNonce?: number;
+  composerFocusNonce?: number;
 };
 
 type PickerMode = 'reminder' | 'alarm' | null;
@@ -61,11 +63,13 @@ export function MessageComposer({
   chatId,
   onSent,
   onInitialDraftApplied,
+  onComposerFocusApplied,
   initialText,
   initialImageUri,
   initialImageWidth,
   initialImageHeight,
   draftNonce,
+  composerFocusNonce,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -83,6 +87,8 @@ export function MessageComposer({
 
   const reduceMotionRef = useRef(false);
   const appliedDraftNonceRef = useRef<number | undefined>(undefined);
+  const appliedFocusNonceRef = useRef<number | undefined>(undefined);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
@@ -167,6 +173,17 @@ export function MessageComposer({
     initialImageHeight,
     onInitialDraftApplied,
   ]);
+
+  useEffect(() => {
+    if (composerFocusNonce == null) return;
+    if (appliedFocusNonceRef.current === composerFocusNonce) return;
+    appliedFocusNonceRef.current = composerFocusNonce;
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+      onComposerFocusApplied?.();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [composerFocusNonce, onComposerFocusApplied]);
 
   const sendMessage = useCallback(
     async (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number }) => {
@@ -422,6 +439,8 @@ export function MessageComposer({
             {'>'}
           </Text>
           <RetroTextInput
+            ref={inputRef}
+            autoFocus={composerFocusNonce != null}
             containerStyle={styles.inputHost}
             cursorColor={colors.ink}
             cursorTestID="message-composer-caret"
