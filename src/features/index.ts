@@ -52,6 +52,9 @@ export {
 
 export { getUnreadCounts, markChatAsRead } from './unread-badges';
 
+export { RetroTextInput } from './retro-text-caret';
+export type { RetroTextInputProps } from './retro-text-caret';
+
 export {
   useShareNavigation,
   useSharePick,

@@ -169,6 +169,7 @@ describe('MessageComposer', () => {
     );
     const input = getByPlaceholderText('Message...');
     expect(input.props.textAlignVertical).toBe('center');
+    expect(input.props.caretHidden).toBe(true);
 
     const wrapper = getByTestId('composer-input-wrapper');
     const wrapperStyle = StyleSheet.flatten(wrapper.props.style);

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image, TextInput } from 'react-native';
+import { View, Pressable, StyleSheet, AccessibilityInfo, Linking, Image } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -20,6 +20,7 @@ import {
   requestBatteryOptimizationExemption,
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
+import { RetroTextInput } from '../../features/retro-text-caret';
 import { Send, Bell, Repeat, X, Square, Paperclip } from '../../shared/ui/pixel';
 import {
   hapticTap,
@@ -420,7 +421,10 @@ export function MessageComposer({
           <Text variant="body" tone="ink" style={styles.prompt} accessible={false}>
             {'>'}
           </Text>
-          <TextInput
+          <RetroTextInput
+            containerStyle={styles.inputHost}
+            cursorColor={colors.ink}
+            cursorTestID="message-composer-caret"
             style={[styles.input, { color: colors.ink, fontFamily: fonts.regular }]}
             placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
             placeholderTextColor={colors.mutedSoft}
@@ -520,11 +524,14 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     lineHeight: 24,
   },
-  input: {
+  inputHost: {
     flex: 1,
+  },
+  input: {
     fontSize: 16,
     lineHeight: 24,
     maxHeight: 120,
+    paddingHorizontal: 0,
     paddingVertical: 6,
   },
   actions: {
