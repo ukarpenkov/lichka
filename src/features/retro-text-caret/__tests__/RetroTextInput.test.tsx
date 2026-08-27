@@ -160,6 +160,32 @@ describe('RetroTextInput', () => {
     ).toBe(`abcd\u200B`);
   });
 
+  it('should keep the caret visible while the next text layout is pending', () => {
+    const {getByTestId} = render(
+      <RetroTextInput
+        cursorColor="#000"
+        cursorTestID="test-caret"
+        onChangeText={jest.fn()}
+        style={inputStyle}
+        testID="test-input"
+        value="ab"
+      />,
+    );
+    const input = getByTestId('test-input');
+
+    fireEvent(input, 'focus', {nativeEvent: {}});
+    fireEvent(
+      getByTestId('test-caret-measurement', hiddenQueryOptions),
+      'textLayout',
+      {
+        nativeEvent: {lines: [line]},
+      },
+    );
+    fireEvent.changeText(input, 'abc');
+
+    expect(getByTestId('test-caret', hiddenQueryOptions)).toBeTruthy();
+  });
+
   it('should blink discretely and disappear after the field loses focus', () => {
     jest.useFakeTimers();
     const onBlur = jest.fn();

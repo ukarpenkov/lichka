@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import {
   AccessibilityInfo,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -89,7 +90,11 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
     const [scrollOffset, setScrollOffset] = useState({x: 0, y: 0});
     const [containerWidth, setContainerWidth] = useState(0);
 
-    const flattenedStyle = StyleSheet.flatten(style) ?? {};
+    const inputStyle: StyleProp<TextStyle> = [
+      Platform.OS === 'android' ? {includeFontPadding: false} : null,
+      style,
+    ];
+    const flattenedStyle = StyleSheet.flatten(inputStyle) ?? {};
     const paddingLeft = numericStyleValue(
       flattenedStyle.paddingLeft ??
         flattenedStyle.paddingHorizontal ??
@@ -166,17 +171,12 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
     }, []);
 
     useEffect(() => {
-      setInternalSelection(current => {
-        if (!focused) {
-          return {start: text.length, end: text.length};
-        }
-        return clampSelection(current, text.length);
-      });
-    }, [focused, text.length]);
+      setInternalSelection(current => clampSelection(current, text.length));
+    }, [text.length]);
 
     useEffect(() => {
       setCaretLayout(null);
-    }, [containerWidth, measuredPrefix]);
+    }, [containerWidth]);
 
     useEffect(() => {
       setBlinkVisible(true);
@@ -237,12 +237,9 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
       event => {
         setFocused(true);
         setBlinkVisible(true);
-        if (!controlledSelection) {
-          setInternalSelection({start: text.length, end: text.length});
-        }
         onFocus?.(event);
       },
-      [controlledSelection, onFocus, text.length],
+      [onFocus],
     );
 
     const handleBlur: NonNullable<TextInputProps['onBlur']> = useCallback(
@@ -298,18 +295,19 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
         <TextInput
           ref={ref}
           allowFontScaling={allowFontScaling}
-          caretHidden
-          defaultValue={undefined}
           maxFontSizeMultiplier={maxFontSizeMultiplier}
+          {...rest}
+          caretHidden
+          cursorColor="transparent"
+          defaultValue={undefined}
           onBlur={handleBlur}
           onChangeText={handleChangeText}
           onFocus={handleFocus}
           onScroll={handleScroll}
           onSelectionChange={handleSelectionChange}
           selection={controlledSelection}
-          style={style}
+          style={inputStyle}
           value={text}
-          {...rest}
         />
 
         {focused && hasCollapsedSelection ? (
