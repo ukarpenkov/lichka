@@ -311,41 +311,41 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
         />
 
         {focused && hasCollapsedSelection ? (
+          <Text
+            accessibilityElementsHidden
+            allowFontScaling={allowFontScaling}
+            importantForAccessibility="no-hide-descendants"
+            maxFontSizeMultiplier={maxFontSizeMultiplier}
+            onTextLayout={handleTextLayout}
+            pointerEvents="none"
+            style={[
+              styles.measurement,
+              measurementTypography,
+              {
+                left: paddingLeft,
+                right: paddingRight,
+                top: paddingTop - scrollOffset.y,
+              },
+            ]}
+            testID={`${cursorTestID}-measurement`}>
+            {measuredPrefix}
+          </Text>
+        ) : null}
+        {showCaret ? (
           <View
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
             pointerEvents="none"
-            style={StyleSheet.absoluteFill}>
-            <Text
-              allowFontScaling={allowFontScaling}
-              maxFontSizeMultiplier={maxFontSizeMultiplier}
-              onTextLayout={handleTextLayout}
-              style={[
-                styles.measurement,
-                measurementTypography,
-                {
-                  left: paddingLeft,
-                  right: paddingRight,
-                  top: paddingTop - scrollOffset.y,
-                },
-              ]}
-              testID={`${cursorTestID}-measurement`}>
-              {measuredPrefix}
-            </Text>
-            {showCaret ? (
-              <View
-                style={[
-                  styles.caret,
-                  {
-                    backgroundColor: cursorColor,
-                    left: caretLeft,
-                    top: caretTop,
-                  },
-                ]}
-                testID={cursorTestID}
-              />
-            ) : null}
-          </View>
+            style={[
+              styles.caret,
+              {
+                backgroundColor: cursorColor,
+                left: caretLeft,
+                top: caretTop,
+              },
+            ]}
+            testID={cursorTestID}
+          />
         ) : null}
       </View>
     );
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   measurement: {
-    color: 'transparent',
+    opacity: 0,
     position: 'absolute',
   },
   caret: {

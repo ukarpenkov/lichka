@@ -4,6 +4,7 @@ import {AccessibilityInfo, StyleSheet} from 'react-native';
 import {RetroTextInput} from '..';
 
 const inputStyle = {
+  color: '#22C55E',
   fontFamily: 'JetBrainsMono-Regular',
   fontSize: 16,
   lineHeight: 24,
@@ -51,6 +52,7 @@ describe('RetroTextInput', () => {
     const input = getByTestId('test-input');
 
     expect(input.props.caretHidden).toBe(true);
+    expect(StyleSheet.flatten(input.props.style).color).toBe('#22C55E');
     expect(queryByTestId('test-caret')).toBeNull();
 
     fireEvent(input.parent!, 'layout', {
@@ -75,6 +77,30 @@ describe('RetroTextInput', () => {
       top: 27,
       width: 10,
     });
+  });
+
+  it('should hide the caret measurement layer without making typed text transparent', () => {
+    const {getByTestId} = render(
+      <RetroTextInput
+        cursorColor="#F2A900"
+        cursorTestID="test-caret"
+        onChangeText={jest.fn()}
+        style={inputStyle}
+        testID="test-input"
+        value="abc"
+      />,
+    );
+    const input = getByTestId('test-input');
+
+    fireEvent(input, 'focus', {nativeEvent: {}});
+
+    const measurementStyle = StyleSheet.flatten(
+      getByTestId('test-caret-measurement', hiddenQueryOptions).props.style,
+    );
+
+    expect(StyleSheet.flatten(input.props.style).color).toBe('#22C55E');
+    expect(measurementStyle.opacity).toBe(0);
+    expect(measurementStyle.color).toBeUndefined();
   });
 
   it('should hide the decorative caret while a text range is selected', () => {
