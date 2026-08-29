@@ -17,7 +17,7 @@ import { SettingsRow } from './SettingsRow';
 
 type Nav = NativeStackNavigationProp<SettingsStackParamList, 'Settings'>;
 
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.1';
 
 interface ImportSummary {
   chatsAdded: number;
