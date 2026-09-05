@@ -4,14 +4,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Check } from '../../shared/ui/pixel';
 
 import { Screen, Text } from '../../shared/ui';
-import { useTheme, DEFAULT_LIGHT, DEFAULT_DARK, THEME_PRESETS, type ThemePreset } from '../../shared/config';
+import { useTheme, DEFAULT_LIGHT, DEFAULT_DARK, DEFAULT_THEME, THEME_PRESETS, type ThemePreset } from '../../shared/config';
 import { getSettings } from '../../entities/settings';
 
 const ALL_THEMES: ThemePreset[] = [DEFAULT_LIGHT, DEFAULT_DARK, ...THEME_PRESETS];
 
 export function ThemePickerScreen() {
   const { text, setTheme } = useTheme();
-  const [currentId, setCurrentId] = useState(DEFAULT_LIGHT.id);
+  const [currentId, setCurrentId] = useState(DEFAULT_THEME.id);
 
   useFocusEffect(
     useCallback(() => {

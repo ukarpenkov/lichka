@@ -19,8 +19,15 @@ export const DEFAULT_DARK: ThemePreset = {
   text: '#FFFFFF',
 };
 
+export const GREEN_ON_BLACK: ThemePreset = {
+  id: 'green-on-black',
+  name: 'Green on Black',
+  background: '#000000',
+  text: '#39FF14',
+};
+
 export const THEME_PRESETS: readonly ThemePreset[] = [
-  { id: 'green-on-black', name: 'Green on Black', background: '#000000', text: '#39FF14' },
+  GREEN_ON_BLACK,
   { id: 'amber', name: 'Amber', background: '#000000', text: '#FFB000' },
   { id: 'cyan', name: 'Cyan', background: '#000000', text: '#00E5FF' },
   { id: 'blue', name: 'Blue', background: '#0D1117', text: '#58A6FF' },
@@ -33,10 +40,12 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   { id: 'white-on-navy', name: 'White on Navy', background: '#1E3A5F', text: '#FFFFFF' },
 ] as const;
 
+export const DEFAULT_THEME: ThemePreset = GREEN_ON_BLACK;
+
 const ALL_THEMES: ThemePreset[] = [DEFAULT_LIGHT, DEFAULT_DARK, ...THEME_PRESETS];
 
 const themeMap = new Map<string, ThemePreset>(ALL_THEMES.map((t) => [t.id, t]));
 
 export function getTheme(id: string): ThemePreset {
-  return themeMap.get(id) ?? DEFAULT_LIGHT;
+  return themeMap.get(id) ?? DEFAULT_THEME;
 }

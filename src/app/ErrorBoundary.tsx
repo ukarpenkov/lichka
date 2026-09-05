@@ -1,6 +1,6 @@
 import React, { Component, type ReactNode } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { DEFAULT_LIGHT } from '../shared/config/theme';
+import { DEFAULT_THEME } from '../shared/config/theme';
 import { fonts, monoWeight } from '../shared/config/tokens';
 
 interface Props {
@@ -31,13 +31,13 @@ export class ErrorBoundary extends Component<Props, State> {
       const stack = this.state.error.stack;
 
       return (
-        <View style={[styles.container, { backgroundColor: DEFAULT_LIGHT.background }]}>
+        <View style={[styles.container, { backgroundColor: DEFAULT_THEME.background }]}>
           <View style={styles.content}>
-            <View style={[styles.icon, { borderColor: DEFAULT_LIGHT.text }]}>
-              <View style={[styles.exclamation, { backgroundColor: DEFAULT_LIGHT.text }]} />
-              <View style={[styles.dot, { backgroundColor: DEFAULT_LIGHT.text }]} />
+            <View style={[styles.icon, { borderColor: DEFAULT_THEME.text }]}>
+              <View style={[styles.exclamation, { backgroundColor: DEFAULT_THEME.text }]} />
+              <View style={[styles.dot, { backgroundColor: DEFAULT_THEME.text }]} />
             </View>
-            <Text style={[styles.title, { color: DEFAULT_LIGHT.text }]}>
+            <Text style={[styles.title, { color: DEFAULT_THEME.text }]}>
               Something went wrong
             </Text>
             <ScrollView
@@ -45,11 +45,11 @@ export class ErrorBoundary extends Component<Props, State> {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator
             >
-              <Text style={[styles.message, { color: DEFAULT_LIGHT.text }]} selectable>
+              <Text style={[styles.message, { color: DEFAULT_THEME.text }]} selectable>
                 {message}
               </Text>
               {__DEV__ && stack ? (
-                <Text style={[styles.stack, { color: DEFAULT_LIGHT.text + '99' }]} selectable>
+                <Text style={[styles.stack, { color: DEFAULT_THEME.text + '99' }]} selectable>
                   {stack}
                 </Text>
               ) : null}

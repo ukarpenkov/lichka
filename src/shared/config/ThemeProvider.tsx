@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { AppState, NativeModules, Platform, type AppStateStatus } from 'react-native';
 import { getDatabase } from '../db';
-import { getTheme, DEFAULT_LIGHT, type ThemePreset } from './theme';
+import { getTheme, DEFAULT_THEME, type ThemePreset } from './theme';
 import { resolveSemanticColors, type SemanticColors } from './tokens';
 
 const SETTINGS_KEY = 'theme_preset_id';
@@ -21,20 +21,20 @@ interface ThemeContextValue {
 }
 
 const defaultColors = resolveSemanticColors(
-  DEFAULT_LIGHT.background,
-  DEFAULT_LIGHT.text,
+  DEFAULT_THEME.background,
+  DEFAULT_THEME.text,
 );
 
 const ThemeContext = createContext<ThemeContextValue>({
-  preset: DEFAULT_LIGHT,
-  background: DEFAULT_LIGHT.background,
-  text: DEFAULT_LIGHT.text,
+  preset: DEFAULT_THEME,
+  background: DEFAULT_THEME.background,
+  text: DEFAULT_THEME.text,
   colors: defaultColors,
   setTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preset, setPreset] = useState<ThemePreset>(DEFAULT_LIGHT);
+  const [preset, setPreset] = useState<ThemePreset>(DEFAULT_THEME);
 
   useEffect(() => {
     const db = getDatabase();
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const theme =
       result.rows.length > 0
         ? getTheme(result.rows[0].value as string)
-        : DEFAULT_LIGHT;
+        : DEFAULT_THEME;
     setPreset(theme);
     pushAndroidWidgetTheme(theme.background, theme.text);
   }, []);

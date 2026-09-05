@@ -4,7 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { ThemeProvider } from './src/shared/config/ThemeProvider';
-import { DEFAULT_LIGHT, getTheme } from './src/shared/config/theme';
+import { DEFAULT_THEME, getTheme } from './src/shared/config/theme';
 import { LocaleProvider } from './src/shared/config/LocaleProvider';
 import { SharedElementProvider } from './src/shared/ui';
 import { AppInitProvider, useAppInit } from './src/app/AppInitProvider';
@@ -26,11 +26,11 @@ function readThemeSnapshot(): { bg: string; fg: string } {
   } catch {
     // DB not ready
   }
-  return { bg: DEFAULT_LIGHT.background, fg: DEFAULT_LIGHT.text };
+  return { bg: DEFAULT_THEME.background, fg: DEFAULT_THEME.text };
 }
 
 function LoadingScreen() {
-  const [colors, setColors] = useState({ bg: DEFAULT_LIGHT.background, fg: DEFAULT_LIGHT.text });
+  const [colors, setColors] = useState({ bg: DEFAULT_THEME.background, fg: DEFAULT_THEME.text });
 
   useEffect(() => {
     setColors(readThemeSnapshot());

@@ -28,8 +28,8 @@ class ThemeModule(reactContext: ReactApplicationContext) :
         private const val PREFS_NAME = "lichka_theme"
         private const val KEY_BACKGROUND = "background"
         private const val KEY_TEXT = "text"
-        private const val DEFAULT_BACKGROUND = "#1A1A2E"
-        private const val DEFAULT_TEXT = "#FFFFFF"
+        private const val DEFAULT_BACKGROUND = "#000000"
+        private const val DEFAULT_TEXT = "#39FF14"
 
         fun getBackground(context: Context): String =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

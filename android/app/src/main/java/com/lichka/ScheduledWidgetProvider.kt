@@ -133,8 +133,8 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_scheduled)
 
             val canvasColor =
-                parseColorOr(ThemeModule.getBackground(context), Color.parseColor("#FAFAFA"))
-            val inkColor = parseColorOr(ThemeModule.getText(context), Color.BLACK)
+                parseColorOr(ThemeModule.getBackground(context), Color.parseColor("#000000"))
+            val inkColor = parseColorOr(ThemeModule.getText(context), Color.parseColor("#39FF14"))
             val mutedColor = withAlpha(inkColor, 0.6f)
 
             applyThemePlate(

@@ -20,7 +20,7 @@ describe('settingsRepository', () => {
       const settings = getSettings();
 
       expect(settings).toEqual({
-        themePresetId: 'light',
+        themePresetId: 'green-on-black',
         hapticEnabled: true,
         soundEnabled: true,
         locale: 'en',
@@ -55,7 +55,7 @@ describe('settingsRepository', () => {
       const settings = getSettings();
 
       expect(settings.locale).toBe('ru');
-      expect(settings.themePresetId).toBe('light');
+      expect(settings.themePresetId).toBe('green-on-black');
       expect(settings.hapticEnabled).toBe(true);
       expect(settings.soundEnabled).toBe(true);
     });

@@ -113,7 +113,7 @@ class AlarmActivity : Activity() {
 
     private fun applyTheme(background: String, text: String) {
         val bgColor = parseColorOr(background, Color.parseColor("#0a0a0a"))
-        val textColor = parseColorOr(text, Color.WHITE)
+        val textColor = parseColorOr(text, Color.parseColor("#39FF14"))
         val muted = withAlpha(textColor, 0.6f)
         val surfaceStrong = withAlpha(textColor, 0.12f)
 

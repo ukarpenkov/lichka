@@ -28,12 +28,12 @@ class ScheduledWidgetRemoteViewsFactory(
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
-    private var inkColor: Int = Color.BLACK
+    private var inkColor: Int = Color.parseColor("#39FF14")
 
     /** Ink from setRemoteAdapter extras (reconnect URI); prefs are the source of truth in getViewAt. */
     private val intentInkColor: Int? =
         if (intent.hasExtra(ScheduledWidgetProvider.EXTRA_THEME_INK)) {
-            intent.getIntExtra(ScheduledWidgetProvider.EXTRA_THEME_INK, Color.BLACK)
+            intent.getIntExtra(ScheduledWidgetProvider.EXTRA_THEME_INK, Color.parseColor("#39FF14"))
         } else {
             null
         }
@@ -114,9 +114,9 @@ class ScheduledWidgetRemoteViewsFactory(
         // the host reconnects the factory before prefs are readable.
         val prefsHex = ThemeModule.getText(context)
         if (prefsHex.isNotBlank()) {
-            return parseColorOr(prefsHex, intentInkColor ?: Color.BLACK)
+            return parseColorOr(prefsHex, intentInkColor ?: Color.parseColor("#39FF14"))
         }
-        return intentInkColor ?: Color.BLACK
+        return intentInkColor ?: Color.parseColor("#39FF14")
     }
 
     private fun iconForType(type: String): Int {

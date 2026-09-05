@@ -1,7 +1,9 @@
 export {
   type ThemePreset,
+  DEFAULT_THEME,
   DEFAULT_LIGHT,
   DEFAULT_DARK,
+  GREEN_ON_BLACK,
   THEME_PRESETS,
   getTheme,
 } from './theme';

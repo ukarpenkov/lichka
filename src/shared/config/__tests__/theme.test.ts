@@ -1,11 +1,20 @@
 import {
   getTheme,
+  DEFAULT_THEME,
   DEFAULT_LIGHT,
   DEFAULT_DARK,
   THEME_PRESETS,
 } from '../theme';
 
 describe('theme', () => {
+  describe('DEFAULT_THEME', () => {
+    it('should be green on black', () => {
+      expect(DEFAULT_THEME.id).toBe('green-on-black');
+      expect(DEFAULT_THEME.background).toBe('#000000');
+      expect(DEFAULT_THEME.text).toBe('#39FF14');
+    });
+  });
+
   describe('DEFAULT_LIGHT', () => {
     it('should have correct colors', () => {
       expect(DEFAULT_LIGHT.background).toBe('#FAFAFA');
@@ -62,12 +71,12 @@ describe('theme', () => {
       }
     });
 
-    it('should fallback to DEFAULT_LIGHT for unknown id', () => {
-      expect(getTheme('nonexistent')).toBe(DEFAULT_LIGHT);
+    it('should fallback to DEFAULT_THEME for unknown id', () => {
+      expect(getTheme('nonexistent')).toBe(DEFAULT_THEME);
     });
 
-    it('should fallback to DEFAULT_LIGHT for empty string', () => {
-      expect(getTheme('')).toBe(DEFAULT_LIGHT);
+    it('should fallback to DEFAULT_THEME for empty string', () => {
+      expect(getTheme('')).toBe(DEFAULT_THEME);
     });
   });
 });

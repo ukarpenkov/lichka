@@ -2,7 +2,7 @@ import { getDatabase } from '../../../shared/db';
 import type { AppSettings } from './types';
 
 const DEFAULTS: AppSettings = {
-  themePresetId: 'light',
+  themePresetId: 'green-on-black',
   hapticEnabled: true,
   soundEnabled: true,
   locale: 'en',

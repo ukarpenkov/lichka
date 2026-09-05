@@ -2,7 +2,7 @@ import React from 'react';
 import { AppState, NativeModules, Platform } from 'react-native';
 import { renderHook, act } from '@testing-library/react-native';
 import { ThemeProvider, useTheme } from '../ThemeProvider';
-import { DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
+import { DEFAULT_THEME, DEFAULT_LIGHT, DEFAULT_DARK, getTheme } from '../theme';
 
 const mockExecuteSync = jest.fn();
 const mockSetTheme = jest.fn();
@@ -46,20 +46,20 @@ describe('ThemeProvider', () => {
     delete NativeModules.ThemeModule;
   });
 
-  it('should provide DEFAULT_LIGHT when no saved theme', () => {
+  it('should provide DEFAULT_THEME when no saved theme', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.preset).toBe(DEFAULT_LIGHT);
-    expect(result.current.background).toBe(DEFAULT_LIGHT.background);
-    expect(result.current.text).toBe(DEFAULT_LIGHT.text);
+    expect(result.current.preset).toBe(DEFAULT_THEME);
+    expect(result.current.background).toBe(DEFAULT_THEME.background);
+    expect(result.current.text).toBe(DEFAULT_THEME.text);
   });
 
   it('should provide semantic colors derived from the pair', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.colors.canvas).toBe(DEFAULT_LIGHT.background);
-    expect(result.current.colors.ink).toBe(DEFAULT_LIGHT.text);
-    expect(result.current.colors.surfaceSoft).toBe('rgba(0, 0, 0, 0.06)');
+    expect(result.current.colors.canvas).toBe(DEFAULT_THEME.background);
+    expect(result.current.colors.ink).toBe(DEFAULT_THEME.text);
+    expect(result.current.colors.surfaceSoft).toBe('rgba(57, 255, 20, 0.06)');
   });
 
   it('should update semantic colors when theme switches', () => {
@@ -167,11 +167,11 @@ describe('ThemeProvider', () => {
     expect(result.current.preset).toBe(DEFAULT_LIGHT);
   });
 
-  it('should use DEFAULT_LIGHT for unknown saved id', () => {
+  it('should use DEFAULT_THEME for unknown saved id', () => {
     mockExecuteSync.mockReturnValue({ rows: [{ value: 'nonexistent' }] });
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.preset).toBe(DEFAULT_LIGHT);
+    expect(result.current.preset).toBe(DEFAULT_THEME);
   });
 });
