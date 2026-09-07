@@ -3,6 +3,8 @@ import { FlatList, View, StyleSheet } from 'react-native';
 
 import { Screen, Text, PageHeader, AlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
+import { playDeleteSound } from '../../shared/lib';
+import { getSettings } from '../../entities/settings';
 import {
   getScheduledMessages,
   disableFiredMessages,
@@ -173,6 +175,9 @@ export function ScheduledScreen() {
             onPress: () => {
               deleteMessage(entry.message.id);
               cancelNotification(entry.message.id);
+              if (getSettings().soundEnabled) {
+                playDeleteSound();
+              }
               loadEntries();
             },
           },

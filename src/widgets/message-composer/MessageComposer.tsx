@@ -221,10 +221,10 @@ export function MessageComposer({
 
       if (finalType !== 'simple' && finalType !== 'image') {
         scheduleNotification(msg);
+        triggerSendSound();
       }
 
       triggerHapticSuccess();
-      triggerSendSound();
       setBody('');
       setImagePreview(null);
       onSent?.();

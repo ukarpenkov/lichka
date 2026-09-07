@@ -28,7 +28,9 @@ import {
   MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
   setClipboardString,
+  playDeleteSound,
 } from '../../shared/lib';
+import { getSettings } from '../../entities/settings';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
@@ -635,6 +637,9 @@ export function ChatRoomScreen() {
             onPress: () => {
               deleteMessage(actualId);
               cancelNotification(actualId);
+              if (getSettings().soundEnabled) {
+                playDeleteSound();
+              }
               loadData();
               loadFuture();
             },

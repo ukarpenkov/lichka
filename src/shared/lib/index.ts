@@ -45,7 +45,7 @@ export {
 } from './launcherShortcut';
 export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
 export { setClipboardString } from './clipboard';
-export { playSendSound, playReminderSound } from './sounds';
+export { playSendSound, playDeleteSound, playReminderSound } from './sounds';
 export {
   useKeyboardHeight,
   getAndroidChatAreaKeyboardPad,
