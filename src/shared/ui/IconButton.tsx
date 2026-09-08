@@ -13,6 +13,7 @@ export type IconButtonProps = {
   disabled?: boolean;
   /** Вызывается перед onPress — для haptic feedback */
   onPressIn?: () => void;
+  testID?: string;
 };
 
 export function IconButton({
@@ -24,6 +25,7 @@ export function IconButton({
   onPress,
   disabled,
   onPressIn,
+  testID,
 }: IconButtonProps) {
   const { text } = useTheme();
   const iconColor = color ?? text;
@@ -35,6 +37,7 @@ export function IconButton({
 
   return (
     <Pressable
+      testID={testID}
       onPress={handlePress}
       disabled={disabled}
       style={({ pressed }) => [

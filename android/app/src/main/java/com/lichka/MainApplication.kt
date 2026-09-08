@@ -19,6 +19,7 @@ class MainApplication : Application(), ReactApplication {
           add(WidgetPackage())
           add(SharePackage())
           add(ShortcutPackage())
+          add(SoundFxPackage())
         },
     )
   }

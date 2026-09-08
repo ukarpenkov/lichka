@@ -1,10 +1,12 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Image, StyleSheet } from 'react-native';
 import { MessageComposer } from '../MessageComposer';
 
 const mockCreateMessage = jest.fn();
 const mockScheduleNotification = jest.fn();
+const mockGetSettings = jest.fn(() => ({ hapticEnabled: false, soundEnabled: false, locale: 'en' }));
+const mockPlaySendSound = jest.fn();
 
 jest.mock('../../../entities/message', () => ({
   createMessage: (...args: unknown[]) => mockCreateMessage(...args),
@@ -18,7 +20,7 @@ jest.mock('../../../entities/message', () => ({
 }));
 
 jest.mock('../../../entities/settings', () => ({
-  getSettings: () => ({ hapticEnabled: false, soundEnabled: false, locale: 'en' }),
+  getSettings: () => mockGetSettings(),
 }));
 
 jest.mock('../../../features/notifications', () => ({
@@ -98,7 +100,7 @@ jest.mock('../../../shared/lib/haptics', () => ({
 }));
 
 jest.mock('../../../shared/lib/sounds', () => ({
-  playSendSound: jest.fn(),
+  playSendSound: (...args: unknown[]) => mockPlaySendSound(...args),
 }));
 
 jest.mock('../../../shared/lib/mediaPath', () => ({
@@ -138,6 +140,8 @@ jest.mock('../../../shared/ui/AlertDialog', () => ({
 beforeEach(() => {
   mockCreateMessage.mockReset();
   mockScheduleNotification.mockReset();
+  mockPlaySendSound.mockReset();
+  mockGetSettings.mockReturnValue({ hapticEnabled: false, soundEnabled: false, locale: 'en' });
 });
 
 describe('MessageComposer', () => {
@@ -253,5 +257,20 @@ describe('MessageComposer', () => {
     const { getByPlaceholderText } = render(<MessageComposer chatId="chat-1" />);
 
     expect(getByPlaceholderText('Message...').props.autoFocus).toBe(false);
+  });
+
+  it('should play send sound for a regular message when sound is enabled', async () => {
+    mockGetSettings.mockReturnValue({ hapticEnabled: false, soundEnabled: true, locale: 'en' });
+    mockCreateMessage.mockReturnValue({ id: 'msg-1', type: 'simple' });
+
+    const { getByPlaceholderText, getByTestId } = render(<MessageComposer chatId="chat-1" />);
+    fireEvent.changeText(getByPlaceholderText('Message...'), 'hello');
+    fireEvent.press(getByTestId('composer-send'));
+
+    await waitFor(() => {
+      expect(mockCreateMessage).toHaveBeenCalled();
+    });
+    expect(mockPlaySendSound).toHaveBeenCalledTimes(1);
+    expect(mockScheduleNotification).not.toHaveBeenCalled();
   });
 });

@@ -221,10 +221,10 @@ export function MessageComposer({
 
       if (finalType !== 'simple' && finalType !== 'image') {
         scheduleNotification(msg);
-        triggerSendSound();
       }
 
       triggerHapticSuccess();
+      triggerSendSound();
       setBody('');
       setImagePreview(null);
       onSent?.();
@@ -352,9 +352,10 @@ export function MessageComposer({
       const payload = JSON.stringify({ uri: relativeUri });
       const durationSec = Math.round(result.durationMs / 1000);
       createMessage(chatId, 'simple', t.voiceMessage(durationSec), null, null, payload);
+      triggerSendSound();
       onSent?.();
     }
-  }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity, t]);
+  }, [isRecording, stopRecording, chatId, onSent, dotScale, recOpacity, t, triggerSendSound]);
 
   const handleCancelRecord = useCallback(async () => {
     dotScale.value = withSpring(1, { damping: 15, stiffness: 150 });
@@ -467,7 +468,7 @@ export function MessageComposer({
           <IconButton icon={Repeat} size={22} color={colors.muted} onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={AlarmClockIcon} size={22} color={colors.muted} onPress={handleAlarm} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
           <IconButton icon={Bell} size={22} color={colors.muted} onPress={handleReminder} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Send} size={22} color={colors.ink} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton testID="composer-send" icon={Send} size={22} color={colors.ink} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
         </View>
       </Animated.View>
 
