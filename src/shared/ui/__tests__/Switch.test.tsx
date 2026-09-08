@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Switch } from '../Switch';
+import { hapticTap } from '../../lib/haptics';
 
 jest.mock('../../config/ThemeProvider', () => ({
   useTheme: () => ({
@@ -24,7 +25,14 @@ jest.mock('../../config/ThemeProvider', () => ({
   }),
 }));
 
+jest.mock('../../lib/haptics', () => ({
+  hapticTap: jest.fn(),
+}));
+
 describe('Switch', () => {
+  beforeEach(() => {
+    (hapticTap as jest.Mock).mockClear();
+  });
   it('should expose checked accessibility state when on', () => {
     const { getByRole } = render(
       <Switch value={true} onValueChange={jest.fn()} />,
@@ -45,6 +53,7 @@ describe('Switch', () => {
     fireEvent.press(getByRole('switch'));
 
     expect(onValueChange).toHaveBeenCalledWith(true);
+    expect(hapticTap).toHaveBeenCalledTimes(1);
   });
 
   it('should not call onValueChange when disabled', () => {
@@ -56,6 +65,7 @@ describe('Switch', () => {
     fireEvent.press(getByRole('switch'));
 
     expect(onValueChange).not.toHaveBeenCalled();
+    expect(hapticTap).not.toHaveBeenCalled();
     expect(getByRole('switch').props.accessibilityState.disabled).toBe(true);
   });
 

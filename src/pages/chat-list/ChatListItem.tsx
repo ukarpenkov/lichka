@@ -4,6 +4,7 @@ import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 import { Text, AnimatedPressable, Badge } from '../../shared/ui';
 import { ChatAvatar } from '../../widgets/chat-avatar';
 import { useTheme, listRow } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 import type { Chat } from '../../entities/chat';
 
 export type ChatListItemProps = {
@@ -21,8 +22,14 @@ export function ChatListItem({ chat, unreadCount = 0, onPress, onLongPress }: Ch
       entering={FadeInUp.springify().damping(20).stiffness(200)}
       layout={Layout.springify().damping(22).stiffness(180)}>
       <AnimatedPressable
-        onPress={onPress}
-        onLongPress={onLongPress}
+        onPress={() => {
+          hapticTap();
+          onPress();
+        }}
+        onLongPress={() => {
+          hapticTap();
+          onLongPress();
+        }}
         scaleTo={1}
         pressStyle={{ backgroundColor: colors.surfaceSoft }}
         style={styles.row}

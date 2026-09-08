@@ -15,6 +15,7 @@ import {
   type AlertButton,
 } from '../../shared/ui';
 import { useTheme, useLocale, fabShadow } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 import { getChats, deleteChat, type Chat } from '../../entities/chat';
 import { getUnreadCounts } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
@@ -127,6 +128,7 @@ export function ChatListScreen() {
   }, [menuChat]);
 
   const handleCreate = useCallback(() => {
+    hapticTap();
     setEditChat(null);
     setFormVisible(true);
   }, []);
@@ -151,6 +153,7 @@ export function ChatListScreen() {
             <IconButton
               icon={Search}
               size={24}
+              haptic
               onPress={() => setSearchVisible(true)}
             />
           )

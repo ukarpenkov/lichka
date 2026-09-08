@@ -6,7 +6,7 @@ import Animated, { FadeInUp, Layout } from 'react-native-reanimated';
 
 import { Text, AnimatedPressable, LinkifiedText } from '../../shared/ui';
 import { useTheme, useLocale, listRow, radii, formatScheduledWhen } from '../../shared/config';
-import { hapticLongPress } from '../../shared/lib';
+import { hapticTap, hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
 
@@ -50,7 +50,10 @@ export function ScheduledItem({
       entering={FadeInUp.springify().damping(20).stiffness(200)}
       layout={Layout.springify().damping(22).stiffness(180)}>
       <AnimatedPressable
-        onPress={onPress}
+        onPress={() => {
+          hapticTap();
+          onPress();
+        }}
         onLongPress={handleLongPress}
         delayLongPress={300}
         scaleTo={1}

@@ -1,4 +1,5 @@
 import { getSettings, updateSettings } from '../model/settingsRepository';
+import { setHapticFeedbackEnabled } from '../../../shared/lib/haptics';
 
 const mockExecuteSync = jest.fn();
 
@@ -8,9 +9,14 @@ jest.mock('../../../shared/db', () => ({
   }),
 }));
 
+jest.mock('../../../shared/lib/haptics', () => ({
+  setHapticFeedbackEnabled: jest.fn(),
+}));
+
 describe('settingsRepository', () => {
   beforeEach(() => {
     mockExecuteSync.mockReset();
+    (setHapticFeedbackEnabled as jest.Mock).mockClear();
   });
 
   describe('getSettings', () => {
@@ -25,6 +31,7 @@ describe('settingsRepository', () => {
         soundEnabled: true,
         locale: 'en',
       });
+      expect(setHapticFeedbackEnabled).toHaveBeenCalledWith(true);
     });
 
     it('should return stored values from settings table', () => {
@@ -89,6 +96,7 @@ describe('settingsRepository', () => {
         ['haptic_enabled', '0', '0'],
       );
       expect(settings.hapticEnabled).toBe(false);
+      expect(setHapticFeedbackEnabled).toHaveBeenCalledWith(false);
     });
 
     it('should update a string field', () => {

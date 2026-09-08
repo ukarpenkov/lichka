@@ -43,7 +43,12 @@ export {
   getInitialShortcutId,
   consumeInitialShortcut,
 } from './launcherShortcut';
-export { hapticTap, hapticLongPress, hapticSuccess } from './haptics';
+export {
+  hapticTap,
+  hapticLongPress,
+  hapticSuccess,
+  setHapticFeedbackEnabled,
+} from './haptics';
 export { setClipboardString } from './clipboard';
 export { playSendSound, playDeleteSound, playReminderSound } from './sounds';
 export {

@@ -184,6 +184,11 @@ jest.mock('react-native-audio-recorder-player', () => {
 
 jest.mock('react-native-haptic-feedback', () => ({
   trigger: jest.fn(),
+  HapticFeedbackTypes: {
+    impactLight: 'impactLight',
+    impactMedium: 'impactMedium',
+    notificationSuccess: 'notificationSuccess',
+  },
 }));
 
 jest.mock('react-native-sound', () => {

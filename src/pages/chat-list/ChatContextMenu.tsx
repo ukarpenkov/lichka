@@ -10,6 +10,7 @@ import {
   hardBorderWidth,
   spacing,
 } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 
 export type ChatContextMenuProps = {
   visible: boolean;
@@ -46,6 +47,7 @@ export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose 
           >
             <Pressable
               onPress={() => {
+                hapticTap();
                 onClose();
                 onEdit();
               }}
@@ -64,6 +66,7 @@ export function ChatContextMenu({ visible, canDelete, onEdit, onDelete, onClose 
             {canDelete ? (
               <Pressable
                 onPress={() => {
+                  hapticTap();
                   onClose();
                   onDelete();
                 }}

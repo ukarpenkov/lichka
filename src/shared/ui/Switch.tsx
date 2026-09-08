@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../config';
 import { SPRING_SNAP } from '../lib/animations';
+import { hapticTap } from '../lib/haptics';
 
 const TRACK_W = 51;
 const TRACK_H = 31;
@@ -41,7 +42,10 @@ export function Switch({ value, onValueChange, disabled }: SwitchProps) {
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled: !!disabled }}
       disabled={disabled}
-      onPress={() => onValueChange(!value)}
+      onPress={() => {
+        hapticTap();
+        onValueChange(!value);
+      }}
       style={[
         styles.track,
         {

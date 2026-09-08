@@ -29,6 +29,7 @@ import {
   PAGER_TAB_BAR_HEIGHT,
   setClipboardString,
   playDeleteSound,
+  hapticTap,
 } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
@@ -687,6 +688,7 @@ export function ChatRoomScreen() {
   );
 
   const handleScheduleCta = useCallback(() => {
+    hapticTap();
     exitFuture();
   }, [exitFuture]);
 

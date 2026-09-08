@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { LinkifiedText } from '../../shared/ui';
-import { resolveMediaPath } from '../../shared/lib';
+import { hapticTap, resolveMediaPath } from '../../shared/lib';
 import { radii, spacing } from '../../shared/config';
 import type { Message } from '../../entities/message';
 
@@ -122,6 +122,7 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
 
   const handlePress = useCallback(() => {
     if (imageData && absoluteUri && onPress) {
+      hapticTap();
       onPress({ uri: absoluteUri, width: imageData.width, height: imageData.height });
     }
   }, [imageData, absoluteUri, onPress]);

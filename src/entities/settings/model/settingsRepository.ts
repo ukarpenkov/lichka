@@ -1,4 +1,5 @@
 import { getDatabase } from '../../../shared/db';
+import { setHapticFeedbackEnabled } from '../../../shared/lib/haptics';
 import type { AppSettings } from './types';
 
 const DEFAULTS: AppSettings = {
@@ -26,12 +27,14 @@ export function getSettings(): AppSettings {
     map.set(row.key as string, row.value as string);
   }
 
-  return {
+  const settings: AppSettings = {
     themePresetId: map.get(DB_KEYS.themePresetId) ?? DEFAULTS.themePresetId,
     hapticEnabled: map.get(DB_KEYS.hapticEnabled) === '1' ? true : map.get(DB_KEYS.hapticEnabled) === '0' ? false : DEFAULTS.hapticEnabled,
     soundEnabled: map.get(DB_KEYS.soundEnabled) === '1' ? true : map.get(DB_KEYS.soundEnabled) === '0' ? false : DEFAULTS.soundEnabled,
     locale: map.get(DB_KEYS.locale) ?? DEFAULTS.locale,
   };
+  setHapticFeedbackEnabled(settings.hapticEnabled);
+  return settings;
 }
 
 export function updateSettings(partial: Partial<AppSettings>): AppSettings {

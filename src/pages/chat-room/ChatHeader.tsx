@@ -4,6 +4,7 @@ import { ArrowLeft, Search } from '../../shared/ui/pixel';
 import { Text, IconButton } from '../../shared/ui';
 import { ChatAvatar } from '../../widgets/chat-avatar';
 import { useTheme, spacing } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 import type { Chat } from '../../entities/chat';
 
 type ChatHeaderProps = {
@@ -26,9 +27,10 @@ export function ChatHeader({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.canvas }]}>
-      <IconButton icon={ArrowLeft} size={24} onPress={onBack} />
+      <IconButton icon={ArrowLeft} size={24} haptic onPress={onBack} testID="chat-header-back" />
 
       <Pressable
+        testID="chat-header-title"
         style={({ pressed }) => [
           styles.titleRow,
           pressed && Platform.OS !== 'android'
@@ -38,7 +40,10 @@ export function ChatHeader({
         android_ripple={
           Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
         }
-        onPress={onTitlePress}>
+        onPress={() => {
+          hapticTap();
+          onTitlePress();
+        }}>
         <ChatAvatar
           title={chat.title}
           avatarPath={chat.avatarPath}
@@ -56,7 +61,7 @@ export function ChatHeader({
         </View>
       </Pressable>
 
-      <IconButton icon={Search} size={24} onPress={onSearch} />
+      <IconButton icon={Search} size={24} haptic onPress={onSearch} testID="chat-header-search" />
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Image, type ImageSourcePropType, StyleSheet } from 'react-native';
 import { useTheme } from '../config';
+import { hapticTap } from '../lib/haptics';
 
 export type IconButtonProps = {
   icon?: React.ComponentType<any>;
@@ -13,6 +14,8 @@ export type IconButtonProps = {
   disabled?: boolean;
   /** Вызывается перед onPress — для haptic feedback */
   onPressIn?: () => void;
+  /** Короткий impactLight при нажатии (навигация, открытие оверлея). */
+  haptic?: boolean;
   testID?: string;
 };
 
@@ -25,12 +28,16 @@ export function IconButton({
   onPress,
   disabled,
   onPressIn,
+  haptic = false,
   testID,
 }: IconButtonProps) {
   const { text } = useTheme();
   const iconColor = color ?? text;
 
   const handlePress = () => {
+    if (haptic) {
+      hapticTap();
+    }
     onPressIn?.();
     onPress?.();
   };

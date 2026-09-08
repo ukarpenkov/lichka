@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Modal, View, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTheme, useLocale, formatScheduledAt, formatInterval, radii, fonts } from '../../shared/config';
 import { Text } from '../../shared/ui';
+import { hapticTap } from '../../shared/lib';
 import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
 import type { Message } from '../../entities/message';
@@ -102,7 +103,12 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
                     {scheduledAt ? formatScheduledAt(scheduledAt, locale) : t.notSet}
                   </Text>
                 </View>
-                <Pressable onPress={() => setDatePickerVisible(true)} style={styles.changeBtn}>
+                <Pressable
+                  onPress={() => {
+                    hapticTap();
+                    setDatePickerVisible(true);
+                  }}
+                  style={styles.changeBtn}>
                   <Text variant="button" tone="ink">
                     {t.change}
                   </Text>
@@ -118,7 +124,12 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
                     {intervalMinutes ? formatInterval(intervalMinutes, t) : t.notSet}
                   </Text>
                 </View>
-                <Pressable onPress={() => setPeriodPickerVisible(true)} style={styles.changeBtn}>
+                <Pressable
+                  onPress={() => {
+                    hapticTap();
+                    setPeriodPickerVisible(true);
+                  }}
+                  style={styles.changeBtn}>
                   <Text variant="button" tone="ink">
                     {t.change}
                   </Text>

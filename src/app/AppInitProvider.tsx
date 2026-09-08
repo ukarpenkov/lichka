@@ -3,6 +3,7 @@ import { runMigrations } from '../shared/db';
 import { registerNotificationChannels, cleanupOrphanMedia } from '../shared/lib';
 import { requestNotificationPermission } from '../features/notifications';
 import { seedDefaultChat } from '../entities/chat';
+import { getSettings } from '../entities/settings';
 
 type InitState =
   | { status: 'loading' }
@@ -38,6 +39,8 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
             `Seed default chat failed: ${e instanceof Error ? e.message : String(e)}`,
           );
         }
+
+        getSettings();
 
         try {
           registerNotificationChannels();

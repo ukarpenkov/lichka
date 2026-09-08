@@ -3,6 +3,7 @@ import { Pressable, View, StyleSheet, Platform, type ViewStyle } from 'react-nat
 import { Text } from '../../shared/ui';
 import type { PixelIconComponent } from '../../shared/ui/pixel';
 import { useTheme, listRow } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 
 export type SettingsRowProps = {
   label: string;
@@ -14,9 +15,16 @@ export type SettingsRowProps = {
 export function SettingsRow({ label, icon: Icon, onPress, children }: SettingsRowProps) {
   const { colors } = useTheme();
 
+  const handlePress = onPress
+    ? () => {
+        hapticTap();
+        onPress();
+      }
+    : undefined;
+
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={!onPress}
       android_ripple={
         Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined

@@ -23,7 +23,6 @@ import { useVoiceRecorder, requestMicrophonePermission } from '../../features/vo
 import { RetroTextInput } from '../../features/retro-text-caret';
 import { Send, Bell, Repeat, X, Square, Paperclip } from '../../shared/ui/pixel';
 import {
-  hapticTap,
   hapticLongPress,
   hapticSuccess,
   playSendSound,
@@ -112,21 +111,13 @@ export function MessageComposer({
     opacity: recOpacity.value,
   }));
 
-  const triggerHapticTap = useCallback(() => {
-    if (reduceMotionRef.current) return;
-    if (!getSettings().hapticEnabled) return;
-    hapticTap();
-  }, []);
-
   const triggerHapticSuccess = useCallback(() => {
     if (reduceMotionRef.current) return;
-    if (!getSettings().hapticEnabled) return;
     hapticSuccess();
   }, []);
 
   const triggerHapticLongPress = useCallback(() => {
     if (reduceMotionRef.current) return;
-    if (!getSettings().hapticEnabled) return;
     hapticLongPress();
   }, []);
 
@@ -454,7 +445,7 @@ export function MessageComposer({
             onChangeText={setBody}
             maxLength={4000}
           />
-          <IconButton icon={Paperclip} size={22} color={colors.muted} onPress={handleAttachImage} onPressIn={triggerHapticTap} />
+          <IconButton icon={Paperclip} size={22} color={colors.muted} haptic onPress={handleAttachImage} />
         </View>
         <View style={styles.actions}>
           {!imagePreview && (
@@ -465,10 +456,10 @@ export function MessageComposer({
               <MicIcon size={22} color={colors.muted} />
             </AnimatedPressable>
           )}
-          <IconButton icon={Repeat} size={22} color={colors.muted} onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={AlarmClockIcon} size={22} color={colors.muted} onPress={handleAlarm} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton icon={Bell} size={22} color={colors.muted} onPress={handleReminder} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
-          <IconButton testID="composer-send" icon={Send} size={22} color={colors.ink} onPress={handleSend} disabled={!imagePreview && !body.trim()} onPressIn={triggerHapticTap} />
+          <IconButton icon={Repeat} size={22} color={colors.muted} haptic onPress={handlePeriodic} disabled={!imagePreview && !body.trim()} />
+          <IconButton icon={AlarmClockIcon} size={22} color={colors.muted} haptic onPress={handleAlarm} disabled={!imagePreview && !body.trim()} />
+          <IconButton icon={Bell} size={22} color={colors.muted} haptic onPress={handleReminder} disabled={!imagePreview && !body.trim()} />
+          <IconButton testID="composer-send" icon={Send} size={22} color={colors.ink} haptic onPress={handleSend} disabled={!imagePreview && !body.trim()} />
         </View>
       </Animated.View>
 

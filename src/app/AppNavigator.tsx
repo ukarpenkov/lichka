@@ -8,13 +8,15 @@ import {
 } from '@react-navigation/native';
 import type { NavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { MessageCircle, CalendarDays, Settings } from '../shared/ui/pixel';
+import { withAlpha } from '../shared/lib/color';
+import { hapticTap } from '../shared/lib/haptics';
+import { IconButton } from '../shared/ui';
+import { MessageCircle, CalendarDays, Settings, ArrowLeft } from '../shared/ui/pixel';
 import { useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '../shared/config/ThemeProvider';
 import { useLocale } from '../shared/config/LocaleProvider';
 import { fonts, typography } from '../shared/config/tokens';
-import { withAlpha } from '../shared/lib/color';
 import { ChatListScreen } from '../pages/chat-list';
 import { ChatRoomScreen } from '../pages/chat-room';
 import { ScheduledScreen } from '../pages/scheduled';
@@ -78,6 +80,7 @@ function useIndependentStackBridge(
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (activeIndex !== tabIndex) return false;
       if (navRef.current?.canGoBack()) {
+        hapticTap();
         navRef.current.goBack();
         return true;
       }
@@ -169,6 +172,15 @@ function SettingsStackScreen() {
                 fontSize: typography.display.fontSize,
                 fontWeight: Platform.OS === 'ios' ? ('400' as const) : ('normal' as const),
               },
+              headerLeft: () => (
+                <IconButton
+                  icon={ArrowLeft}
+                  size={24}
+                  haptic
+                  onPress={() => navRef.current?.goBack()}
+                  testID="theme-picker-back"
+                />
+              ),
             }}
           />
         </SettingsStack.Navigator>

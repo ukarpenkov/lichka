@@ -8,6 +8,7 @@ import { X } from '../../shared/ui/pixel';
 import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow, fonts } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
+import { hapticTap } from '../../shared/lib';
 import type { ChatStackParamList } from '../../app/types';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
@@ -43,6 +44,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
 
   const handleSelect = useCallback(
     (item: SearchResult) => {
+      hapticTap();
       onClose();
       navigation.navigate('ChatRoom', {
         chatId: item.chat_id,

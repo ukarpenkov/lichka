@@ -5,6 +5,7 @@ import { Check } from '../../shared/ui/pixel';
 
 import { Screen, Text } from '../../shared/ui';
 import { useTheme, DEFAULT_LIGHT, DEFAULT_DARK, DEFAULT_THEME, THEME_PRESETS, type ThemePreset } from '../../shared/config';
+import { hapticTap } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 
 const ALL_THEMES: ThemePreset[] = [DEFAULT_LIGHT, DEFAULT_DARK, ...THEME_PRESETS];
@@ -22,6 +23,7 @@ export function ThemePickerScreen() {
 
   const handleSelect = useCallback(
     (id: string) => {
+      hapticTap();
       setTheme(id);
       setCurrentId(id);
     },
