@@ -27,7 +27,7 @@ import { SettingsRow } from './SettingsRow';
 
 type Nav = NativeStackNavigationProp<SettingsStackParamList, 'Settings'>;
 
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 const DIALOG_CHAIN_MS = 300;
 
 type BackupPrompt = 'cancel' | 'merge' | 'replace';
