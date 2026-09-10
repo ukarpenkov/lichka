@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, View, StyleSheet, Platform, type ViewStyle } from 'react-native';
 import { Text } from '../../shared/ui';
 import type { PixelIconComponent } from '../../shared/ui/pixel';
 import { useTheme, listRow } from '../../shared/config';
@@ -10,36 +10,60 @@ export type SettingsRowProps = {
   icon?: PixelIconComponent;
   onPress?: () => void;
   children?: React.ReactNode;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
-export function SettingsRow({ label, icon: Icon, onPress, children }: SettingsRowProps) {
+export function SettingsRow({
+  label,
+  icon: Icon,
+  onPress,
+  children,
+  disabled = false,
+  loading = false,
+}: SettingsRowProps) {
   const { colors } = useTheme();
+  const isDisabled = !onPress || disabled || loading;
+  const muted = disabled && !loading;
+  const iconColor = muted ? colors.muted : colors.ink;
 
-  const handlePress = onPress
-    ? () => {
-        hapticTap();
-        onPress();
-      }
-    : undefined;
+  const handlePress =
+    onPress && !isDisabled
+      ? () => {
+          hapticTap();
+          onPress();
+        }
+      : undefined;
 
   return (
     <Pressable
       onPress={handlePress}
-      disabled={!onPress}
+      disabled={isDisabled}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       android_ripple={
-        Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+        Platform.OS === 'android' && !isDisabled ? { color: colors.surfaceSoft } : undefined
       }
       style={({ pressed }) => [
         styles.row,
-        pressed && Platform.OS !== 'android'
+        pressed && Platform.OS !== 'android' && !isDisabled
           ? { backgroundColor: colors.surfaceSoft }
           : null,
       ]}>
       <View style={styles.left}>
-        {Icon && <Icon size={20} color={colors.ink} style={styles.icon} />}
-        <Text variant="body">{label}</Text>
+        {Icon && <Icon size={20} color={iconColor} style={styles.icon} />}
+        <Text variant="body" tone={muted ? 'muted' : 'ink'}>
+          {label}
+        </Text>
       </View>
-      {children && <View style={styles.right}>{children}</View>}
+      {loading ? (
+        <ActivityIndicator
+          testID="settings-row-loader"
+          size="small"
+          color={colors.ink}
+        />
+      ) : children ? (
+        <View style={styles.right}>{children}</View>
+      ) : null}
     </Pressable>
   );
 }

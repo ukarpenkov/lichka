@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,17 @@ import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive
 import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, getLocaleBundle, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
-import { exportToZIP, importFromJSON, importFromZIP, saveToGoogleDrive, fetchGoogleDriveBackup, classifyDriveError, type ZipImportResult, type DriveBackupDownload } from '../../features';
+import {
+  exportToZIP,
+  importFromJSON,
+  importFromZIP,
+  saveToGoogleDrive,
+  fetchGoogleDriveBackup,
+  classifyDriveError,
+  useBackupGroupBusy,
+  type ZipImportResult,
+  type DriveBackupDownload,
+} from '../../features';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
@@ -18,6 +28,9 @@ import { SettingsRow } from './SettingsRow';
 type Nav = NativeStackNavigationProp<SettingsStackParamList, 'Settings'>;
 
 const APP_VERSION = '2.2';
+const DIALOG_CHAIN_MS = 300;
+
+type BackupPrompt = 'cancel' | 'merge' | 'replace';
 
 interface ImportSummary {
   chatsAdded: number;
@@ -61,6 +74,10 @@ function importErrorMessage(t: LocaleDictionary, e: unknown): string {
   return t.importFailed;
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { colors } = useTheme();
@@ -71,6 +88,8 @@ export function SettingsScreen() {
     message?: string;
     buttons?: AlertButton[];
   } | null>(null);
+  const { isGroupDisabled, isActionLoading, run } = useBackupGroupBusy();
+  const pendingPromptRef = useRef<((value: BackupPrompt) => void) | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,6 +114,65 @@ export function SettingsScreen() {
       setSettings(getSettings());
     },
     [setAppLocale],
+  );
+
+  const settlePrompt = useCallback((value: BackupPrompt) => {
+    const settle = pendingPromptRef.current;
+    pendingPromptRef.current = null;
+    settle?.(value);
+  }, []);
+
+  const promptBackup = useCallback(
+    (config: {
+      title?: string;
+      message?: string;
+      buttons: Array<AlertButton & { prompt: BackupPrompt }>;
+    }) => {
+      return new Promise<BackupPrompt>((resolve) => {
+        pendingPromptRef.current = resolve;
+        setDialog({
+          title: config.title,
+          message: config.message,
+          buttons: config.buttons.map(({ prompt, ...btn }) => ({
+            ...btn,
+            onPress: () => settlePrompt(prompt),
+          })),
+        });
+      });
+    },
+    [settlePrompt],
+  );
+
+  const handleDialogClose = useCallback(() => {
+    setDialog(null);
+    settlePrompt('cancel');
+  }, [settlePrompt]);
+
+  const promptImportMode = useCallback(
+    async (title: string, message: string) => {
+      const first = await promptBackup({
+        title,
+        message,
+        buttons: [
+          { text: t.cancel, style: 'cancel', prompt: 'cancel' },
+          { text: t.merge, prompt: 'merge' },
+          { text: t.replaceAll, style: 'destructive', prompt: 'replace' },
+        ],
+      });
+      if (first !== 'replace') {
+        return first;
+      }
+      await wait(DIALOG_CHAIN_MS);
+      return promptBackup({
+        title: t.replaceAllConfirm,
+        message: t.replaceAllWarning,
+        buttons: [
+          { text: t.cancel, style: 'cancel', prompt: 'cancel' },
+          { text: t.replace, style: 'destructive', prompt: 'replace' },
+        ],
+      });
+    },
+    [promptBackup, t],
   );
 
   const handleImport = useCallback(
@@ -124,7 +202,7 @@ export function SettingsScreen() {
         const message = formatImportResult(t, summary);
         setTimeout(() => {
           setDialog({ title: t.importComplete, message, buttons: [{ text: t.done }] });
-        }, 300);
+        }, DIALOG_CHAIN_MS);
         setSettings(getSettings());
       } catch (e: unknown) {
         if (e && typeof e === 'object' && 'code' in e && e.code === 'DOCUMENT_PICKER_CANCELED') {
@@ -136,7 +214,7 @@ export function SettingsScreen() {
             message: importErrorMessage(t, e),
             buttons: [{ text: t.done }],
           });
-        }, 300);
+        }, DIALOG_CHAIN_MS);
       }
     },
     [t],
@@ -157,7 +235,7 @@ export function SettingsScreen() {
         const message = formatImportResult(t, summary);
         setTimeout(() => {
           setDialog({ title: t.restoreComplete, message, buttons: [{ text: t.done }] });
-        }, 300);
+        }, DIALOG_CHAIN_MS);
         setSettings(getSettings());
       } catch (e: unknown) {
         console.error('[google-drive] performDriveImport failed:', e instanceof Error ? e.message : String(e));
@@ -167,13 +245,83 @@ export function SettingsScreen() {
             message: importErrorMessage(t, e),
             buttons: [{ text: t.done }],
           });
-        }, 300);
+        }, DIALOG_CHAIN_MS);
       } finally {
         await RNFS.unlink(backup.path).catch(() => {});
       }
     },
     [t],
   );
+
+  const handleDriveBackup = useCallback(() => {
+    return run('driveBackup', async () => {
+      try {
+        await saveToGoogleDrive();
+        setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
+      } catch (e: unknown) {
+        const kind = classifyDriveError(e);
+        if (kind === 'cancelled') return;
+        console.error('[google-drive] save backup error:', kind, e instanceof Error ? e.message : e);
+        setDialog({
+          title: t.error,
+          message: driveErrorMessage(t, e, t.backupFailed),
+          buttons: [{ text: t.done }],
+        });
+      }
+    });
+  }, [run, t]);
+
+  const handleDriveRestore = useCallback(() => {
+    return run('driveRestore', async () => {
+      let backup: DriveBackupDownload | undefined;
+      try {
+        backup = await fetchGoogleDriveBackup();
+        const mode = await promptImportMode(
+          t.restoreTitle,
+          backup.kind === 'json'
+            ? `${t.driveRestoreNoMedia}\n\n${t.chooseImportMode}`
+            : t.chooseImportMode,
+        );
+        if (mode === 'cancel') {
+          await RNFS.unlink(backup.path).catch(() => {});
+          return;
+        }
+        await performDriveImport(backup, mode);
+      } catch (e: unknown) {
+        const kind = classifyDriveError(e);
+        if (kind === 'cancelled') return;
+        if (kind === 'no_backup') {
+          setDialog({ title: t.noBackup, message: t.noBackupMessage, buttons: [{ text: t.done }] });
+          return;
+        }
+        console.error('[google-drive] restore backup error:', kind, e instanceof Error ? e.message : e);
+        setDialog({
+          title: t.error,
+          message: driveErrorMessage(t, e, t.restoreFailed),
+          buttons: [{ text: t.done }],
+        });
+      }
+    });
+  }, [run, promptImportMode, performDriveImport, t]);
+
+  const handleExport = useCallback(() => {
+    return run('exportFile', async () => {
+      try {
+        const filePath = await exportToZIP();
+        setDialog({ title: t.done, message: t.exportDone(filePath), buttons: [{ text: t.done }] });
+      } catch {
+        setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
+      }
+    });
+  }, [run, t]);
+
+  const handleImportPress = useCallback(() => {
+    return run('importFile', async () => {
+      const mode = await promptImportMode(t.importFromFile, t.chooseImportMode);
+      if (mode === 'cancel') return;
+      await handleImport(mode);
+    });
+  }, [run, promptImportMode, handleImport, t]);
 
   if (!settings) {
     return (
@@ -260,127 +408,30 @@ export function SettingsScreen() {
           <SettingsRow
             label={t.backupToGoogleDrive}
             icon={Cloud}
-            onPress={async () => {
-              try {
-                await saveToGoogleDrive();
-                setDialog({ title: t.done, message: t.backupSaved, buttons: [{ text: t.done }] });
-              } catch (e: unknown) {
-                const kind = classifyDriveError(e);
-                if (kind === 'cancelled') return;
-                console.error('[google-drive] save backup error:', kind, e instanceof Error ? e.message : e);
-                setDialog({
-                  title: t.error,
-                  message: driveErrorMessage(t, e, t.backupFailed),
-                  buttons: [{ text: t.done }],
-                });
-              }
-            }}
+            disabled={isGroupDisabled}
+            loading={isActionLoading('driveBackup')}
+            onPress={handleDriveBackup}
           />
           <SettingsRow
             label={t.restoreFromGoogleDrive}
             icon={CloudDownload}
-            onPress={async () => {
-              try {
-                const backup = await fetchGoogleDriveBackup();
-
-                const modeDialog = (mode: 'merge' | 'replace') =>
-                  setTimeout(() => {
-                    setDialog({
-                      title: t.replaceAllConfirm,
-                      message: t.replaceAllWarning,
-                      buttons: [
-                        { text: t.cancel, style: 'cancel' },
-                        {
-                          text: t.replace,
-                          style: 'destructive',
-                          onPress: () => performDriveImport(backup, mode),
-                        },
-                      ],
-                    });
-                  }, 300);
-
-                setDialog({
-                  title: t.restoreTitle,
-                  message:
-                    backup.kind === 'json'
-                      ? `${t.driveRestoreNoMedia}\n\n${t.chooseImportMode}`
-                      : t.chooseImportMode,
-                  buttons: [
-                    { text: t.cancel, style: 'cancel' },
-                    {
-                      text: t.merge,
-                      onPress: () => performDriveImport(backup, 'merge'),
-                    },
-                    {
-                      text: t.replaceAll,
-                      style: 'destructive',
-                      onPress: () => modeDialog('replace'),
-                    },
-                  ],
-                });
-              } catch (e: unknown) {
-                const kind = classifyDriveError(e);
-                if (kind === 'cancelled') return;
-                if (kind === 'no_backup') {
-                  setDialog({ title: t.noBackup, message: t.noBackupMessage, buttons: [{ text: t.done }] });
-                  return;
-                }
-                console.error('[google-drive] restore backup error:', kind, e instanceof Error ? e.message : e);
-                setDialog({
-                  title: t.error,
-                  message: driveErrorMessage(t, e, t.restoreFailed),
-                  buttons: [{ text: t.done }],
-                });
-              }
-            }}
+            disabled={isGroupDisabled}
+            loading={isActionLoading('driveRestore')}
+            onPress={handleDriveRestore}
           />
           <SettingsRow
             label={t.exportToFile}
             icon={FileArchive}
-            onPress={async () => {
-              try {
-                const filePath = await exportToZIP();
-                setDialog({ title: t.done, message: t.exportDone(filePath), buttons: [{ text: t.done }] });
-              } catch {
-                setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
-              }
-            }}
+            disabled={isGroupDisabled}
+            loading={isActionLoading('exportFile')}
+            onPress={handleExport}
           />
           <SettingsRow
             label={t.importFromFile}
             icon={FileUp}
-            onPress={() => {
-              setDialog({
-                title: t.importFromFile,
-                message: t.chooseImportMode,
-                buttons: [
-                  {
-                    text: t.cancel,
-                    style: 'cancel',
-                  },
-                  {
-                    text: t.merge,
-                    onPress: () => handleImport('merge'),
-                  },
-                  {
-                    text: t.replaceAll,
-                    style: 'destructive',
-                    onPress: () => {
-                      setTimeout(() => {
-                        setDialog({
-                          title: t.replaceAllConfirm,
-                          message: t.replaceAllWarning,
-                          buttons: [
-                            { text: t.cancel, style: 'cancel' },
-                            { text: t.replace, style: 'destructive', onPress: () => handleImport('replace') },
-                          ],
-                        });
-                      }, 300);
-                    },
-                  },
-                ],
-              });
-            }}
+            disabled={isGroupDisabled}
+            loading={isActionLoading('importFile')}
+            onPress={handleImportPress}
           />
         </View>
 
@@ -402,7 +453,7 @@ export function SettingsScreen() {
         title={dialog?.title}
         message={dialog?.message}
         buttons={dialog?.buttons}
-        onClose={() => setDialog(null)}
+        onClose={handleDialogClose}
       />
     </Screen>
   );

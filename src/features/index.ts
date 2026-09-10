@@ -20,6 +20,9 @@ export type { EditFields } from './edit-message';
 export { exportToJSON, exportToZIP } from './export';
 export { importFromJSON, importFromZIP, type ImportMode, type ImportResult, type ZipImportResult } from './import';
 
+export { useBackupGroupBusy } from './backup-group-busy';
+export type { BackupGroupAction, BackupGroupBusyApi } from './backup-group-busy';
+
 export {
   getGoogleToken,
   signOutGoogle,
