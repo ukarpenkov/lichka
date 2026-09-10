@@ -172,3 +172,18 @@ docs/features/<feature-name>-proposal.md
 
 - Тесты запускаются перед мержем; PR не мержится при падении
 - При запросе отчёта указывай в `docs/reports/` какие сценарии покрыты
+
+---
+
+## Android-релиз (Google Play) — `versionCode`
+
+Google Play принимает каждый `versionCode` **только один раз**. Повторная загрузка: «Код версии N уже использован» / «Version code N has already been used».
+
+### Перед каждым релизным AAB/APK для Play
+
+1. В `android/app/build.gradle` **увеличить `versionCode`** (строго больше последнего уже загруженного в Play)
+2. `versionName` / `APP_VERSION` (то, что в Settings, например `2.3`) **можно не менять**
+3. Только после инкремента собирать `./gradlew bundleRelease` или `assembleRelease`
+4. Не перезаливать артефакт со старым `versionCode`, даже если Gradle UP-TO-DATE
+
+`versionCode` — целое, монотонно растёт. `versionName` — строка для UI, не уникальный ключ стора.

@@ -1,0 +1,19 @@
+---
+description: Google Play — перед каждым релизным AAB увеличивать versionCode, иначе «код версии уже использован»
+alwaysApply: true
+---
+
+# Android-релиз: уникальный versionCode
+
+Источник: `docs/rules/development-and-release-rules.md` (§5).
+
+Google Play принимает каждый `versionCode` **один раз**. Ошибка «Код версии N уже использован» значит: этот код уже загружали.
+
+## Перед сборкой релизного AAB/APK для Play
+
+1. В `android/app/build.gradle` **увеличить `versionCode`** — строго больше последнего кода в Play
+2. `versionName` / `APP_VERSION` (например `2.3`) можно не менять — это не ключ стора
+3. Затем `./gradlew bundleRelease` или `assembleRelease`
+4. Не заливать старый артефакт, даже если Gradle UP-TO-DATE
+
+`versionCode` — целое, только растёт. `versionName` — строка для UI.

@@ -157,3 +157,21 @@ it('should call AsyncStorage.setItem')
 - Пул-реквест не мержится, если хотя бы один тест не проходит
 - Отчёт о покрытии генерируется автоматически
 
+---
+
+## 5. Android-релиз (Google Play) — `versionCode`
+
+Google Play принимает каждый `versionCode` **только один раз**. Повторная загрузка того же кода даёт ошибку: «Код версии N уже использован» / «Version code N has already been used».
+
+### Перед каждым релизным AAB/APK для Play
+
+1. В `android/app/build.gradle` **увеличить `versionCode`** (строго больше последнего уже загруженного в Play).
+2. `versionName` (то, что видит пользователь в Settings, например `2.3`) **можно не менять** — это не уникальный ключ стора.
+3. Только после инкремента собирать `./gradlew bundleRelease` (AAB) или `assembleRelease` (APK).
+4. Не перезаливать артефакт со старым `versionCode`, даже если сборка «уже есть» и Gradle пишет UP-TO-DATE.
+
+### Что не делать
+
+- Не собирать Play-AAB с тем же `versionCode`, что уже ушёл в консоль (включая черновик/предыдущую попытку).
+- Не путать `versionCode` (целое, монотонно растёт) и `versionName` / `APP_VERSION` (строка для UI).
+
