@@ -28,7 +28,7 @@ jest.mock('../../../features/notifications', () => ({
   cancelNotification: jest.fn(),
   requestNotificationPermission: jest.fn(),
   ensureExactAlarmPermission: jest.fn(),
-  requestBatteryOptimizationExemption: jest.fn(),
+  requestBatteryOptimizationExemption: jest.fn().mockResolvedValue(undefined),
   useNotificationNavigation: jest.fn(),
   setNavigationReady: jest.fn(),
 }));

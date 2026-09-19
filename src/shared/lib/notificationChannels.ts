@@ -76,6 +76,11 @@ export function canScheduleExactAlarms(): Promise<boolean> {
   return requireNotificationModule().canScheduleExactAlarms();
 }
 
+/** true, если приложение уже исключено из оптимизации батареи (doze whitelist). */
+export function isIgnoringBatteryOptimizations(): Promise<boolean> {
+  return requireNotificationModule().isIgnoringBatteryOptimizations();
+}
+
 export function requestIgnoreBatteryOptimizations(): void {
   requireNotificationModule().requestIgnoreBatteryOptimizations();
 }

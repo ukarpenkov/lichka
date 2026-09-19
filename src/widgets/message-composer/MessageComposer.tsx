@@ -267,7 +267,7 @@ export function MessageComposer({
             setPermissionDialog(true);
             return;
           }
-          requestBatteryOptimizationExemption();
+          await requestBatteryOptimizationExemption();
           sendMessage('alarm', { scheduledAt: date.toISOString() });
         } else {
           await AsyncStorage.setItem('alarm_guide_shown', '1');
@@ -292,7 +292,7 @@ export function MessageComposer({
       setPermissionDialog(true);
       return;
     }
-    requestBatteryOptimizationExemption();
+    await requestBatteryOptimizationExemption();
     sendMessage('alarm', { scheduledAt: pickerDate.toISOString() });
   }, [sendMessage, pickerDate]);
 

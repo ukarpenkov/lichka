@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -105,6 +106,19 @@ class NotificationModule(reactContext: ReactApplicationContext) :
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
             reactApplicationContext.startActivity(intent)
+        }
+    }
+
+    @ReactMethod
+    fun isIgnoringBatteryOptimizations(promise: Promise) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager =
+                reactApplicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
+            promise.resolve(
+                powerManager.isIgnoringBatteryOptimizations(reactApplicationContext.packageName),
+            )
+        } else {
+            promise.resolve(true)
         }
     }
 

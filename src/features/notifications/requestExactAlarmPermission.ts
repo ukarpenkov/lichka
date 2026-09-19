@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import {
   canScheduleExactAlarms,
   requestScheduleExactAlarm,
+  isIgnoringBatteryOptimizations,
   requestIgnoreBatteryOptimizations,
 } from '../../shared/lib/notificationChannels';
 
@@ -17,8 +18,16 @@ export async function ensureExactAlarmPermission(): Promise<boolean> {
   return false;
 }
 
-export function requestBatteryOptimizationExemption(): void {
-  if (Platform.OS !== 'android' || batteryOptimizationRequested) return;
+/**
+ * Открывает системный экран отключения оптимизации батареи только когда
+ * приложение ещё под ограничениями, и не более одного раза за сессию.
+ */
+export async function requestBatteryOptimizationExemption(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  if (await isIgnoringBatteryOptimizations()) return;
+  if (batteryOptimizationRequested) return;
+
   batteryOptimizationRequested = true;
   requestIgnoreBatteryOptimizations();
 }

@@ -19,6 +19,7 @@ export {
   scheduleAlarm,
   cancelAlarm,
   canScheduleExactAlarms,
+  isIgnoringBatteryOptimizations,
   requestIgnoreBatteryOptimizations,
   getInitialChatId,
   getInitialMessageId,
