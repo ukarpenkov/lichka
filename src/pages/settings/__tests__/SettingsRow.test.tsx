@@ -115,11 +115,11 @@ describe('SettingsRow', () => {
   it('should render trailing children when not loading', () => {
     const { getByText, queryByTestId } = render(
       <SettingsRow label="Version">
-        <RNText>2.3</RNText>
+        <RNText>3.0</RNText>
       </SettingsRow>,
     );
 
-    expect(getByText('2.3')).toBeTruthy();
+    expect(getByText('3.0')).toBeTruthy();
     expect(queryByTestId('settings-row-loader')).toBeNull();
   });
 });
