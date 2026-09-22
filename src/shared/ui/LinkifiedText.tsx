@@ -71,7 +71,7 @@ export function LinkifiedText({
               variant={variant}
               tone={tone}
               onPress={() => {
-                void handlePress(seg.href);
+                handlePress(seg.href).catch(() => undefined);
               }}
               accessibilityRole="link"
               accessibilityHint={t.openLink}
@@ -83,7 +83,7 @@ export function LinkifiedText({
               <Link
                 size={size}
                 color={iconColor}
-                style={{ width: size, height: size, pointerEvents: 'none' }}
+                style={[styles.linkIcon, { width: size, height: size }]}
               />
             </Text>
           ) : (
@@ -110,5 +110,8 @@ export function LinkifiedText({
 const styles = StyleSheet.create({
   link: {
     textDecorationLine: 'underline',
+  },
+  linkIcon: {
+    pointerEvents: 'none',
   },
 });

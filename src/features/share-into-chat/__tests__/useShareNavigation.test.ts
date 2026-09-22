@@ -3,7 +3,7 @@ jest.mock('../../../shared/lib/shareIntent', () => ({
   consumeInitialShare: jest.fn(),
 }));
 
-import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
+import { NativeEventEmitter, NativeModules, Platform, type EmitterSubscription } from 'react-native';
 import { act, renderHook } from '@testing-library/react-native';
 
 import {
@@ -42,7 +42,7 @@ describe('useShareNavigation', () => {
       if (eventName === 'onShareReceived') {
         shareHandler = handler as typeof shareHandler;
       }
-      return { remove };
+      return { remove } as unknown as EmitterSubscription;
     });
     getInitial.mockResolvedValue(null);
     setMainTabsApi({ switchToTab });

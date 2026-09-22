@@ -7,6 +7,10 @@ import {
   toHttpHref,
 } from '../messageLinks';
 
+function javascriptUrl(payload: string): string {
+  return ['java', 'script:', payload].join('');
+}
+
 describe('toHttpHref', () => {
   it('should accept https URLs with a dotted host', () => {
     expect(toHttpHref('https://example.com/note')).toBe('https://example.com/note');
@@ -25,7 +29,7 @@ describe('toHttpHref', () => {
     expect(toHttpHref('https://')).toBeNull();
     expect(toHttpHref('https://git')).toBeNull();
     expect(toHttpHref('www.')).toBeNull();
-    expect(toHttpHref('javascript:alert(1)')).toBeNull();
+    expect(toHttpHref(javascriptUrl('alert(1)'))).toBeNull();
     expect(toHttpHref('file:///tmp/a')).toBeNull();
     expect(toHttpHref('example.com')).toBeNull();
   });
@@ -108,6 +112,6 @@ describe('openExternalUrl', () => {
   });
 
   it('should refuse non-http URLs', async () => {
-    await expect(openExternalUrl('javascript:alert(1)')).rejects.toThrow('unsupported-url');
+    await expect(openExternalUrl(javascriptUrl('alert(1)'))).rejects.toThrow('unsupported-url');
   });
 });

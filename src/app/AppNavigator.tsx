@@ -132,10 +132,27 @@ function ChatStackScreen() {
   );
 }
 
+const themePickerGoBack: { current: () => void } = {
+  current: () => {},
+};
+
+function ThemePickerBackButton() {
+  return (
+    <IconButton
+      icon={ArrowLeft}
+      size={24}
+      haptic
+      onPress={() => themePickerGoBack.current()}
+      testID="theme-picker-back"
+    />
+  );
+}
+
 function SettingsStackScreen() {
   const { text, background } = useTheme();
   const { t } = useLocale();
   const navRef = useNavigationContainerRef<SettingsStackParamList>();
+  themePickerGoBack.current = () => navRef.current?.goBack();
   const syncNestedOpen = useIndependentStackBridge(SETTINGS_TAB_INDEX, navRef);
   const navTheme = React.useMemo(
     () => buildNavTheme(text, background),
@@ -172,15 +189,7 @@ function SettingsStackScreen() {
                 fontSize: typography.display.fontSize,
                 fontWeight: Platform.OS === 'ios' ? ('400' as const) : ('normal' as const),
               },
-              headerLeft: () => (
-                <IconButton
-                  icon={ArrowLeft}
-                  size={24}
-                  haptic
-                  onPress={() => navRef.current?.goBack()}
-                  testID="theme-picker-back"
-                />
-              ),
+              headerLeft: ThemePickerBackButton,
             }}
           />
         </SettingsStack.Navigator>

@@ -4,7 +4,7 @@ jest.mock('../../../shared/lib/scheduledWidget', () => ({
   consumeInitialWidgetOpen: jest.fn(),
 }));
 
-import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
+import { NativeEventEmitter, NativeModules, Platform, type EmitterSubscription } from 'react-native';
 import { act, renderHook } from '@testing-library/react-native';
 
 import {
@@ -112,7 +112,7 @@ describe('useWidgetNavigation', () => {
       if (eventName === 'onWidgetOpen') {
         widgetOpenHandler = handler as typeof widgetOpenHandler;
       }
-      return { remove };
+      return { remove } as unknown as EmitterSubscription;
     });
     getInitialOpenTarget.mockResolvedValue(null);
     getInitialMessageId.mockResolvedValue(null);
