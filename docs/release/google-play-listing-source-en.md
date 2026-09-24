@@ -1,11 +1,52 @@
-# Google Play — Full description
+# Google Play — English source for AI translations
 
-Store listing field: **Full description**  
-**Limit:** 4000 characters max.
+Исходник для **Import translations using AI** («Импортируйте переводы с помощью ИИ»).
 
-## Text
+Язык исходника: **English (United States)**, код `en-US`. Консоль переводит уже сохранённый английский листинг, а не этот markdown-файл целиком. В поля листинга вставляется только текст из блоков ниже.
 
-Источник для ИИ-перевода: `docs/release/google-play-listing-source-en.md`.
+## Как использовать
+
+В диалог **Импортируйте переводы с помощью ИИ** загружается не этот файл, а:
+
+`docs/release/google-play-listing-translations.md`
+
+Там те же три поля уже на 23 языках. Консоль сама определяет язык и добавляет тексты на страницу. Этот файл — английский исходник, с которого собраны переводы.
+
+## Что не переводить
+
+- **Lichka** — название приложения. Во всех языках остаётся `Lichka`.
+
+## Лимиты Google Play
+
+| Поле | Лимит |
+|------|--------|
+| App name | 30 символов |
+| Short description | 80 символов |
+| Full description | 4000 символов |
+
+После генерации проверить каждый язык: перевод часто длиннее английского, особенно название и короткий текст. Обрезанный заголовок в консоль не сохраняется.
+
+Не добавлять чужие торговые марки. Не обещать синхронизацию в фоне и хранение заметок на сервере.
+
+---
+
+## App name
+
+```
+Lichka: Chats Reminders Alarms
+```
+
+30 символов.
+
+## Short description
+
+```
+Chat with yourself: private notes, reminders, and alarms. Works offline.
+```
+
+72 символа.
+
+## Full description
 
 ```
 Lichka is a private journal that works like a chat with yourself.
@@ -66,10 +107,4 @@ Lichka is for capturing a thought quickly and finding it later: work, study, ide
 Create one chat. Send yourself something you want to keep.
 ```
 
-## Meta
-
-- **Length:** 2833 characters (limit 4000).
-- Language: English (United States), source for AI translations.
-- No competitor brand names in listing text.
-- Voice framed as voice notes in chat, not a standalone dictaphone app.
-- Google Drive backup is data only; photos, voice notes, and chat images are in the ZIP export.
+2833 символа из 4000.

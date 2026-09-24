@@ -6,11 +6,13 @@ Users can expand it to read the full details.
 
 ## Text
 
+Источник для ИИ-перевода: `docs/release/google-play-listing-source-en.md`.
+
 ```
-Chats with yourself: themed journals, reminders and alarms. Offline.
+Chat with yourself: private notes, reminders, and alarms. Works offline.
 ```
 
-**Length:** 68 characters.
+**Length:** 72 characters.
 
 ## Notes
 
