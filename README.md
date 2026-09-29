@@ -2,7 +2,6 @@
 
 Offline Android app for personal thematic chats with yourself. Messages, reminders, alarms, and periodic notifications are stored locally in SQLite. No server.
 
-Version: 2.0  
 Platform: Android (minSdk 24, package `com.lichka`)  
 License: MIT
 
