@@ -45,7 +45,11 @@ import {
   extractTemplateId,
   type Message,
 } from '../../entities/message';
-import { cancelNotification } from '../../features/notifications';
+import {
+  cancelNotification,
+  canStopPeriodicReminder,
+  stopPeriodicReminder,
+} from '../../features/notifications';
 import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { markChatAsRead } from '../../features/unread-badges';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
@@ -652,6 +656,14 @@ export function ChatRoomScreen() {
 
   const { saveEdit } = useEditMessage();
 
+  const handleStopReminder = useCallback(() => {
+    if (!menuMessage) return;
+    stopPeriodicReminder(menuMessage);
+    setMenuMessage(null);
+    loadData();
+    loadFuture();
+  }, [menuMessage, loadData, loadFuture]);
+
   const handleCopyMessage = useCallback(() => {
     if (!menuMessage) return;
     setClipboardString(menuMessage.body ?? '');
@@ -1016,6 +1028,7 @@ export function ChatRoomScreen() {
         onCopy={handleCopyMessage}
         onEdit={handleEditMessage}
         onDelete={handleDeleteMessage}
+        onStopReminder={canStopPeriodicReminder(menuMessage) ? handleStopReminder : undefined}
         onClose={closeMessageMenu}
       />
 

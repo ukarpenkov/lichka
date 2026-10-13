@@ -37,6 +37,7 @@ export const es: LocaleBundle = {
 
     // Chat Room
     chatNotFound: 'Chat no encontrado',
+    stopReminder: 'Detener recordatorio',
     deleteMessage: 'Eliminar mensaje',
     deleteMessageConfirm: '¿Eliminar permanentemente?',
     edited: 'editado',

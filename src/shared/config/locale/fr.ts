@@ -37,6 +37,7 @@ export const fr: LocaleBundle = {
 
     // Chat Room
     chatNotFound: 'Discussion introuvable',
+    stopReminder: 'Arrêter le rappel',
     deleteMessage: 'Supprimer le message',
     deleteMessageConfirm: 'Supprimer définitivement ?',
     edited: 'modifié',

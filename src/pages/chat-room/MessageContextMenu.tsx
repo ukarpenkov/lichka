@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
-import { Copy, Pencil, Trash2 } from '../../shared/ui/pixel';
+import { Copy, Pencil, Square, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
 import {
   useTheme,
@@ -18,6 +18,7 @@ type MessageContextMenuProps = {
   onCopy: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onStopReminder?: () => void;
   onClose: () => void;
 };
 
@@ -31,6 +32,7 @@ export function MessageContextMenu({
   onCopy,
   onEdit,
   onDelete,
+  onStopReminder,
   onClose,
 }: MessageContextMenuProps) {
   const { text, background, colors } = useTheme();
@@ -126,6 +128,25 @@ export function MessageContextMenu({
               <Pencil size={18} color={colors.ink} />
               <Text variant="body">{t.edit}</Text>
             </Pressable>
+            {onStopReminder ? (
+              <Pressable
+                onPress={() => runWhenArmed(onStopReminder)}
+                android_ripple={
+                  Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+                }
+                style={({ pressed }) => [
+                  styles.item,
+                  pressed && armed && Platform.OS !== 'android'
+                    ? { backgroundColor: colors.surfaceSoft }
+                    : null,
+                ]}
+                accessibilityRole="menuitem"
+                accessibilityState={{ disabled: !armed }}
+              >
+                <Square size={18} color={colors.ink} />
+                <Text variant="body" style={styles.itemLabel}>{t.stopReminder}</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => runWhenArmed(onDelete)}
               android_ripple={
@@ -183,5 +204,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: 12,
     minHeight: 56,
+  },
+  itemLabel: {
+    flexShrink: 1,
   },
 });

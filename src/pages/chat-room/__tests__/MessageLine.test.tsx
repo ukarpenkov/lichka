@@ -100,6 +100,18 @@ describe('formatLogTime', () => {
 });
 
 describe('MessageLine', () => {
+  it('should show a stopped reminder at its last occurrence without the repeat icon or edited marker', () => {
+    const timestamp = '2026-01-01T00:15:00.000Z';
+    const { getByTestId, queryByTestId, getByText, queryByText } = render(
+      <MessageLine message={createMessage({ type: 'reminder', createdAt: timestamp })}
+        onLongPress={onLongPress} />,
+    );
+    expect(getByTestId('icon-Bell')).toBeTruthy();
+    expect(queryByTestId('icon-Repeat')).toBeNull();
+    expect(getByText(formatLogTime(timestamp))).toBeTruthy();
+    expect(queryByText(/\(изм\.\)/)).toBeNull();
+  });
+
   beforeEach(() => {
     onLongPress.mockClear();
   });

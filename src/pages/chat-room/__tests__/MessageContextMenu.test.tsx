@@ -31,6 +31,7 @@ jest.mock('../../../shared/config/LocaleProvider', () => ({
       copy: 'Copy',
       edit: 'Edit',
       delete: 'Delete',
+      stopReminder: 'Stop reminder',
     },
   }),
 }));
@@ -42,6 +43,22 @@ describe('MessageContextMenu', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('should stop a periodic reminder only after the menu is armed', () => {
+    const onStopReminder = jest.fn();
+    const onClose = jest.fn();
+    const { getByText, getAllByRole } = render(
+      <MessageContextMenu visible onCopy={jest.fn()} onEdit={jest.fn()}
+        onDelete={jest.fn()} onClose={onClose} onStopReminder={onStopReminder} />,
+    );
+    expect(getAllByRole('menuitem')).toHaveLength(4);
+    fireEvent.press(getByText('Stop reminder'));
+    expect(onStopReminder).not.toHaveBeenCalled();
+    act(() => jest.advanceTimersByTime(350));
+    fireEvent.press(getByText('Stop reminder'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onStopReminder).toHaveBeenCalledTimes(1);
   });
 
   it('should render Copy above Edit and Delete when visible', () => {

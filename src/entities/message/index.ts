@@ -11,6 +11,7 @@ export {
   getMessagesForChatAtTime,
   disableFiredMessages,
   getPeriodicDisplayMessages,
+  finishPeriodicMessage,
   isPeriodicDisplayId,
   extractTemplateId,
   getUnreadCounts,

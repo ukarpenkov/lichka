@@ -18,6 +18,7 @@ import {
   getMessagesForChatAtTime,
   disableFiredMessages,
   getPeriodicDisplayMessages,
+  finishPeriodicMessage,
   getUnreadCounts,
   isPeriodicDisplayId,
   extractTemplateId,
@@ -61,6 +62,68 @@ describe('messageRepository', () => {
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
   };
+
+  describe('finishPeriodicMessage', () => {
+    const periodicRow = {
+      ...sampleDbRow,
+      type: 'periodic',
+      enabled: 1,
+      interval_minutes: 5,
+      payload: '{"uri":"/images/photo.jpg"}',
+    };
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-01-01T00:17:00.000Z'));
+    });
+
+    afterEach(() => jest.useRealTimers());
+
+    it('should preserve the latest occurrence and attachment as a disabled ordinary reminder', () => {
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+      const result = finishPeriodicMessage('msg-1');
+      expect(result).toEqual({
+        id: 'msg-1', chatId: 'chat-1', body: 'Hello', type: 'reminder',
+        enabled: false, intervalMinutes: null, payload: periodicRow.payload,
+        scheduledAt: '2026-01-01T00:15:00.000Z',
+        createdAt: '2026-01-01T00:15:00.000Z',
+        updatedAt: '2026-01-01T00:15:00.000Z',
+      });
+      expect(mockExecuteSync).toHaveBeenLastCalledWith(
+        expect.stringContaining("type = 'reminder', enabled = 0, interval_minutes = NULL"),
+        [result!.createdAt, result!.createdAt, result!.createdAt, 'msg-1'],
+      );
+      expect(require('react-native-fs').unlink).not.toHaveBeenCalled();
+    });
+
+    it('should use the latest occurrence even when another repeat arrived after opening the menu', () => {
+      mockExecuteSync.mockReturnValue({ rows: [periodicRow] });
+      const [display] = getPeriodicDisplayMessages('chat-1');
+      jest.setSystemTime(new Date('2026-01-01T00:20:00.000Z'));
+      expect(finishPeriodicMessage(extractTemplateId(display.id))?.createdAt)
+        .toBe('2026-01-01T00:20:00.000Z');
+    });
+
+    it.each([
+      ['ordinary message', sampleDbRow],
+      ['already disabled reminder', { ...periodicRow, enabled: 0 }],
+      ['not yet fired reminder', { ...periodicRow, created_at: '2026-01-01T00:16:00.000Z' }],
+      ['missing interval', { ...periodicRow, interval_minutes: null }],
+      ['negative interval', { ...periodicRow, interval_minutes: -5 }],
+      ['invalid date', { ...periodicRow, created_at: 'invalid' }],
+      ['invalid interval', { ...periodicRow, interval_minutes: Infinity }],
+    ])('should leave an %s unchanged', (_label, row) => {
+      mockExecuteSync.mockReturnValue({ rows: [row] });
+      expect(finishPeriodicMessage('msg-1')).toBeNull();
+      expect(mockExecuteSync).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore a message that has been deleted', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      expect(finishPeriodicMessage('missing')).toBeNull();
+      expect(mockExecuteSync).toHaveBeenCalledTimes(1);
+    });
+  });
 
   describe('createMessage', () => {
     it('should create a simple message with generated UUID and timestamps', () => {

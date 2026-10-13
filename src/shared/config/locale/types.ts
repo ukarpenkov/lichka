@@ -34,6 +34,7 @@ export interface LocaleDictionary {
   // Chat Room
   chatNotFound: string;
   deleteMessage: string;
+  stopReminder: string;
   deleteMessageConfirm: string;
   edited: string;
   editMessage: string;

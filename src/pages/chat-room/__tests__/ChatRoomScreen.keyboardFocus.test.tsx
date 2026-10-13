@@ -119,6 +119,8 @@ jest.mock('../../../entities/message', () => ({
 
 jest.mock('../../../features/notifications', () => ({
   cancelNotification: jest.fn(),
+  canStopPeriodicReminder: () => false,
+  stopPeriodicReminder: jest.fn(),
 }));
 
 jest.mock('../../../features/scheduled-widget', () => ({
@@ -193,10 +195,16 @@ import { ChatRoomScreen } from '../ChatRoomScreen';
 
 describe('ChatRoomScreen keyboard focus regression', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     mockComposerMount.mockClear();
     mockComposerUnmount.mockClear();
     mockListMount.mockClear();
     mockListUnmount.mockClear();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should keep the composer mounted when at-bottom state changes', () => {

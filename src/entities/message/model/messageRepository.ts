@@ -214,6 +214,39 @@ export function extractTemplateId(displayId: string): string {
   return displayId.slice(PERIODIC_DISPLAY_PREFIX.length);
 }
 
+function getLatestPeriodicFireAt(template: Message, now: number): string | null {
+  const interval = template.intervalMinutes;
+  if (!interval || interval <= 0 || !Number.isFinite(interval)) return null;
+  const createdAtMs = new Date(template.createdAt).getTime();
+  const intervalMs = interval * 60_000;
+  const fires = Math.floor((now - createdAtMs) / intervalMs);
+  if (!Number.isFinite(fires) || fires <= 0) return null;
+  return new Date(createdAtMs + fires * intervalMs).toISOString();
+}
+
+/** Keep the latest occurrence as a fired reminder, preserving identity and media. */
+export function finishPeriodicMessage(id: string): Message | null {
+  const template = getMessageById(id);
+  if (!template || template.type !== 'periodic' || !template.enabled) return null;
+  const latestFireAt = getLatestPeriodicFireAt(template, Date.now());
+  if (!latestFireAt) return null;
+
+  getDatabase().executeSync(
+    `UPDATE messages SET type = 'reminder', enabled = 0, interval_minutes = NULL,
+     scheduled_at = ?, created_at = ?, updated_at = ? WHERE id = ?`,
+    [latestFireAt, latestFireAt, latestFireAt, id],
+  );
+  return {
+    ...template,
+    type: 'reminder',
+    enabled: false,
+    intervalMinutes: null,
+    scheduledAt: latestFireAt,
+    createdAt: latestFireAt,
+    updatedAt: latestFireAt,
+  };
+}
+
 export function getPeriodicDisplayMessages(chatId: string): Message[] {
   const db = getDatabase();
   const result = db.executeSync(
@@ -229,19 +262,13 @@ export function getPeriodicDisplayMessages(chatId: string): Message[] {
 
   for (const row of result.rows) {
     const template = mapRow(row);
-    if (!template.intervalMinutes) continue;
-
-    const createdAtMs = new Date(template.createdAt).getTime();
-    const intervalMs = template.intervalMinutes * 60_000;
-    const fires = Math.floor((now - createdAtMs) / intervalMs);
-
-    if (fires > 0) {
-      const latestFireAt = createdAtMs + fires * intervalMs;
+    const latestFireAt = getLatestPeriodicFireAt(template, now);
+    if (latestFireAt) {
       displayMessages.push({
         ...template,
         id: PERIODIC_DISPLAY_PREFIX + template.id,
-        createdAt: new Date(latestFireAt).toISOString(),
-        updatedAt: new Date(latestFireAt).toISOString(),
+        createdAt: latestFireAt,
+        updatedAt: latestFireAt,
       });
     }
   }
