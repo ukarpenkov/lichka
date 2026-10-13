@@ -55,6 +55,19 @@ const createMessage = (overrides: Partial<{
 });
 
 describe('exportToJSON with image messages', () => {
+  it('exports checklist identity, order and completion state', async () => {
+    const checklist = [
+      { id: 'milk', text: 'Milk', checked: true },
+      { id: 'soda', text: 'Soda', checked: false },
+    ];
+    mockGetChats.mockReturnValue([createChat('chat-1', 'Shopping')]);
+    mockGetMessagesByChatId.mockReturnValue([{ ...createMessage({ body: 'Milk\nSoda' }), checklist }]);
+    await exportToJSON();
+    const exported = JSON.parse(require('react-native-fs').writeFile.mock.calls[0][1]);
+    expect(exported.schema_version).toBe(3);
+    expect(exported.chats[0].messages[0].checklist).toEqual(checklist);
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetSettings.mockReturnValue({
@@ -84,7 +97,7 @@ describe('exportToJSON with image messages', () => {
     expect(writeFileCalls).toHaveLength(1);
     const exportedJson = JSON.parse(writeFileCalls[0][1]);
 
-    expect(exportedJson.schema_version).toBe(2);
+    expect(exportedJson.schema_version).toBe(3);
     expect(exportedJson.chats[0].isSystem).toBe(false);
 
     const messages = exportedJson.chats[0].messages;

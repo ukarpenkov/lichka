@@ -12,6 +12,7 @@ import {
   getVisibleMessagesByChatId,
   getMessageById,
   updateMessage,
+  toggleMessageChecklistItem,
   deleteMessage,
   getScheduledMessages,
   getScheduledMessagesByChatId,
@@ -85,6 +86,7 @@ describe('messageRepository', () => {
       expect(result).toEqual({
         id: 'msg-1', chatId: 'chat-1', body: 'Hello', type: 'reminder',
         enabled: false, intervalMinutes: null, payload: periodicRow.payload,
+        checklist: null,
         scheduledAt: '2026-01-01T00:15:00.000Z',
         createdAt: '2026-01-01T00:15:00.000Z',
         updatedAt: '2026-01-01T00:15:00.000Z',
@@ -178,6 +180,7 @@ describe('messageRepository', () => {
           '{"key":"val"}',
           msg.createdAt,
           msg.updatedAt,
+          null,
         ],
       );
     });
@@ -236,6 +239,7 @@ describe('messageRepository', () => {
         payload: null,
         createdAt: '2026-01-01T00:00:00.000Z',
         updatedAt: '2026-01-01T00:00:00.000Z',
+        checklist: null,
       });
       expect(messages[1].enabled).toBe(true);
     });
@@ -335,6 +339,81 @@ describe('messageRepository', () => {
       mockExecuteSync.mockReturnValue({ rows: [] });
 
       expect(updateMessage('missing', { body: 'New' })).toBeNull();
+    });
+  });
+
+  describe('checklist persistence', () => {
+    const items = [
+      { id: 'milk', text: 'Milk', checked: false },
+      { id: 'kefir', text: 'Kefir', checked: true },
+    ];
+    const row = { ...sampleDbRow, body: 'Milk\nKefir', checklist: JSON.stringify(items) };
+
+    it('stores and reads ordered checklist items separately from searchable text', () => {
+      mockExecuteSync.mockReturnValue({ rows: [] });
+      const message = createMessage('chat-1', 'simple', ' Milk\nKefir\n', null, null, null, 'msg-1', items);
+      expect(message.body).toBe('Milk\nKefir');
+      expect(message.checklist).toEqual(items);
+      expect(mockExecuteSync).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO messages'),
+        expect.arrayContaining([JSON.stringify(items), 'milk\nkefir']),
+      );
+      mockExecuteSync.mockReturnValue({ rows: [row] });
+      expect(getMessageById('msg-1')?.checklist).toEqual(items);
+    });
+
+    it('preserves other items when toggling and reads the saved state on the next tap', () => {
+      let stored = { ...row };
+      mockExecuteSync.mockImplementation((sql: string, params: unknown[]) => {
+        if (sql.startsWith('UPDATE messages SET checklist')) {
+          stored = { ...stored, checklist: params[0] as string, updated_at: params[1] as string };
+          return { rows: [], rowsAffected: 1 };
+        }
+        return { rows: [stored] };
+      });
+      expect(toggleMessageChecklistItem('msg-1', 'milk')?.checklist?.map(item => item.checked)).toEqual([true, true]);
+      expect(getMessagesByChatId('chat-1')[0].checklist?.[0].checked).toBe(true);
+      expect(toggleMessageChecklistItem('msg-1', 'milk')?.checklist?.map(item => item.checked)).toEqual([false, true]);
+      expect(stored.body).toBe(row.body);
+      expect(stored.created_at).toBe(row.created_at);
+    });
+
+    it.each([
+      ['missing message', []],
+      ['ordinary message', [sampleDbRow]],
+      ['deleted item', [row]],
+    ])('does not write when toggling a %s', (_label, rows) => {
+      mockExecuteSync.mockReturnValue({ rows });
+      expect(toggleMessageChecklistItem('msg-1', 'unknown')).toBeNull();
+      expect(mockExecuteSync).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves checked items when editing or reordering text and starts new items unchecked', () => {
+      mockExecuteSync.mockReturnValue({ rows: [row] });
+      const message = updateMessage('msg-1', { body: ' Kefir \nBread\n' });
+      expect(message?.body).toBe('Kefir\nBread');
+      expect(message?.checklist).toEqual([
+        items[1], { id: expect.any(String), text: 'Bread', checked: false },
+      ]);
+      expect(mockExecuteSync).toHaveBeenLastCalledWith(
+        expect.stringContaining('checklist = ?'),
+        expect.arrayContaining([JSON.stringify(message?.checklist), 'kefir\nbread']),
+      );
+    });
+
+    it('removes checklist data if editing removes all items', () => {
+      mockExecuteSync.mockReturnValue({ rows: [row] });
+      expect(updateMessage('msg-1', { body: ' \n' })?.checklist).toBeNull();
+    });
+
+    it('preserves a checklist when stopping a periodic reminder', () => {
+      mockExecuteSync.mockReturnValue({ rows: [{ ...row, type: 'periodic', enabled: 1, interval_minutes: 5 }] });
+      expect(finishPeriodicMessage('msg-1')?.checklist).toEqual(items);
+    });
+
+    it('does not report a successful toggle when persistence fails', () => {
+      mockExecuteSync.mockReturnValueOnce({ rows: [row] }).mockImplementationOnce(() => { throw new Error('disk full'); });
+      expect(() => toggleMessageChecklistItem('msg-1', 'milk')).toThrow('disk full');
     });
   });
 

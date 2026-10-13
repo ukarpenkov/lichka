@@ -17,6 +17,7 @@ jest.mock('../../../entities/chat', () => ({
 }));
 
 jest.mock('../../../entities/message', () => ({
+  isChecklist: jest.requireActual('../../../entities/message/model/checklist').isChecklist,
   getMessageById: (id: string) => mockGetMessageById(id),
 }));
 
@@ -67,6 +68,45 @@ const baseBackup = {
 };
 
 describe('importFromJSON', () => {
+  const checklist = [
+    { id: 'milk', text: 'Milk', checked: true },
+    { id: 'soda', text: 'Soda', checked: false },
+  ];
+  const checklistBackup = (items: unknown = checklist) => ({
+    ...baseBackup,
+    schema_version: 3,
+    chats: [{ ...baseBackup.chats[0], messages: [{
+      ...baseBackup.chats[0].messages[0], body: 'Milk\nSoda', checklist: items,
+    }] }],
+  });
+
+  it('restores checklist items and completion in replace mode', () => {
+    importFromJSON(JSON.stringify(checklistBackup()), 'replace');
+    const insert = mockExecuteSync.mock.calls.find(([sql]) => sql.includes('INSERT INTO messages'));
+    expect(insert?.[1].at(-1)).toBe(JSON.stringify(checklist));
+  });
+
+  it('updates checklist state when merging a newer message', () => {
+    mockGetMessageById.mockReturnValue({ id: 'msg-1', updatedAt: '2025-01-01T00:00:00.000Z' });
+    importFromJSON(JSON.stringify(checklistBackup()), 'merge');
+    expect(mockExecuteSync).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE messages SET'),
+      expect.arrayContaining([JSON.stringify(checklist)]),
+    );
+  });
+
+  it('keeps local completion state when the imported message is older', () => {
+    mockGetMessageById.mockReturnValue({ id: 'msg-1', updatedAt: '2027-01-01T00:00:00.000Z' });
+    const result = importFromJSON(JSON.stringify(checklistBackup()), 'merge');
+    expect(result.messagesUpdated).toBe(0);
+  });
+
+  it.each([[], [{ id: 'milk', text: 'Milk', checked: 'yes' }], [checklist[0], checklist[0]],
+    [{ ...checklist[0], text: 'Different body' }]].map(items => ({ items })))('rolls back invalid checklist data: $items', ({ items }) => {
+    expect(() => importFromJSON(JSON.stringify(checklistBackup(items)), 'replace')).toThrow('Invalid file format');
+    expect(mockExecuteSync).toHaveBeenLastCalledWith('ROLLBACK');
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetSettings.mockReturnValue({ locale: 'en' });

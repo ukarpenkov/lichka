@@ -30,6 +30,7 @@ const VIGNETTE_STOPS = [
 type ImageMessageProps = {
   message: Message;
   onPress?: (data: { uri: string; width: number; height: number }) => void;
+  caption?: React.ReactNode;
 };
 
 function parseImagePayload(
@@ -94,7 +95,7 @@ function ImageVignette({
   );
 }
 
-export function ImageMessage({ message, onPress }: ImageMessageProps) {
+export function ImageMessage({ message, onPress, caption }: ImageMessageProps) {
   const { width: screenWidth } = useWindowDimensions();
   const [measuredWidth, setMeasuredWidth] = useState<number | null>(null);
 
@@ -128,9 +129,7 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
   }, [imageData, absoluteUri, onPress]);
 
   if (!imageData || !absoluteUri) {
-    return (
-      <LinkifiedText variant="body" text={message.body} style={styles.fallback} />
-    );
+    return <>{caption ?? <LinkifiedText variant="body" text={message.body} style={styles.fallback} />}</>;
   }
 
   const aspectRatio =
@@ -172,9 +171,9 @@ export function ImageMessage({ message, onPress }: ImageMessageProps) {
           />
         </View>
       </Pressable>
-      {hasCaption && (
+      {caption ?? (hasCaption && (
         <LinkifiedText variant="body" text={message.body} style={styles.caption} />
-      )}
+      ))}
     </View>
   );
 }

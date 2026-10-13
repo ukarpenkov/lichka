@@ -1,6 +1,6 @@
 import React from 'react';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
-import {AccessibilityInfo, StyleSheet} from 'react-native';
+import {AccessibilityInfo, StyleSheet, View} from 'react-native';
 import {RetroTextInput} from '..';
 
 const inputStyle = {
@@ -27,6 +27,23 @@ const line = {
 const hiddenQueryOptions = {includeHiddenElements: true};
 
 describe('RetroTextInput', () => {
+  it('uses one decorative marker per logical line including an empty final line', () => {
+    const { getByTestId, queryByTestId, rerender } = render(
+      <RetroTextInput cursorColor="#000" cursorTestID="list" style={inputStyle}
+        value={'A long paragraph that wraps visually\nMilk\n'}
+        lineStartAdornment={<View />} testID="input" />,
+    );
+    expect(getByTestId('list-line-marker-2', hiddenQueryOptions)).toBeTruthy();
+    expect(queryByTestId('list-line-marker-3', hiddenQueryOptions)).toBeNull();
+    expect(StyleSheet.flatten(getByTestId('input').props.style).paddingLeft).toBe(28);
+    expect(getByTestId('list-line-markers', hiddenQueryOptions).props.pointerEvents).toBe('none');
+    fireEvent.scroll(getByTestId('input'), { nativeEvent: { contentOffset: { x: 0, y: 48 } } });
+    expect(StyleSheet.flatten(getByTestId('list-line-markers', hiddenQueryOptions).props.style).top).toBe(-42);
+    rerender(<RetroTextInput cursorColor="#000" cursorTestID="list" style={inputStyle} value="Milk" testID="input" />);
+    expect(queryByTestId('list-line-markers', hiddenQueryOptions)).toBeNull();
+    expect(StyleSheet.flatten(getByTestId('input').props.style).paddingLeft).toBeUndefined();
+  });
+
   beforeEach(() => {
     jest
       .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')

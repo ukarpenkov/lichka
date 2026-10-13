@@ -82,7 +82,7 @@ describe('exportToZIP', () => {
     const backupCall = writeFileCalls.find((c: string[]) => c[0].endsWith('/backup.json'));
     expect(backupCall).toBeDefined();
     const json = JSON.parse(backupCall![1] as string);
-    expect(json.schema_version).toBe(2);
+    expect(json.schema_version).toBe(3);
     expect(json.chats).toHaveLength(1);
     expect(json.chats[0].isSystem).toBe(false);
     expect(json.readMarkers).toEqual({});

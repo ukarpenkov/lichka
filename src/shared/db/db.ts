@@ -109,6 +109,9 @@ const MIGRATIONS: Record<number, MigrationDef> = {
       }
     },
   },
+  9: `
+    ALTER TABLE messages ADD COLUMN checklist TEXT;
+  `,
 };
 
 let dbInstance: DB | null = null;

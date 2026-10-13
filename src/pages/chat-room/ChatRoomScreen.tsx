@@ -53,6 +53,7 @@ import {
 import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { markChatAsRead } from '../../features/unread-badges';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
+import { toggleChecklistItem } from '../../features/message-checklist';
 import {
   ImageViewer,
   useImageViewer,
@@ -656,6 +657,16 @@ export function ChatRoomScreen() {
 
   const { saveEdit } = useEditMessage();
 
+  const handleChecklistItemPress = useCallback((checklistMessageId: string, itemId: string) => {
+    try {
+      toggleChecklistItem(checklistMessageId, itemId);
+      loadData();
+      loadFuture();
+    } catch {
+      setDialog({ title: t.error, message: t.checklistSaveError });
+    }
+  }, [loadData, loadFuture, t]);
+
   const handleStopReminder = useCallback(() => {
     if (!menuMessage) return;
     stopPeriodicReminder(menuMessage);
@@ -735,6 +746,7 @@ export function ChatRoomScreen() {
             animateEnter={animateEnter}
             onLongPress={openMessageMenu}
             onImagePress={open}
+            onChecklistItemPress={handleChecklistItemPress}
           />
         );
       if (GAP_DEBUG && index === 0) {
@@ -751,7 +763,7 @@ export function ChatRoomScreen() {
       }
       return content;
     },
-    [open, highlightedMessageId, openMessageMenu, measureGap],
+    [open, highlightedMessageId, openMessageMenu, measureGap, handleChecklistItemPress],
   );
 
   const keyExtractor = useCallback((item: ListItem) => item.key, []);

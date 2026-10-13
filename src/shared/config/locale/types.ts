@@ -136,6 +136,8 @@ export interface LocaleDictionary {
   // Voice
   voiceMessage: (sec: number) => string;
   recording: (duration: string) => string;
+  checklistMode: string;
+  checklistSaveError: string;
   messageInput: string;
 
   // Image

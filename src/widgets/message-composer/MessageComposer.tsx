@@ -12,7 +12,7 @@ import Animated, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, useLocale, fonts, radii } from '../../shared/config';
 import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
-import { createMessage, type MessageType } from '../../entities/message';
+import { createMessage, checklistFromText, type MessageType } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
 import {
   scheduleNotification,
@@ -21,7 +21,7 @@ import {
 } from '../../features/notifications';
 import { useVoiceRecorder, requestMicrophonePermission } from '../../features/voice-record';
 import { RetroTextInput } from '../../features/retro-text-caret';
-import { Send, Bell, Repeat, X, Square, Paperclip } from '../../shared/ui/pixel';
+import { Send, Bell, Repeat, X, Square, Paperclip, CheckboxEmpty, CheckboxChecked } from '../../shared/ui/pixel';
 import {
   hapticLongPress,
   hapticSuccess,
@@ -73,6 +73,7 @@ export function MessageComposer({
   const { colors } = useTheme();
   const { t } = useLocale();
   const [body, setBody] = useState('');
+  const [checklistMode, setChecklistMode] = useState(false);
   const [pickerMode, setPickerMode] = useState<PickerMode>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
   const [intervalVisible, setIntervalVisible] = useState(false);
@@ -133,6 +134,7 @@ export function MessageComposer({
 
     if (initialText) {
       setBody(initialText);
+      setChecklistMode(false);
     }
 
     if (!initialImageUri) {
@@ -178,7 +180,8 @@ export function MessageComposer({
 
   const sendMessage = useCallback(
     async (type: 'simple' | 'reminder' | 'alarm' | 'periodic', opts?: { scheduledAt?: string; intervalMinutes?: number }) => {
-      const textBody = body.trim();
+      const checklist = checklistMode ? checklistFromText(body) : null;
+      const textBody = checklist ? checklist.map(item => item.text).join('\n') : body.trim();
       if (!textBody && !imagePreview) return;
 
       let payload: string | null = null;
@@ -208,6 +211,7 @@ export function MessageComposer({
         opts?.intervalMinutes ?? null,
         payload,
         msgId,
+        checklist?.length ? checklist : null,
       );
 
       if (finalType !== 'simple' && finalType !== 'image') {
@@ -217,10 +221,11 @@ export function MessageComposer({
       triggerHapticSuccess();
       triggerSendSound();
       setBody('');
+      setChecklistMode(false);
       setImagePreview(null);
       onSent?.();
     },
-    [body, imagePreview, chatId, onSent, t, triggerHapticSuccess, triggerSendSound],
+    [body, checklistMode, imagePreview, chatId, onSent, t, triggerHapticSuccess, triggerSendSound],
   );
 
   const handleAttachImage = useCallback(async () => {
@@ -232,6 +237,11 @@ export function MessageComposer({
     } catch {
       setImageErrorDialog(true);
     }
+  }, []);
+
+  const handleBodyChange = useCallback((text: string) => {
+    setBody(text);
+    if (!text) setChecklistMode(false);
   }, []);
 
   const handleRemoveImage = useCallback(() => {
@@ -440,11 +450,25 @@ export function MessageComposer({
             placeholder={imagePreview ? t.messagePlaceholder : t.messageInput}
             placeholderTextColor={colors.mutedSoft}
             multiline
-            textAlignVertical="center"
+            textAlignVertical={checklistMode ? 'top' : 'center'}
             value={body}
-            onChangeText={setBody}
+            onChangeText={handleBodyChange}
+            lineStartAdornment={checklistMode ? <CheckboxEmpty size={20} color={colors.muted} /> : undefined}
             maxLength={4000}
           />
+          {(checklistMode || body.includes('\n')) && (
+            <Pressable
+              testID="composer-checklist-toggle"
+              accessibilityRole="checkbox"
+              accessibilityLabel={t.checklistMode}
+              accessibilityState={{ checked: checklistMode }}
+              onPress={() => setChecklistMode(active => !active)}
+              style={styles.checklistButton}>
+              {checklistMode
+                ? <CheckboxChecked size={22} color={colors.ink} />
+                : <CheckboxEmpty size={22} color={colors.muted} />}
+            </Pressable>
+          )}
           <IconButton icon={Paperclip} size={22} color={colors.muted} haptic onPress={handleAttachImage} />
         </View>
         <View style={styles.actions}>
@@ -538,6 +562,7 @@ const styles = StyleSheet.create({
   inputHost: {
     flex: 1,
   },
+  checklistButton: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   input: {
     fontSize: 16,
     lineHeight: 24,

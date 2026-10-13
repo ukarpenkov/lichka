@@ -16,6 +16,26 @@ describe('db migrations', () => {
     mockExecuteSync.mockReset();
   });
 
+  describe('migration 9 — message checklists', () => {
+    it('adds nullable checklist storage without rewriting existing messages', () => {
+      mockExecuteSync.mockImplementation((sql: string) => ({ rows: sql.startsWith('SELECT version')
+        ? [1, 3, 4, 5, 6, 7, 8].map(version => ({ version })) : [] }));
+      runMigrations();
+      expect(mockExecuteSync).toHaveBeenCalledWith('ALTER TABLE messages ADD COLUMN checklist TEXT');
+      expect(mockExecuteSync).toHaveBeenCalledWith('INSERT INTO schema_migrations (version) VALUES (?)', [9]);
+      const sqls = mockExecuteSync.mock.calls.map(([sql]) => sql as string);
+      expect(sqls.some(sql => sql.startsWith('DROP') || sql.startsWith('DELETE'))).toBe(false);
+      expect(sqls.at(-1)).toBe('COMMIT');
+    });
+
+    it('does not reapply the checklist migration on the next launch', () => {
+      mockExecuteSync.mockImplementation((sql: string) => ({ rows: sql.startsWith('SELECT version')
+        ? [1, 3, 4, 5, 6, 7, 8, 9].map(version => ({ version })) : [] }));
+      runMigrations();
+      expect(mockExecuteSync).not.toHaveBeenCalledWith('ALTER TABLE messages ADD COLUMN checklist TEXT');
+    });
+  });
+
   describe('migration 6 — image type support', () => {
     it('should apply migration 6 when previous migrations (1-5) are already applied', () => {
       mockExecuteSync.mockReturnValueOnce({ rows: [] });

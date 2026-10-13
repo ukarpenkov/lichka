@@ -1,10 +1,12 @@
-export type { Message, MessageType } from './model/types';
+export type { Message, MessageType, ChecklistItem } from './model/types';
+export { checklistFromText, isChecklist } from './model/checklist';
 export {
   createMessage,
   getMessagesByChatId,
   getVisibleMessagesByChatId,
   getMessageById,
   updateMessage,
+  toggleMessageChecklistItem,
   deleteMessage,
   getScheduledMessages,
   getScheduledMessagesByChatId,

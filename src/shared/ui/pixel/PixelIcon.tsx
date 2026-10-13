@@ -12,9 +12,14 @@ export type IconProps = {
 export type PixelIconComponent = React.ComponentType<IconProps>;
 
 const VIEW = 32;
+const CHECKBOX_FRAME = 'M3.05 3.05h25.9v25.9H3.05Zm3.05 3.05v19.8h19.8V6.1Z';
+// Tick from Streamline Pixel's business-product-check (CC BY 4.0), without its badge.
+const CHECKBOX_TICK = 'M15.235 16.765h-1.52v-1.52h-1.53v-1.53h-1.52v1.53h-1.52v1.52h1.52v1.52h1.52v1.53h1.53v1.52h1.52v-1.52h1.53v-1.53h1.52v-1.52h1.52v-1.52h1.53v-1.53h1.52v-1.52h-1.52v-1.53h-1.53v1.53h-1.52v1.52h-1.52v1.53h-1.53Z';
 
 /** Icons missing from Streamline Pixel — same 32px grid, fillable. */
 const CUSTOM: Record<string, string[]> = {
+  'checkbox-empty': [CHECKBOX_FRAME],
+  'checkbox-checked': [CHECKBOX_FRAME, CHECKBOX_TICK],
   plus: ['M14.48 6.1h3.05v8.38H25.9v3.05H17.53V25.9H14.48V17.53H6.1V14.48h8.38V6.1Z'],
   close: [
     'M6.1 4.57h3.05v3.05h3.05v3.05h2.28v3.05h3.05V10.67h3.05V7.62h3.05V4.57h3.05v3.05h-3.05v3.05h-3.05v3.05h-3.05v3.05h3.05v3.05h3.05v3.05h3.05v3.05h-3.05v-3.05h-3.05v-3.05h-3.05v-3.05h-3.05v3.05h-3.05v3.05H9.15v3.05H6.1v-3.05h3.05v-3.05h3.05v-3.05h3.05v-3.05H12.2V10.67H9.15V7.62H6.1V4.57Z',

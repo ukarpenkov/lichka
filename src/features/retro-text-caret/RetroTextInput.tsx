@@ -43,6 +43,8 @@ export type RetroTextInputProps = Omit<
   cursorColor: string;
   cursorTestID?: string;
   style?: TextInputProps['style'];
+  /** Decorative, non-interactive marker for each explicit newline, never soft wraps. */
+  lineStartAdornment?: React.ReactNode;
 };
 
 function clampSelection(selection: Selection, textLength: number): Selection {
@@ -63,6 +65,7 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
       cursorColor,
       cursorTestID = 'retro-text-caret',
       defaultValue = '',
+      lineStartAdornment,
       maxFontSizeMultiplier,
       onBlur,
       onChangeText,
@@ -90,9 +93,13 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
     const [scrollOffset, setScrollOffset] = useState({x: 0, y: 0});
     const [containerWidth, setContainerWidth] = useState(0);
 
+    const baseStyle = StyleSheet.flatten(style) ?? {};
     const inputStyle: StyleProp<TextStyle> = [
       Platform.OS === 'android' ? {includeFontPadding: false} : null,
       style,
+      lineStartAdornment ? {
+        paddingLeft: numericStyleValue(baseStyle.paddingLeft ?? baseStyle.paddingHorizontal ?? baseStyle.padding) + 24,
+      } : null,
     ];
     const flattenedStyle = StyleSheet.flatten(inputStyle) ?? {};
     const paddingLeft = numericStyleValue(
@@ -310,6 +317,33 @@ export const RetroTextInput = forwardRef<TextInput, RetroTextInputProps>(
           value={text}
         />
 
+        {lineStartAdornment ? (
+          <View
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[styles.lineMarkers, {
+              left: paddingLeft,
+              right: paddingRight,
+              top: paddingTop - scrollOffset.y,
+            }]}
+            testID={`${cursorTestID}-line-markers`}>
+            {text.split(/\r?\n/).map((paragraph, index) => (
+              <View key={index}>
+                <Text
+                  allowFontScaling={allowFontScaling}
+                  maxFontSizeMultiplier={maxFontSizeMultiplier}
+                  style={[measurementTypography, styles.lineMeasurement]}>
+                  {paragraph || ZERO_WIDTH_MARKER}
+                </Text>
+                <View style={styles.lineMarker} testID={`${cursorTestID}-line-marker-${index}`}>
+                  {lineStartAdornment}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         {focused && hasCollapsedSelection ? (
           <Text
             accessibilityElementsHidden
@@ -361,6 +395,9 @@ const styles = StyleSheet.create({
     opacity: 0,
     position: 'absolute',
   },
+  lineMarkers: { position: 'absolute' },
+  lineMeasurement: { opacity: 0 },
+  lineMarker: { position: 'absolute', left: -24, top: 2 },
   caret: {
     height: CARET_HEIGHT,
     position: 'absolute',

@@ -1,7 +1,7 @@
 import { getDatabase } from '../../shared/db';
 import { normalizeSearchText } from '../../shared/db/normalizeSearchText';
 import { getChatById } from '../../entities/chat';
-import { getMessageById } from '../../entities/message';
+import { getMessageById, isChecklist } from '../../entities/message';
 import {
   updateSettings,
   type AppSettings,
@@ -118,13 +118,18 @@ export function importFromJSON(json: string, mode: ImportMode): ImportResult {
         }
 
         const body = typeof msg.body === 'string' ? msg.body : '';
+        if (msg.checklist != null && (!isChecklist(msg.checklist) ||
+            msg.checklist.map((item: { text: string }) => item.text).join('\n') !== body)) {
+          throw new Error(t.invalidFormat);
+        }
+        const checklist = msg.checklist == null ? null : JSON.stringify(msg.checklist);
         const bodyLc = normalizeSearchText(body);
         const existingMsg = getMessageById(msg.id);
 
         if (mode === 'merge' && existingMsg) {
           if (msg.updatedAt > existingMsg.updatedAt) {
             db.executeSync(
-              `UPDATE messages SET chat_id = ?, type = ?, body = ?, body_lc = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, created_at = ?, updated_at = ? WHERE id = ?`,
+              `UPDATE messages SET chat_id = ?, type = ?, body = ?, body_lc = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, created_at = ?, updated_at = ?, checklist = ? WHERE id = ?`,
               [
                 chat.id,
                 msg.type,
@@ -136,6 +141,7 @@ export function importFromJSON(json: string, mode: ImportMode): ImportResult {
                 msg.payload ?? null,
                 msg.createdAt,
                 msg.updatedAt,
+                checklist,
                 msg.id,
               ],
             );
@@ -143,7 +149,7 @@ export function importFromJSON(json: string, mode: ImportMode): ImportResult {
           }
         } else {
           db.executeSync(
-            `INSERT INTO messages (id, chat_id, type, body, body_lc, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO messages (id, chat_id, type, body, body_lc, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at, checklist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               msg.id,
               chat.id,
@@ -156,6 +162,7 @@ export function importFromJSON(json: string, mode: ImportMode): ImportResult {
               msg.payload ?? null,
               msg.createdAt,
               msg.updatedAt,
+              checklist,
             ],
           );
           result.messagesAdded++;

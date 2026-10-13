@@ -100,6 +100,21 @@ describe('formatLogTime', () => {
 });
 
 describe('MessageLine', () => {
+  it('renders an interactive checklist and forwards the message and item identity', () => {
+    const onChecklistItemPress = jest.fn();
+    const message = { ...createMessage(), checklist: [
+      { id: 'milk', text: 'Milk', checked: false },
+      { id: 'soda', text: 'Soda', checked: true },
+    ] };
+    const { getByRole, getByText } = render(<MessageLine message={message}
+      onLongPress={onLongPress} onChecklistItemPress={onChecklistItemPress} />);
+    fireEvent.press(getByRole('checkbox', { name: 'Milk' }));
+    expect(onChecklistItemPress).toHaveBeenCalledWith('msg-1', 'milk');
+    expect(getByText('Soda')).toHaveStyle({ textDecorationLine: 'line-through' });
+    fireEvent(getByRole('checkbox', { name: 'Soda' }), 'longPress');
+    expect(onLongPress).toHaveBeenCalledWith(message);
+  });
+
   it('should show a stopped reminder at its last occurrence without the repeat icon or edited marker', () => {
     const timestamp = '2026-01-01T00:15:00.000Z';
     const { getByTestId, queryByTestId, getByText, queryByText } = render(

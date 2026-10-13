@@ -9,6 +9,7 @@ const mockGetSettings = jest.fn(() => ({ hapticEnabled: false, soundEnabled: fal
 const mockPlaySendSound = jest.fn();
 
 jest.mock('../../../entities/message', () => ({
+  checklistFromText: jest.requireActual('../../../entities/message/model/checklist').checklistFromText,
   createMessage: (...args: unknown[]) => mockCreateMessage(...args),
   getMessageById: jest.fn(),
   getMessagesByChatId: jest.fn(),
@@ -71,6 +72,7 @@ jest.mock('../../../shared/config/LocaleProvider', () => ({
   useLocale: () => ({
     t: {
       messageInput: 'Message...',
+      checklistMode: 'Checklist',
       messagePlaceholder: 'Message text...',
       imageMessage: (w: number, h: number) => `[image:${w}x${h}]`,
       attachImage: 'Attach image',
@@ -145,6 +147,60 @@ beforeEach(() => {
 });
 
 describe('MessageComposer', () => {
+  it('reveals the checklist switch after an explicit newline, not ordinary typing', () => {
+    const { getByPlaceholderText, queryByTestId, getByRole } = render(<MessageComposer chatId="chat-1" />);
+    const input = getByPlaceholderText('Message...');
+    fireEvent.changeText(input, 'Milk');
+    expect(queryByTestId('composer-checklist-toggle')).toBeNull();
+    fireEvent.changeText(input, 'Milk\n');
+    expect(getByRole('checkbox', { name: 'Checklist' }).props.accessibilityState).toMatchObject({ checked: false });
+  });
+
+  it('marks every draft line without enabling item toggles and preserves text when switched off', () => {
+    const { getByPlaceholderText, getByRole, getAllByRole, getByTestId, queryByTestId } = render(<MessageComposer chatId="chat-1" />);
+    fireEvent.changeText(getByPlaceholderText('Message...'), 'Milk\nKefir\n');
+    fireEvent.press(getByRole('checkbox', { name: 'Checklist' }));
+    expect(getByRole('checkbox', { name: 'Checklist' }).props.accessibilityState).toMatchObject({ checked: true });
+    expect(getByTestId('message-composer-caret-line-marker-2', { includeHiddenElements: true })).toBeTruthy();
+    expect(getAllByRole('checkbox')).toHaveLength(1);
+    fireEvent.press(getByRole('checkbox', { name: 'Checklist' }));
+    expect(getByPlaceholderText('Message...').props.value).toBe('Milk\nKefir\n');
+    expect(queryByTestId('message-composer-caret-line-markers', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('sends all nonempty items unchecked and resets the composer', async () => {
+    const onSent = jest.fn();
+    const { getByPlaceholderText, getByTestId, queryByTestId } = render(<MessageComposer chatId="chat-1" onSent={onSent} />);
+    fireEvent.changeText(getByPlaceholderText('Message...'), 'молоко\nкефир\nCoca-Cola\nсода\n');
+    fireEvent.press(getByTestId('composer-checklist-toggle'));
+    fireEvent.press(getByTestId('composer-send'));
+    await waitFor(() => expect(onSent).toHaveBeenCalledTimes(1));
+    expect(mockCreateMessage.mock.calls[0][2]).toBe('молоко\nкефир\nCoca-Cola\nсода');
+    expect(mockCreateMessage.mock.calls[0][7]).toEqual(
+      ['молоко', 'кефир', 'Coca-Cola', 'сода'].map(text => ({ id: expect.any(String), text, checked: false })),
+    );
+    expect(getByPlaceholderText('Message...').props.value).toBe('');
+    expect(queryByTestId('composer-checklist-toggle')).toBeNull();
+  });
+
+  it('keeps plain multiline messages unchanged when the mode is not enabled', () => {
+    const { getByPlaceholderText, getByTestId } = render(<MessageComposer chatId="chat-1" />);
+    fireEvent.changeText(getByPlaceholderText('Message...'), 'Milk\nKefir');
+    fireEvent.press(getByTestId('composer-send'));
+    expect(mockCreateMessage.mock.calls[0][7]).toBeNull();
+  });
+
+  it('keeps newly added lines in checklist mode and resets after deleting the entire draft', () => {
+    const { getByPlaceholderText, getByTestId, queryByTestId } = render(<MessageComposer chatId="chat-1" />);
+    const input = getByPlaceholderText('Message...');
+    fireEvent.changeText(input, 'Milk\n');
+    fireEvent.press(getByTestId('composer-checklist-toggle'));
+    fireEvent.changeText(input, 'Milk\nKefir\nSoda');
+    expect(getByTestId('message-composer-caret-line-marker-2', { includeHiddenElements: true })).toBeTruthy();
+    fireEvent.changeText(input, '');
+    expect(queryByTestId('composer-checklist-toggle')).toBeNull();
+  });
+
   it('renders Paperclip button', () => {
     const { getByTestId } = render(<MessageComposer chatId="chat-1" />);
     expect(getByTestId('icon-Paperclip')).toBeTruthy();

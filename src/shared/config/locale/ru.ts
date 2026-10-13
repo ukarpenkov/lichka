@@ -140,6 +140,8 @@ export const ru: LocaleBundle = {
     // Voice
     voiceMessage: (sec) => `[voice:${sec}]`,
     recording: (duration) => `Запись ${duration}`,
+    checklistMode: 'Список с галочками',
+    checklistSaveError: 'Не удалось сохранить галочку. Попробуйте ещё раз.',
     messageInput: 'Сообщение...',
 
     // Image

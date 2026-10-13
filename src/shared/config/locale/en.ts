@@ -140,6 +140,8 @@ export const en: LocaleBundle = {
     // Voice
     voiceMessage: (sec) => `[voice:${sec}]`,
     recording: (duration) => `Recording ${duration}`,
+    checklistMode: 'Checklist',
+    checklistSaveError: 'Could not save the checklist. Please try again.',
     messageInput: 'Message...',
 
     // Image

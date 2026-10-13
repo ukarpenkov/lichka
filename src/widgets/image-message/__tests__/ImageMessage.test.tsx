@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render } from '@testing-library/react-native';
 import { ImageMessage } from '../ImageMessage';
 import type { Message } from '../../../entities/message';
@@ -32,6 +33,17 @@ const createMessage = (overrides: Partial<Message> = {}): Message => ({
 });
 
 describe('ImageMessage', () => {
+  it.each([null, JSON.stringify({ uri: 'media/images/1.jpg', width: 800, height: 600 })])(
+    'renders a supplied checklist caption exactly once, including missing media: %s', payload => {
+      const { getAllByText, queryByText } = render(
+        <ImageMessage message={createMessage({ body: 'plain caption', payload })}
+          caption={<Text>Checklist caption</Text>} />,
+      );
+      expect(getAllByText('Checklist caption')).toHaveLength(1);
+      expect(queryByText('plain caption')).toBeNull();
+    },
+  );
+
   it('renders image with valid payload', () => {
     const { UNSAFE_getByType } = render(
       <ImageMessage message={createMessage()} />,

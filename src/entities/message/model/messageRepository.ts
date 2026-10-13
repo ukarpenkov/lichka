@@ -1,10 +1,11 @@
 import { getDatabase } from '../../../shared/db';
 import { normalizeSearchText } from '../../../shared/db/normalizeSearchText';
 import { generateId } from '../../../shared/lib';
-import type { Message, MessageType } from './types';
+import type { Message, MessageType, ChecklistItem } from './types';
+import { checklistFromText, parseChecklist } from './checklist';
 
 const SELECT_COLUMNS =
-  'id, chat_id, type, body, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at';
+  'id, chat_id, type, body, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at, checklist';
 
 export function createMessage(
   chatId: string,
@@ -14,6 +15,7 @@ export function createMessage(
   intervalMinutes?: number | null,
   payload?: string | null,
   id?: string,
+  checklist?: ChecklistItem[] | null,
 ): Message {
   const db = getDatabase();
   const msgId = id ?? generateId();
@@ -22,23 +24,27 @@ export function createMessage(
   const interval = intervalMinutes ?? null;
   const enabled = type === 'simple' || type === 'image' ? 0 : 1;
   const pl = payload ?? null;
-  const bodyLc = normalizeSearchText(body);
+  const items = checklist?.length ? checklistFromText(body, checklist) : null;
+  const textBody = items?.length ? items.map(item => item.text).join('\n') : body;
+  const bodyLc = normalizeSearchText(textBody);
 
   db.executeSync(
-    `INSERT INTO messages (id, chat_id, type, body, body_lc, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [msgId, chatId, type, body, bodyLc, sAt, interval, enabled, pl, now, now],
+    `INSERT INTO messages (id, chat_id, type, body, body_lc, scheduled_at, interval_minutes, enabled, payload, created_at, updated_at, checklist)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [msgId, chatId, type, textBody, bodyLc, sAt, interval, enabled, pl, now, now,
+      items?.length ? JSON.stringify(items) : null],
   );
 
   return {
     id: msgId,
     chatId,
     type,
-    body,
+    body: textBody,
     scheduledAt: sAt,
     intervalMinutes: interval,
     enabled: enabled === 1,
     payload: pl,
+    checklist: items?.length ? items : null,
     createdAt: now,
     updatedAt: now,
   };
@@ -79,7 +85,7 @@ export function updateMessage(
   const existing = getMessageById(id);
   if (!existing) return null;
 
-  const body = fields.body ?? existing.body;
+  let body = fields.body ?? existing.body;
   const scheduledAt =
     fields.scheduledAt !== undefined ? fields.scheduledAt : existing.scheduledAt;
   const intervalMinutes =
@@ -92,8 +98,14 @@ export function updateMessage(
     fields.payload !== undefined ? fields.payload : existing.payload;
   const now = new Date().toISOString();
 
+  const items = existing.checklist
+    ? checklistFromText(body, existing.checklist)
+    : null;
+  const checklist = items?.length ? items : null;
+  if (checklist) body = checklist.map(item => item.text).join('\n');
+
   db.executeSync(
-    `UPDATE messages SET body = ?, body_lc = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, updated_at = ? WHERE id = ?`,
+    `UPDATE messages SET body = ?, body_lc = ?, scheduled_at = ?, interval_minutes = ?, enabled = ?, payload = ?, updated_at = ?, checklist = ? WHERE id = ?`,
     [
       body,
       normalizeSearchText(body),
@@ -102,6 +114,7 @@ export function updateMessage(
       enabled,
       payload,
       now,
+      checklist ? JSON.stringify(checklist) : null,
       id,
     ],
   );
@@ -115,9 +128,25 @@ export function updateMessage(
     intervalMinutes,
     enabled: enabled === 1,
     payload,
+    checklist,
     createdAt: existing.createdAt,
     updatedAt: now,
   };
+}
+
+/** Read the latest persisted state so rapid taps never overwrite another item. */
+export function toggleMessageChecklistItem(id: string, itemId: string): Message | null {
+  const existing = getMessageById(id);
+  if (!existing?.checklist?.some(item => item.id === itemId)) return null;
+  const checklist = existing.checklist.map(item => item.id === itemId
+    ? { ...item, checked: !item.checked }
+    : item);
+  const updatedAt = new Date().toISOString();
+  getDatabase().executeSync(
+    'UPDATE messages SET checklist = ?, updated_at = ? WHERE id = ?',
+    [JSON.stringify(checklist), updatedAt, id],
+  );
+  return { ...existing, checklist, updatedAt };
 }
 
 export function deleteMessage(id: string): boolean {
@@ -372,6 +401,7 @@ function mapRow(row: Record<string, unknown>): Message {
     intervalMinutes: row.interval_minutes as number | null,
     enabled: (row.enabled as number) === 1,
     payload: row.payload as string | null,
+    checklist: parseChecklist(row.checklist),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

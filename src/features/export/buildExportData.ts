@@ -2,13 +2,14 @@ import { getChats } from '../../entities/chat';
 import {
   getMessagesByChatId,
   getAllReadMarkers,
+  type ChecklistItem,
 } from '../../entities/message';
 import { getSettings, type AppSettings } from '../../entities/settings';
 
 /** Current export format version (independent of DB migration versions). */
-export const EXPORT_SCHEMA_VERSION = 2;
+export const EXPORT_SCHEMA_VERSION = 3;
 export const MIN_SUPPORTED_EXPORT_SCHEMA = 1;
-export const MAX_SUPPORTED_EXPORT_SCHEMA = 2;
+export const MAX_SUPPORTED_EXPORT_SCHEMA = 3;
 
 export interface ExportMessage {
   id: string;
@@ -18,6 +19,7 @@ export interface ExportMessage {
   intervalMinutes: number | null;
   enabled: boolean;
   payload: string | null;
+  checklist?: ChecklistItem[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +65,7 @@ export function buildExportData(): ExportData {
         intervalMinutes: m.intervalMinutes,
         enabled: m.enabled,
         payload: m.payload,
+        checklist: m.checklist ?? null,
         createdAt: m.createdAt,
         updatedAt: m.updatedAt,
       })),

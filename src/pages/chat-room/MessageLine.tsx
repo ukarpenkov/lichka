@@ -7,6 +7,7 @@ import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../..
 import { Text, AlarmClockIcon, LinkifiedText } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
 import { ImageMessage } from '../../widgets/image-message';
+import { Checklist } from '../../features/message-checklist';
 import { hapticLongPress } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
 import type { Message, MessageType } from '../../entities/message';
@@ -18,6 +19,7 @@ type MessageLineProps = {
   animateEnter?: boolean;
   onLongPress: (message: Message) => void;
   onImagePress?: (data: { uri: string; width: number; height: number }) => void;
+  onChecklistItemPress?: (messageId: string, itemId: string) => void;
 };
 
 /** Chat timestamp: [HH:MM] — stored seconds remain unchanged. */
@@ -66,6 +68,7 @@ export function MessageLine({
   animateEnter = true,
   onLongPress,
   onImagePress,
+  onChecklistItemPress,
 }: MessageLineProps) {
   const { colors } = useTheme();
   const { t } = useLocale();
@@ -118,9 +121,18 @@ export function MessageLine({
     .filter(Boolean)
     .join(' ');
 
+  const checklistContent = message.checklist?.length ? (
+    <Checklist
+      items={message.checklist}
+      onToggle={onChecklistItemPress ? itemId => onChecklistItemPress(message.id, itemId) : undefined}
+      onLongPress={handleLongPress}
+    />
+  ) : undefined;
+
   return (
     <Animated.View entering={animateEnter ? FadeIn.duration(180) : undefined}>
       <GesturePressable
+        accessible={!checklistContent}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         onLongPress={handleLongPress}
@@ -155,7 +167,9 @@ export function MessageLine({
           {isVoice ? (
             <VoiceMessage message={message} />
           ) : isImage ? (
-            <ImageMessage message={message} onPress={onImagePress} />
+            <ImageMessage message={message} onPress={onImagePress} caption={checklistContent} />
+          ) : checklistContent ? (
+            checklistContent
           ) : (
             <LinkifiedText variant="body" tone="body" style={styles.body} text={message.body}>
               {isEdited ? (
@@ -165,7 +179,7 @@ export function MessageLine({
               ) : null}
             </LinkifiedText>
           )}
-          {(isVoice || isImage) && isEdited ? (
+          {(isVoice || isImage || checklistContent) && isEdited ? (
             <Text variant="mono-meta" tone="muted" style={styles.editedAlone}>
               ({t.edited})
             </Text>
