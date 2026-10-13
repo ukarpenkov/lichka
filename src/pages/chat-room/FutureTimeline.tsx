@@ -78,7 +78,7 @@ function FutureMessageRow({
         {Icon ? <Icon size={20} color={colors.ink} /> : null}
       </View>
       <View style={styles.content}>
-        <LinkifiedText variant="title-sm" text={message.body} numberOfLines={1} />
+        <LinkifiedText variant="title-sm" text={message.body} />
         <Text variant="body-sm" tone="mutedSoft" style={styles.when}>
           {timeText}
         </Text>
