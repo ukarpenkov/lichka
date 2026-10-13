@@ -1,7 +1,7 @@
 # Google Play — Release notes
 
 Поле консоли: **Release notes** / **Что нового в этом выпуске**.
-Выпуск: `versionName` **3.1**, `versionCode` **11** (`android/app/build.gradle`).
+Выпуск: `versionName` **4.0**, `versionCode` **12** (`android/app/build.gradle`).
 
 **Лимит:** 500 символов на язык. Все 23 текста ниже короче лимита. Самый длинный — fr-FR, 151 символ.
 
