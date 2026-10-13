@@ -547,8 +547,6 @@ export function ImageViewer({ visible, data, onClose, openKey = 0 }: ImageViewer
     >
       <GestureHandlerRootView style={styles.root}>
         <StatusBar
-          translucent
-          backgroundColor={background}
           barStyle={isLightBackground(background) ? 'dark-content' : 'light-content'}
         />
         <Animated.View

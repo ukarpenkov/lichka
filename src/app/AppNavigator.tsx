@@ -324,7 +324,6 @@ export function AppNavigator() {
       onReady={() => setNavigationReady()}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={background}
       />
       <NotificationHandler />
       <RootStack.Navigator screenOptions={{ headerShown: false }}>

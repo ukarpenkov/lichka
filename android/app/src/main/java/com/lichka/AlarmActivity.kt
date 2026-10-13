@@ -21,6 +21,10 @@ import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.graphics.ColorUtils
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,6 +39,7 @@ class AlarmActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
@@ -48,6 +53,19 @@ class AlarmActivity : Activity() {
         }
 
         setContentView(R.layout.activity_alarm)
+        val content = findViewById<View>(R.id.alarm_content)
+        val left = content.paddingLeft
+        val top = content.paddingTop
+        val right = content.paddingRight
+        val bottom = content.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+            )
+            view.setPadding(left + bars.left, top + bars.top, right + bars.right, bottom + bars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(content)
 
         val chatTitle = intent.getStringExtra(AlarmScheduler.EXTRA_CHAT_TITLE) ?: ""
         val body = intent.getStringExtra(AlarmScheduler.EXTRA_BODY) ?: ""
@@ -114,6 +132,11 @@ class AlarmActivity : Activity() {
     private fun applyTheme(background: String, text: String) {
         val bgColor = parseColorOr(background, Color.parseColor("#0a0a0a"))
         val textColor = parseColorOr(text, Color.parseColor("#39FF14"))
+        val lightBackground = ColorUtils.calculateLuminance(bgColor) > 0.5
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = lightBackground
+            isAppearanceLightNavigationBars = lightBackground
+        }
         val muted = withAlpha(textColor, 0.6f)
         val surfaceStrong = withAlpha(textColor, 0.12f)
 
