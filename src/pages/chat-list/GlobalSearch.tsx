@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from '../../shared/ui/pixel';
 
-import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
+import { Text, KeyboardAwareView, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow, fonts } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 import { hapticTap } from '../../shared/lib';
@@ -79,68 +79,71 @@ export function GlobalSearch({ visible, onClose }: Props) {
       entering={SlideInDown.duration(200).springify().damping(20).stiffness(200)}
       exiting={FadeOut.duration(150)}
       style={[styles.container, { backgroundColor: colors.canvas }]}>
-      <View style={styles.inputRow}>
-        <TextInput
-          ref={inputRef}
-          autoFocus
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t.searchMessages}
-          placeholderTextColor={colors.mutedSoft}
-          style={[
-            styles.input,
-            {
-              color: colors.ink,
-              backgroundColor: colors.surfaceSoft,
-              fontFamily: fonts.regular,
-            },
-          ]}
-          textAlignVertical="center"
-          returnKeyType="search"
-          autoCorrect={false}
-        />
-        <IconButton icon={X} size={24} onPress={onClose} />
-      </View>
+      <KeyboardAwareView style={styles.keyboardArea}>
+        <View style={styles.inputRow}>
+          <TextInput
+            ref={inputRef}
+            autoFocus
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t.searchMessages}
+            placeholderTextColor={colors.mutedSoft}
+            style={[
+              styles.input,
+              {
+                color: colors.ink,
+                backgroundColor: colors.surfaceSoft,
+                fontFamily: fonts.regular,
+              },
+            ]}
+            textAlignVertical="center"
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          <IconButton icon={X} size={24} onPress={onClose} />
+        </View>
 
-      <FlatList
-        data={results}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <AnimatedPressable
-            scaleTo={1}
-            pressStyle={{ backgroundColor: colors.surfaceSoft }}
-            style={styles.resultItem}
-            onPress={() => handleSelect(item)}
-            {...(Platform.OS === 'android'
-              ? { android_ripple: { color: colors.surfaceSoft } }
-              : {})}>
-            <HighlightedBody text={item.highlighted} />
-            <View style={styles.resultMeta}>
-              <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
-                {item.chat_title}
-              </Text>
-              <Text variant="body-sm" tone="mutedSoft">
-                {formatTime(item.created_at)}
-              </Text>
-            </View>
-          </AnimatedPressable>
-        )}
-        ListEmptyComponent={
-          query.trim() ? (
-            <View style={styles.emptyResult}>
-              <Text variant="body-sm" tone="muted">
-                {t.nothingFound}
-              </Text>
-            </View>
-          ) : null
-        }
-        keyboardShouldPersistTaps="handled"
-      />
+        <FlatList
+          data={results}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <AnimatedPressable
+              scaleTo={1}
+              pressStyle={{ backgroundColor: colors.surfaceSoft }}
+              style={styles.resultItem}
+              onPress={() => handleSelect(item)}
+              {...(Platform.OS === 'android'
+                ? { android_ripple: { color: colors.surfaceSoft } }
+                : {})}>
+              <HighlightedBody text={item.highlighted} />
+              <View style={styles.resultMeta}>
+                <Text variant="body-sm" tone="muted" numberOfLines={1} style={styles.metaChat}>
+                  {item.chat_title}
+                </Text>
+                <Text variant="body-sm" tone="mutedSoft">
+                  {formatTime(item.created_at)}
+                </Text>
+              </View>
+            </AnimatedPressable>
+          )}
+          ListEmptyComponent={
+            query.trim() ? (
+              <View style={styles.emptyResult}>
+                <Text variant="body-sm" tone="muted">
+                  {t.nothingFound}
+                </Text>
+              </View>
+            ) : null
+          }
+          keyboardShouldPersistTaps="handled"
+        />
+      </KeyboardAwareView>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardArea: { flex: 1 },
   container: {
     position: 'absolute',
     top: 0,

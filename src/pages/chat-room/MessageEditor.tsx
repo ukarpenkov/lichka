@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Modal, View, Pressable, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { Modal, View, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
 import { useTheme, useLocale, formatScheduledAt, formatInterval, radii, fonts } from '../../shared/config';
-import { Text } from '../../shared/ui';
+import { Text, KeyboardAwareView } from '../../shared/ui';
 import { hapticTap } from '../../shared/lib';
 import { DateTimePicker } from '../../widgets/datetime-picker';
 import { PeriodPicker } from '../../widgets/period-picker';
@@ -66,77 +66,76 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAwareView style={styles.flex}>
         <Pressable style={[styles.backdrop, { backgroundColor: colors.scrim }]} onPress={onClose}>
           <Pressable
             style={[styles.card, { backgroundColor: colors.canvas }]}
             onPress={() => {}}>
-            <Text variant="title" style={styles.title}>
-              {t.editMessage}
-            </Text>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.formScroll}>
+              <Text variant="title" style={styles.title}>
+                {t.editMessage}
+              </Text>
 
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: colors.ink,
-                  backgroundColor: colors.surfaceSoft,
-                },
-              ]}
-              value={body}
-              onChangeText={setBody}
-              multiline
-              maxLength={4000}
-              placeholder={t.messagePlaceholder}
-              placeholderTextColor={colors.mutedSoft}
-              autoFocus
-            />
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: colors.ink,
+                    backgroundColor: colors.surfaceSoft,
+                  },
+                ]}
+                value={body}
+                onChangeText={setBody}
+                multiline
+                maxLength={4000}
+                placeholder={t.messagePlaceholder}
+                placeholderTextColor={colors.mutedSoft}
+                autoFocus
+              />
 
-            {isScheduled && (
-              <View style={styles.timeRow}>
-                <View style={styles.timeInfo}>
-                  <CalendarClock size={16} color={colors.muted} />
-                  <Text variant="body-sm" tone="muted">
-                    {scheduledAt ? formatScheduledAt(scheduledAt, locale) : t.notSet}
-                  </Text>
+              {isScheduled && (
+                <View style={styles.timeRow}>
+                  <View style={styles.timeInfo}>
+                    <CalendarClock size={16} color={colors.muted} />
+                    <Text variant="body-sm" tone="muted">
+                      {scheduledAt ? formatScheduledAt(scheduledAt, locale) : t.notSet}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
+                      hapticTap();
+                      setDatePickerVisible(true);
+                    }}
+                    style={styles.changeBtn}>
+                    <Text variant="button" tone="ink">
+                      {t.change}
+                    </Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => {
-                    hapticTap();
-                    setDatePickerVisible(true);
-                  }}
-                  style={styles.changeBtn}>
-                  <Text variant="button" tone="ink">
-                    {t.change}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
+              )}
 
-            {isPeriodic && (
-              <View style={styles.timeRow}>
-                <View style={styles.timeInfo}>
-                  <Repeat size={16} color={colors.muted} />
-                  <Text variant="body-sm" tone="muted">
-                    {intervalMinutes ? formatInterval(intervalMinutes, t) : t.notSet}
-                  </Text>
+              {isPeriodic && (
+                <View style={styles.timeRow}>
+                  <View style={styles.timeInfo}>
+                    <Repeat size={16} color={colors.muted} />
+                    <Text variant="body-sm" tone="muted">
+                      {intervalMinutes ? formatInterval(intervalMinutes, t) : t.notSet}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
+                      hapticTap();
+                      setPeriodPickerVisible(true);
+                    }}
+                    style={styles.changeBtn}>
+                    <Text variant="button" tone="ink">
+                      {t.change}
+                    </Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => {
-                    hapticTap();
-                    setPeriodPickerVisible(true);
-                  }}
-                  style={styles.changeBtn}>
-                  <Text variant="button" tone="ink">
-                    {t.change}
-                  </Text>
-                </Pressable>
-              </View>
-            )}
+              )}
 
+            </ScrollView>
             <View style={styles.buttons}>
               <Pressable onPress={onClose} style={styles.btn}>
                 <Text variant="button" tone="muted">
@@ -151,7 +150,7 @@ export function MessageEditor({ visible, message, onSave, onClose }: Props) {
             </View>
           </Pressable>
         </Pressable>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
 
       <DateTimePicker
         visible={datePickerVisible}
@@ -177,7 +176,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  formScroll: { flexGrow: 0, flexShrink: 1 },
   card: {
+    maxHeight: '95%',
     width: '85%',
     borderRadius: radii.lg,
     padding: 20,

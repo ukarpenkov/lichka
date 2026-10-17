@@ -5,11 +5,10 @@ import {
   Pressable,
   TextInput,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
 } from 'react-native';
 import { useTheme, useLocale, fonts, monoWeight } from '../../shared/config';
-import { Text } from '../../shared/ui';
+import { Text, KeyboardAwareView } from '../../shared/ui';
 
 const ACCENT = '#4A9EFF';
 
@@ -74,64 +73,63 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAwareView style={styles.flex}>
         <Pressable style={styles.overlay} onPress={onCancel}>
           <Pressable style={[styles.card, { backgroundColor: background }]} onPress={() => {}}>
-            <Text variant="body" style={[styles.title, { color: text }]}>
-              {t.periodicity}
-            </Text>
-
-            {/* Presets */}
-            <View style={styles.presets}>
-              {PRESETS.map((preset) => {
-                const isActive = selected === preset.value;
-                return (
-                  <Pressable
-                    key={preset.value}
-                    onPress={() => handlePresetPress(preset.value)}
-                    style={[
-                      styles.presetBtn,
-                      { borderColor: isActive ? ACCENT : text + '33' },
-                      isActive && styles.presetBtnActive,
-                    ]}
-                  >
-                    <Text
-                      variant="body"
-                      style={{
-                        color: isActive ? ACCENT : text,
-                        ...monoWeight(isActive ? 'bold' : 'regular'),
-                      }}
-                    >
-                      {preset.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {/* Custom interval */}
-            <View style={styles.customRow}>
-              <Text variant="body" style={{ color: `${text}99` }}>
-                {t.customInterval}
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.formScroll}>
+              <Text variant="body" style={[styles.title, { color: text }]}>
+                {t.periodicity}
               </Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  ref={inputRef}
-                  value={customText}
-                  onChangeText={handleCustomChange}
-                  placeholder={t.minutes}
-                  placeholderTextColor={`${text}40`}
-                  keyboardType="number-pad"
-                  style={[styles.input, { color: text, borderColor: customText ? ACCENT : text + '33' }]}
-                  maxLength={4}
-                />
-                <Text variant="caption" style={[styles.unitLabel, { color: `${text}66` }]}>{t.minutes}</Text>
-              </View>
-            </View>
 
+              {/* Presets */}
+              <View style={styles.presets}>
+                {PRESETS.map((preset) => {
+                  const isActive = selected === preset.value;
+                  return (
+                    <Pressable
+                      key={preset.value}
+                      onPress={() => handlePresetPress(preset.value)}
+                      style={[
+                        styles.presetBtn,
+                        { borderColor: isActive ? ACCENT : text + '33' },
+                        isActive && styles.presetBtnActive,
+                      ]}
+                    >
+                      <Text
+                        variant="body"
+                        style={{
+                          color: isActive ? ACCENT : text,
+                          ...monoWeight(isActive ? 'bold' : 'regular'),
+                        }}
+                      >
+                        {preset.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Custom interval */}
+              <View style={styles.customRow}>
+                <Text variant="body" style={{ color: `${text}99` }}>
+                  {t.customInterval}
+                </Text>
+                <View style={styles.inputWrap}>
+                  <TextInput
+                    ref={inputRef}
+                    value={customText}
+                    onChangeText={handleCustomChange}
+                    placeholder={t.minutes}
+                    placeholderTextColor={`${text}40`}
+                    keyboardType="number-pad"
+                    style={[styles.input, { color: text, borderColor: customText ? ACCENT : text + '33' }]}
+                    maxLength={4}
+                  />
+                  <Text variant="caption" style={[styles.unitLabel, { color: `${text}66` }]}>{t.minutes}</Text>
+                </View>
+              </View>
+
+            </ScrollView>
             {/* Buttons */}
             <View style={styles.buttons}>
               <Pressable onPress={onCancel} style={styles.btn}>
@@ -147,7 +145,7 @@ export function PeriodPicker({ visible, value, onConfirm, onCancel }: Props) {
             </View>
           </Pressable>
         </Pressable>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </Modal>
   );
 }
@@ -160,7 +158,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  formScroll: { flexGrow: 0, flexShrink: 1 },
   card: {
+    maxHeight: '95%',
     width: '90%',
     borderRadius: 16,
     padding: 20,

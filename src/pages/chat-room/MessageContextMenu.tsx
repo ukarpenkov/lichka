@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
-import { Copy, Pencil, Square, Trash2 } from '../../shared/ui/pixel';
+import { Copy, Pencil, Stop, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
 import {
   useTheme,
@@ -143,7 +143,7 @@ export function MessageContextMenu({
                 accessibilityRole="menuitem"
                 accessibilityState={{ disabled: !armed }}
               >
-                <Square size={18} color={colors.ink} />
+                <Stop size={18} color={colors.ink} />
                 <Text variant="body" style={styles.itemLabel}>{t.stopReminder}</Text>
               </Pressable>
             ) : null}

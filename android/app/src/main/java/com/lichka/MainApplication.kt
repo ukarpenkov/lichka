@@ -20,6 +20,7 @@ class MainApplication : Application(), ReactApplication {
           add(SharePackage())
           add(ShortcutPackage())
           add(SoundFxPackage())
+          add(KeyboardInsetsPackage())
         },
     )
   }

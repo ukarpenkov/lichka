@@ -44,6 +44,7 @@ export const Image = createPixelIcon('photography-photo-image');
 export const Smile = createPixelIcon('email-emoji-smile-smart');
 export const Play = createPixelIcon('video-movies-play');
 export const Pause = createPixelIcon('pause');
+export const Stop = createPixelIcon('stop');
 
 // Settings
 export const Palette = createPixelIcon('design-color-painting-palette');

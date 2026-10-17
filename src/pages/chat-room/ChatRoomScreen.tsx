@@ -24,7 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme, useLocale, spacing } from '../../shared/config';
 import {
-  getAndroidChatAreaKeyboardPad,
+  KEYBOARD_COMPOSER_GAP,
+  KEYBOARD_ANDROID_LIFT_FUDGE,
   MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
   setClipboardString,
@@ -32,7 +33,7 @@ import {
   hapticTap,
 } from '../../shared/lib';
 import { getSettings } from '../../entities/settings';
-import { Text, AlertDialog, type AlertButton } from '../../shared/ui';
+import { Text, AlertDialog, KeyboardAwareView, type AlertButton } from '../../shared/ui';
 import { getChatById, type Chat } from '../../entities/chat';
 import {
   getVisibleMessagesByChatId,
@@ -151,8 +152,6 @@ export function ChatRoomScreen() {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const keyboardOpenRef = useRef(false);
   keyboardOpenRef.current = keyboardOpen;
-  /** Android only: JS-driven pad so Yoga relayouts FlatList (Reanimated pad did not). */
-  const [androidKeyboardPad, setAndroidKeyboardPad] = useState(0);
   const {
     open,
     close,
@@ -171,7 +170,6 @@ export function ChatRoomScreen() {
   const peekHostRef = useRef<View>(null);
   const chatAreaRef = useRef<View>(null);
   const androidKeyboardPadRef = useRef(0);
-  androidKeyboardPadRef.current = androidKeyboardPad;
   const scrolledToMessageRef = useRef<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const historyOffsetRef = useRef(0);
@@ -467,13 +465,6 @@ export function ChatRoomScreen() {
     const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardOpen(true);
       entryPeekResetRef.current?.();
-      if (Platform.OS === 'android') {
-        // Sibling spacer (not parent paddingBottom): padding + overflow:hidden on
-        // Android can clip FlatList without shrinking its layout — maxOffset stays 0.
-        setAndroidKeyboardPad(
-          getAndroidChatAreaKeyboardPad(e.endCoordinates.height, tabBarHeight),
-        );
-      }
       schedulePinInvertedHistoryToTail();
       logGap('keyboardDidShow', {
         kbHeight: e.endCoordinates.height,
@@ -484,9 +475,6 @@ export function ChatRoomScreen() {
     const hideSub = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardOpen(false);
       entryPeekResetRef.current?.();
-      if (Platform.OS === 'android') {
-        setAndroidKeyboardPad(0);
-      }
       const wasAtBottom = isInvertedListAtVisualBottom(
         historyOffsetRef.current,
         historyMetricsRef.current.contentHeight,
@@ -901,7 +889,11 @@ export function ChatRoomScreen() {
           </Animated.View>
         </GestureDetector>
       ) : (
-        <View ref={chatAreaRef} collapsable={false} style={styles.chatArea}>
+        <KeyboardAwareView
+          ref={chatAreaRef}
+          style={styles.chatArea}
+          keyboardGap={KEYBOARD_COMPOSER_GAP + KEYBOARD_ANDROID_LIFT_FUDGE}
+          onKeyboardInsetChange={(inset) => { androidKeyboardPadRef.current = inset; }}>
           <View ref={peekHostRef} collapsable={false} style={styles.peekHost}>
             {/*
               List + composer stay siblings inside peekHost so FlatList gets a
@@ -1028,10 +1020,7 @@ export function ChatRoomScreen() {
               />
             </View>
           </View>
-          {Platform.OS === 'android' && androidKeyboardPad > 0 ? (
-            <View style={{ height: androidKeyboardPad }} />
-          ) : null}
-        </View>
+        </KeyboardAwareView>
       )}
 
       <MessageContextMenu

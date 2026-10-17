@@ -5,15 +5,15 @@ import {
   Pressable,
   StyleSheet,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
+  Keyboard,
   ActivityIndicator,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
-import { Input, Button, Text, AlertDialog, type AlertButton } from '../../shared/ui';
+import { Input, Button, Text, AlertDialog, KeyboardAwareView, type AlertButton } from '../../shared/ui';
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
@@ -205,6 +205,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   );
 
   const handlePickImage = useCallback(() => {
+    Keyboard.dismiss();
     isPickingImage.current = true;
     launchImageLibrary(
       {
@@ -234,6 +235,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
 
   const handleAvatarTap = useCallback(() => {
     if (iconAvatar) {
+      Keyboard.dismiss();
       setShowIconPicker(true);
     } else {
       handlePickImage();
@@ -327,9 +329,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
       transparent
       animationType="slide"
       onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.modalOverlay}>
+      <KeyboardAwareView style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={onClose} />
         <View style={[styles.sheetContent, { backgroundColor: background }, showIconPicker && styles.sheetContentExpanded]}>
           {showIconPicker ? (
@@ -352,29 +352,31 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
                 </Pressable>
               </View>
 
-              <View style={styles.avatarButton}>
-                <Pressable onPress={handleAvatarTap}>
-                  {avatarContent()}
-                </Pressable>
-                <View style={styles.avatarActions}>
-                  <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
-                    <Camera size={18} color={text + '99'} />
-                    <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
+              <ScrollView keyboardShouldPersistTaps="handled" style={styles.formScroll}>
+                <View style={styles.avatarButton}>
+                  <Pressable onPress={handleAvatarTap}>
+                    {avatarContent()}
                   </Pressable>
-                  <Pressable style={styles.avatarActionBtn} onPress={() => setShowIconPicker(true)}>
-                    <Smile size={18} color={text + '99'} />
-                    <Text variant="caption" style={{ color: text + '99' }}>{t.icon}</Text>
-                  </Pressable>
+                  <View style={styles.avatarActions}>
+                    <Pressable style={styles.avatarActionBtn} onPress={handlePickImage}>
+                      <Camera size={18} color={text + '99'} />
+                      <Text variant="caption" style={{ color: text + '99' }}>{t.photo}</Text>
+                    </Pressable>
+                    <Pressable style={styles.avatarActionBtn} onPress={() => { Keyboard.dismiss(); setShowIconPicker(true); }}>
+                      <Smile size={18} color={text + '99'} />
+                      <Text variant="caption" style={{ color: text + '99' }}>{t.icon}</Text>
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
 
-              <Input
-                placeholder={t.chatNamePlaceholder}
-                value={title}
-                onChangeText={setTitle}
-                autoFocus={!isEdit}
-              />
+                <Input
+                  placeholder={t.chatNamePlaceholder}
+                  value={title}
+                  onChangeText={setTitle}
+                  autoFocus={!isEdit}
+                />
 
+              </ScrollView>
               <View style={styles.actions}>
                 <Button
                   title={isEdit ? t.save : t.create}
@@ -392,7 +394,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
             </>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
 
       <AlertDialog
         visible={dialog !== null}
@@ -425,6 +427,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 0,
   },
+  formScroll: { flexGrow: 0, flexShrink: 1 },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',

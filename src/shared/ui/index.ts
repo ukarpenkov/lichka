@@ -4,6 +4,7 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { Screen, type ScreenProps } from './Screen';
 export { Input, type InputProps } from './Input';
+export { KeyboardAwareView } from './KeyboardAwareView';
 export { Avatar, type AvatarProps } from './Avatar';
 export { HighlightedBody, parseHighlights } from './HighlightedBody';
 export { LinkifiedText, type LinkifiedTextProps } from './LinkifiedText';

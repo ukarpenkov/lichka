@@ -4,7 +4,7 @@ import Animated, { FadeOut, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from '../../shared/ui/pixel';
 
-import { Text, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
+import { Text, KeyboardAwareView, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
 import { useTheme, useLocale, spacing, radii, listRow } from '../../shared/config';
 import { searchMessages, type SearchResult } from '../../entities/message';
 import { DateSeparator } from './DateSeparator';
@@ -97,74 +97,79 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
         styles.container,
         { backgroundColor: colors.canvas, paddingTop: insets.top },
       ]}>
-      <View style={styles.inputRow}>
-        <TextInput
-          ref={inputRef}
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t.searchInChat}
-          placeholderTextColor={colors.mutedSoft}
-          style={[
-            styles.input,
-            {
-              color: colors.ink,
-              backgroundColor: colors.surfaceSoft,
-            },
-          ]}
-          textAlignVertical="center"
-          returnKeyType="search"
-          autoCorrect={false}
-        />
-        <IconButton icon={X} size={24} onPress={onClose} />
-      </View>
+      <KeyboardAwareView style={styles.keyboardArea}>
+        <View style={styles.inputRow}>
+          <TextInput
+            ref={inputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t.searchInChat}
+            placeholderTextColor={colors.mutedSoft}
+            style={[
+              styles.input,
+              {
+                color: colors.ink,
+                backgroundColor: colors.surfaceSoft,
+              },
+            ]}
+            textAlignVertical="center"
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          <IconButton icon={X} size={24} onPress={onClose} />
+        </View>
 
-      <FlatList
-        data={listItems}
-        keyExtractor={(item) => item.key}
-        renderItem={({ item }) => {
-          if (item.kind === 'date') {
-            return <DateSeparator date={item.date} />;
+        <FlatList
+          data={listItems}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => {
+            if (item.kind === 'date') {
+              return <DateSeparator date={item.date} />;
+            }
+            const result = item.result;
+            return (
+              <AnimatedPressable
+                scaleTo={1}
+                pressStyle={{ backgroundColor: colors.surfaceSoft }}
+                style={styles.resultItem}
+                onPress={() => handleSelect(result)}
+                {...(Platform.OS === 'android'
+                  ? { android_ripple: { color: colors.surfaceSoft } }
+                  : {})}>
+                <HighlightedBody text={result.highlighted} />
+                <Text variant="body-sm" tone="mutedSoft" style={styles.resultTime}>
+                  {formatTime(result.created_at)}
+                </Text>
+              </AnimatedPressable>
+            );
+          }}
+          ListEmptyComponent={
+            query.trim() ? (
+              <View style={styles.emptyResult}>
+                <Text variant="body-sm" tone="muted">
+                  {t.nothingFound}
+                </Text>
+              </View>
+            ) : null
           }
-          const result = item.result;
-          return (
-            <AnimatedPressable
-              scaleTo={1}
-              pressStyle={{ backgroundColor: colors.surfaceSoft }}
-              style={styles.resultItem}
-              onPress={() => handleSelect(result)}
-              {...(Platform.OS === 'android'
-                ? { android_ripple: { color: colors.surfaceSoft } }
-                : {})}>
-              <HighlightedBody text={result.highlighted} />
-              <Text variant="body-sm" tone="mutedSoft" style={styles.resultTime}>
-                {formatTime(result.created_at)}
-              </Text>
-            </AnimatedPressable>
-          );
-        }}
-        ListEmptyComponent={
-          query.trim() ? (
-            <View style={styles.emptyResult}>
-              <Text variant="body-sm" tone="muted">
-                {t.nothingFound}
-              </Text>
-            </View>
-          ) : null
-        }
-        keyboardShouldPersistTaps="handled"
-      />
+          keyboardShouldPersistTaps="handled"
+        />
+      </KeyboardAwareView>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardArea: { flex: 1 },
   container: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 20,
+    // ChatRoom's header uses zIndex/elevation 30; the search input must cover it.
+    zIndex: 40,
+    elevation: 40,
   },
   inputRow: {
     flexDirection: 'row',
