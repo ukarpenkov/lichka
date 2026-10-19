@@ -50,6 +50,9 @@ import {
   cancelNotification,
   canStopPeriodicReminder,
   stopPeriodicReminder,
+  canSnoozeReminder,
+  snoozeReminder,
+  type SnoozeDelay,
 } from '../../features/notifications';
 import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { markChatAsRead } from '../../features/unread-badges';
@@ -663,6 +666,22 @@ export function ChatRoomScreen() {
     loadFuture();
   }, [menuMessage, loadData, loadFuture]);
 
+  const snoozeInFlight = useRef(false);
+  const handleSnoozeReminder = useCallback(async (delay: SnoozeDelay) => {
+    if (!menuMessage || snoozeInFlight.current) return;
+    snoozeInFlight.current = true;
+    setMenuMessage(null);
+    try {
+      await snoozeReminder(menuMessage, delay);
+      loadFuture();
+    } catch {
+      // Allow the context menu's native Modal to finish dismissing first.
+      setTimeout(() => setDialog({ title: t.error, message: t.snoozeError }), 300);
+    } finally {
+      snoozeInFlight.current = false;
+    }
+  }, [menuMessage, loadFuture, t]);
+
   const handleCopyMessage = useCallback(() => {
     if (!menuMessage) return;
     setClipboardString(menuMessage.body ?? '');
@@ -1030,6 +1049,8 @@ export function ChatRoomScreen() {
         onEdit={handleEditMessage}
         onDelete={handleDeleteMessage}
         onStopReminder={canStopPeriodicReminder(menuMessage) ? handleStopReminder : undefined}
+        onSnoozeHour={canSnoozeReminder(menuMessage) ? () => handleSnoozeReminder('hour') : undefined}
+        onSnoozeDay={canSnoozeReminder(menuMessage) ? () => handleSnoozeReminder('day') : undefined}
         onClose={closeMessageMenu}
       />
 

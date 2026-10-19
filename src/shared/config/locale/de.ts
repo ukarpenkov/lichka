@@ -38,6 +38,9 @@ export const de: LocaleBundle = {
     // Chat Room
     chatNotFound: 'Chat nicht gefunden',
     stopReminder: 'Erinnerung stoppen',
+    snoozeHour: 'Um eine Stunde verschieben',
+    snoozeDay: 'Um einen Tag verschieben',
+    snoozeError: 'Die Erinnerung konnte nicht verschoben werden',
     deleteMessage: 'Nachricht löschen',
     deleteMessageConfirm: 'Endgültig löschen?',
     edited: 'bearbeitet',

@@ -38,6 +38,9 @@ export const pt: LocaleBundle = {
     // Chat Room
     chatNotFound: 'Conversa não encontrada',
     stopReminder: 'Parar lembrete',
+    snoozeHour: 'Adiar por uma hora',
+    snoozeDay: 'Adiar por um dia',
+    snoozeError: 'Não foi possível adiar o lembrete',
     deleteMessage: 'Excluir mensagem',
     deleteMessageConfirm: 'Excluir permanentemente?',
     edited: 'editado',

@@ -32,6 +32,8 @@ jest.mock('../../../shared/config/LocaleProvider', () => ({
       edit: 'Edit',
       delete: 'Delete',
       stopReminder: 'Stop reminder',
+      snoozeHour: 'Snooze for an hour',
+      snoozeDay: 'Snooze for a day',
     },
   }),
 }));
@@ -43,6 +45,28 @@ describe('MessageContextMenu', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it.each([
+    ['Snooze for an hour', 'onSnoozeHour'],
+    ['Snooze for a day', 'onSnoozeDay'],
+  ] as const)('should run %s after arming and closing the menu', (label, callback) => {
+    const onClose = jest.fn();
+    const actions = { onSnoozeHour: jest.fn(), onSnoozeDay: jest.fn() };
+    const { getByText, getAllByRole } = render(
+      <MessageContextMenu visible onCopy={jest.fn()} onEdit={jest.fn()}
+        onDelete={jest.fn()} onClose={onClose} {...actions} />,
+    );
+    expect(getAllByRole('menuitem')).toHaveLength(5);
+    fireEvent.press(getByText(label));
+    expect(actions[callback]).not.toHaveBeenCalled();
+    act(() => jest.advanceTimersByTime(350));
+    fireEvent.press(getByText(label));
+    expect(actions[callback]).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose.mock.invocationCallOrder[0]).toBeLessThan(actions[callback].mock.invocationCallOrder[0]);
+    const other = callback === 'onSnoozeHour' ? 'onSnoozeDay' : 'onSnoozeHour';
+    expect(actions[other]).not.toHaveBeenCalled();
   });
 
   it('should stop a periodic reminder only after the menu is armed', () => {

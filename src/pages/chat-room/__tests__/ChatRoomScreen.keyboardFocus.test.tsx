@@ -122,6 +122,8 @@ jest.mock('../../../features/notifications', () => ({
   cancelNotification: jest.fn(),
   canStopPeriodicReminder: () => false,
   stopPeriodicReminder: jest.fn(),
+  canSnoozeReminder: () => false,
+  snoozeReminder: jest.fn(),
 }));
 
 jest.mock('../../../features/scheduled-widget', () => ({

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
-import { Copy, Pencil, Stop, Trash2 } from '../../shared/ui/pixel';
+import { CalendarDays, Clock, Copy, Pencil, Stop, Trash2 } from '../../shared/ui/pixel';
 import { Text } from '../../shared/ui';
 import {
   useTheme,
@@ -19,6 +19,8 @@ type MessageContextMenuProps = {
   onEdit: () => void;
   onDelete: () => void;
   onStopReminder?: () => void;
+  onSnoozeHour?: () => void;
+  onSnoozeDay?: () => void;
   onClose: () => void;
 };
 
@@ -33,6 +35,8 @@ export function MessageContextMenu({
   onEdit,
   onDelete,
   onStopReminder,
+  onSnoozeHour,
+  onSnoozeDay,
   onClose,
 }: MessageContextMenuProps) {
   const { text, background, colors } = useTheme();
@@ -128,6 +132,29 @@ export function MessageContextMenu({
               <Pencil size={18} color={colors.ink} />
               <Text variant="body">{t.edit}</Text>
             </Pressable>
+            {[
+              { action: onSnoozeHour, label: t.snoozeHour, Icon: Clock, key: 'hour' },
+              { action: onSnoozeDay, label: t.snoozeDay, Icon: CalendarDays, key: 'day' },
+            ].map(({ action, label, Icon, key }) => action ? (
+              <Pressable
+                key={key}
+                onPress={() => runWhenArmed(action)}
+                android_ripple={
+                  Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
+                }
+                style={({ pressed }) => [
+                  styles.item,
+                  pressed && armed && Platform.OS !== 'android'
+                    ? { backgroundColor: colors.surfaceSoft }
+                    : null,
+                ]}
+                accessibilityRole="menuitem"
+                accessibilityState={{ disabled: !armed }}
+              >
+                <Icon size={18} color={colors.ink} />
+                <Text variant="body" style={styles.itemLabel}>{label}</Text>
+              </Pressable>
+            ) : null)}
             {onStopReminder ? (
               <Pressable
                 onPress={() => runWhenArmed(onStopReminder)}

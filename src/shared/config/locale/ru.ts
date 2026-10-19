@@ -38,6 +38,9 @@ export const ru: LocaleBundle = {
     // Chat Room
     chatNotFound: 'Чат не найден',
     stopReminder: 'Остановить напоминание',
+    snoozeHour: 'Отложить на час',
+    snoozeDay: 'Отложить на день',
+    snoozeError: 'Не удалось отложить уведомление',
     deleteMessage: 'Удалить сообщение',
     deleteMessageConfirm: 'Удалить без возможности восстановления?',
     edited: 'изм.',

@@ -35,6 +35,9 @@ export interface LocaleDictionary {
   chatNotFound: string;
   deleteMessage: string;
   stopReminder: string;
+  snoozeHour: string;
+  snoozeDay: string;
+  snoozeError: string;
   deleteMessageConfirm: string;
   edited: string;
   editMessage: string;
