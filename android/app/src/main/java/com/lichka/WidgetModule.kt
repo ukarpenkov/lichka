@@ -17,8 +17,9 @@ class WidgetModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun updateScheduledWidgetSnapshot(json: String) {
         val context = reactApplicationContext
-        ScheduledWidgetStorage.saveJson(context, json)
-        ScheduledWidgetProvider.refreshAll(context)
+        if (ScheduledWidgetStorage.saveJson(context, json)) {
+            ScheduledWidgetProvider.refreshData(context)
+        }
     }
 
     @ReactMethod

@@ -29,6 +29,8 @@ class ScheduledWidgetRemoteViewsFactory(
 
     private var items: List<ScheduledWidgetStorage.Item> = emptyList()
     private var inkColor: Int = Color.parseColor("#39FF14")
+    private var iconColor: Int? = null
+    private val icons = mutableMapOf<Int, Bitmap>()
 
     /** Ink from setRemoteAdapter extras (reconnect URI); prefs are the source of truth in getViewAt. */
     private val intentInkColor: Int? =
@@ -47,6 +49,7 @@ class ScheduledWidgetRemoteViewsFactory(
 
     override fun onDestroy() {
         items = emptyList()
+        icons.clear()
     }
 
     override fun getCount(): Int = items.size
@@ -71,7 +74,8 @@ class ScheduledWidgetRemoteViewsFactory(
                 ScheduledWidgetStorage.getUntitledText(context)
             }
 
-        views.setTextViewText(R.id.widget_row_body, body)
+        // Only one line is visible. Bound the Binder payload even for very long messages.
+        views.setTextViewText(R.id.widget_row_body, body.take(512))
         views.setTextViewText(R.id.widget_row_meta, formatMeta(item))
         views.setTextColor(R.id.widget_row_body, ink)
         views.setTextColor(R.id.widget_row_meta, mutedColor)
@@ -81,10 +85,14 @@ class ScheduledWidgetRemoteViewsFactory(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             views.setColorStateList(R.id.widget_row_icon, "setImageTintList", null as ColorStateList?)
         }
-        views.setImageViewBitmap(
-            R.id.widget_row_icon,
-            tintedIconBitmap(context, iconForType(item.type), ink),
-        )
+        if (iconColor != ink) {
+            icons.clear()
+            iconColor = ink
+        }
+        val icon = icons.getOrPut(iconForType(item.type)) {
+            tintedIconBitmap(context, iconForType(item.type), ink)
+        }
+        views.setImageViewBitmap(R.id.widget_row_icon, icon)
 
         val fillInIntent =
             Intent().apply {
@@ -128,7 +136,7 @@ class ScheduledWidgetRemoteViewsFactory(
     }
 
     private fun formatMeta(item: ScheduledWidgetStorage.Item): String {
-        val title = item.chatTitle.ifBlank { "—" }
+        val title = item.chatTitle.ifBlank { "—" }.take(128)
         if (item.scheduledAtMillis <= 0L) return title
         val time =
             SimpleDateFormat("dd.MM HH:mm", Locale.getDefault())

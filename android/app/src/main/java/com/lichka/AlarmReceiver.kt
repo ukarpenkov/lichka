@@ -24,6 +24,8 @@ class AlarmReceiver : BroadcastReceiver() {
             else ->
                 handleAlarm(context, messageId, chatId, body, chatTitle, intervalMinutes, isAlarm, triggerTime)
         }
+        // Refresh upcoming rows at the existing alarm event, even with no React runtime.
+        ScheduledWidgetProvider.refreshData(context)
     }
 
     private fun handleAlarm(

@@ -21,12 +21,30 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.SizeF
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.sqrt
 
 class ScheduledWidgetProvider : AppWidgetProvider() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED -> refreshAll(context)
+        }
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        for (id in appWidgetIds) {
+            plateDirectory(context, id).deleteRecursively()
+        }
+    }
 
     override fun onUpdate(
         context: Context,
@@ -55,9 +73,6 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         const val EXTRA_THEME_BACKGROUND = "com.lichka.widget.THEME_BACKGROUND"
         const val EXTRA_THEME_INK = "com.lichka.widget.THEME_INK"
 
-        private const val HARD_SHADOW_DP = 4f
-        private const val HARD_BORDER_DP = 2f
-        private const val CORNER_RADIUS_DP = 16f
         private const val FILE_PROVIDER_SUFFIX = ".fileprovider"
         private const val PLATE_DIR = "widget_plates"
         private const val MAX_BITMAP_PX = 480
@@ -67,15 +82,25 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
         private val refreshLock = Any()
         @Volatile private var refreshPending = false
         @Volatile private var refreshRunning = false
+        private var pendingFullRefresh = false
 
         /**
          * Coalesce rapid refreshAll calls (setTheme + AppState background re-push) so we do not
          * stack competing updateAppWidget binder transactions.
          */
         fun refreshAll(context: Context) {
+            requestRefresh(context, fullRefresh = true)
+        }
+
+        fun refreshData(context: Context) {
+            requestRefresh(context, fullRefresh = false)
+        }
+
+        private fun requestRefresh(context: Context, fullRefresh: Boolean) {
             val appContext = context.applicationContext
             synchronized(refreshLock) {
                 refreshPending = true
+                pendingFullRefresh = pendingFullRefresh || fullRefresh
                 if (refreshRunning) return
                 refreshRunning = true
             }
@@ -84,26 +109,41 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
 
         private fun drainRefreshQueue(context: Context) {
             while (true) {
-                synchronized(refreshLock) {
+                val fullRefresh = synchronized(refreshLock) {
                     if (!refreshPending) {
                         refreshRunning = false
                         return
                     }
                     refreshPending = false
+                    val full = pendingFullRefresh
+                    pendingFullRefresh = false
+                    full
                 }
-                refreshAllNow(context)
+                try {
+                    refreshAllNow(context, fullRefresh)
+                } catch (e: Exception) {
+                    // A disconnected host must not leave the refresh queue stuck forever.
+                    Log.w(TAG, "Widget refresh failed", e)
+                }
             }
         }
 
-        private fun refreshAllNow(context: Context) {
+        private fun refreshAllNow(context: Context, fullRefresh: Boolean) {
             val manager = AppWidgetManager.getInstance(context)
             val ids =
                 manager.getAppWidgetIds(ComponentName(context, ScheduledWidgetProvider::class.java))
             if (ids.isEmpty()) return
-            for (id in ids) {
-                updateWidget(context, manager, id)
+            if (fullRefresh) {
+                for (id in ids) {
+                    updateWidget(context, manager, id)
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val views = RemoteViews(context.packageName, R.layout.widget_scheduled)
+                views.setRemoteAdapter(R.id.widget_list, collectionItems(context))
+                manager.partiallyUpdateAppWidget(ids, views)
+            } else {
+                manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list)
             }
-            manager.notifyAppWidgetViewDataChanged(ids, R.id.widget_list)
         }
 
         private fun updateWidget(
@@ -146,22 +186,22 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
                 inkColor,
                 preferUriPlate,
             )
-            views.setTextColor(R.id.widget_empty, mutedColor)
-            views.setTextViewText(
-                R.id.widget_empty,
-                ScheduledWidgetStorage.getEmptyText(context),
-            )
+            applyEmptyText(context, manager, appWidgetId, views, mutedColor, preferUriPlate)
 
-            val serviceIntent =
-                Intent(context, ScheduledWidgetService::class.java).apply {
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                    // Theme extras change the intent URI so the adapter reconnects on theme switch
-                    // instead of reusing a stale RemoteViewsFactory. Factory also reads them.
-                    putExtra(EXTRA_THEME_BACKGROUND, canvasColor)
-                    putExtra(EXTRA_THEME_INK, inkColor)
-                    data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
-                }
-            views.setRemoteAdapter(R.id.widget_list, serviceIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // A single snapshot avoids the async legacy-adapter conversion overwriting a
+                // newer theme with an older RemoteViews frame on recent Android versions.
+                views.setRemoteAdapter(R.id.widget_list, collectionItems(context))
+            } else {
+                val serviceIntent =
+                    Intent(context, ScheduledWidgetService::class.java).apply {
+                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                        putExtra(EXTRA_THEME_BACKGROUND, canvasColor)
+                        putExtra(EXTRA_THEME_INK, inkColor)
+                        data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+                    }
+                views.setRemoteAdapter(R.id.widget_list, serviceIntent)
+            }
             views.setEmptyView(R.id.widget_list, R.id.widget_empty)
 
             views.setOnClickPendingIntent(
@@ -189,7 +229,22 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             views.setPendingIntentTemplate(R.id.widget_list, templatePendingIntent)
 
             manager.updateAppWidget(appWidgetId, views)
-            manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
+            }
+        }
+
+        @androidx.annotation.RequiresApi(Build.VERSION_CODES.S)
+        private fun collectionItems(context: Context): RemoteViews.RemoteCollectionItems {
+            val factory = ScheduledWidgetRemoteViewsFactory(context, Intent())
+            factory.onDataSetChanged()
+            val builder = RemoteViews.RemoteCollectionItems.Builder()
+                .setHasStableIds(true)
+                .setViewTypeCount(1)
+            for (position in 0 until factory.count) {
+                builder.addItem(factory.getItemId(position), factory.getViewAt(position))
+            }
+            return builder.build()
         }
 
         /**
@@ -213,83 +268,102 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val density = context.resources.displayMetrics.density
             clearImageTint(views, R.id.widget_plate)
 
-            val bitmap = createNeoBrutalPlate(widthPx, heightPx, density, canvasColor, inkColor)
+            val spec = ScheduledWidgetPlateSpec(widthPx, heightPx, density, canvasColor, inkColor)
             if (preferUriPlate) {
-                val written =
-                    writePlatePng(
-                        context,
-                        appWidgetId,
-                        bitmap,
-                        canvasColor,
-                        inkColor,
-                        widthPx,
-                        heightPx,
-                    )
-                if (written != null) {
-                    // Grant on the display URI (with cache-bust query) — the launcher opens
-                    // the exact URI from setImageViewUri, not the bare content://…/plate_N.png.
-                    // Without a matching grant, the host gets SecurityException →
-                    // «Не удалось загрузить виджет».
-                    val granted = grantUriToHomeLaunchers(context, written.displayUri)
+                val uri = cachedPlateUri(context, appWidgetId, spec)
+                if (uri != null) {
+                    // Each appearance has an immutable filename; grant the exact displayed URI.
+                    val granted = grantUriToHomeLaunchers(context, uri)
                     Log.d(
                         TAG,
-                        "widget $appWidgetId: URI grants=$granted, size=${widthPx}x$heightPx, uri=${written.displayUri}",
+                        "widget $appWidgetId: URI grants=$granted, size=${widthPx}x$heightPx, uri=$uri",
                     )
                     if (granted > 0) {
-                        views.setImageViewUri(R.id.widget_plate, written.displayUri)
-                        bitmap.recycle()
+                        views.setImageViewUri(R.id.widget_plate, uri)
                         return
                     }
                     Log.w(TAG, "widget $appWidgetId: NO grants, falling back to bitmap")
                 }
             }
             // Fallback: downscale bitmap to safe Binder size, then setImageViewBitmap.
+            val bitmap = createNeoBrutalPlate(spec)
             val safeBitmap = safeBinderBitmap(bitmap)
             if (safeBitmap !== bitmap) bitmap.recycle()
             views.setImageViewBitmap(R.id.widget_plate, safeBitmap)
         }
 
-        private data class PlateUris(val displayUri: Uri)
+        private fun plateDirectory(context: Context, appWidgetId: Int) =
+            File(context.cacheDir, "$PLATE_DIR/widget_$appWidgetId")
 
-        private fun writePlatePng(
+        private fun applyEmptyText(
+            context: Context,
+            manager: AppWidgetManager,
+            appWidgetId: Int,
+            views: RemoteViews,
+            inkColor: Int,
+            preferUri: Boolean,
+        ) {
+            val text = ScheduledWidgetStorage.getEmptyText(context)
+            views.setTextViewText(R.id.widget_empty_fallback, text)
+            views.setTextColor(R.id.widget_empty_fallback, inkColor)
+            views.setContentDescription(R.id.widget_empty_image, text)
+            val (width, height) = widgetSizePx(context, manager, appWidgetId)
+            val metrics = context.resources.displayMetrics
+            // The root content has 16dp leading / 20dp trailing padding on both axes.
+            val contentWidth = (width - 36f * metrics.density).toInt().coerceAtLeast(1)
+            val contentHeight = (height - 36f * metrics.density).toInt().coerceAtLeast(1)
+            val key = ScheduledWidgetEmptyText.cacheKey(text, contentWidth, contentHeight, metrics.scaledDensity, inkColor)
+            val render = { ScheduledWidgetEmptyText.render(context, text, contentWidth, contentHeight, inkColor) }
+            val uri = if (preferUri) cachedBitmapUri(
+                context, File(plateDirectory(context, appWidgetId), "empty"), key, render,
+            ) else null
+            if (uri != null && grantUriToHomeLaunchers(context, uri) > 0) {
+                views.setImageViewUri(R.id.widget_empty_image, uri)
+            } else {
+                val bitmap = render()
+                val safe = safeBinderBitmap(bitmap, maxPixels = 64_000)
+                if (safe !== bitmap) bitmap.recycle()
+                views.setImageViewBitmap(R.id.widget_empty_image, safe)
+            }
+            views.setViewVisibility(R.id.widget_empty_fallback, View.GONE)
+            views.setViewVisibility(R.id.widget_empty_image, View.VISIBLE)
+        }
+
+        private fun cachedPlateUri(
             context: Context,
             appWidgetId: Int,
-            bitmap: Bitmap,
-            canvasColor: Int,
-            inkColor: Int,
-            widthPx: Int,
-            heightPx: Int,
-        ): PlateUris? {
+            spec: ScheduledWidgetPlateSpec,
+        ): Uri? = cachedBitmapUri(context, plateDirectory(context, appWidgetId), spec.cacheKey) {
+            createNeoBrutalPlate(spec)
+        }
+
+        private fun cachedBitmapUri(context: Context, directory: File, key: String, render: () -> Bitmap): Uri? {
             return try {
-                val dir = File(context.cacheDir, PLATE_DIR).apply { mkdirs() }
-                val file = File(dir, "plate_$appWidgetId.png")
-                FileOutputStream(file).use { out ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                val cache = ScheduledWidgetPlateCache(directory)
+                val file = cache.getOrCreate(key) { target ->
+                    val bitmap = render()
+                    try {
+                        FileOutputStream(target).use { out ->
+                            check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out))
+                        }
+                    } finally {
+                        bitmap.recycle()
+                    }
                 }
-                val fileUri =
-                    FileProvider.getUriForFile(
-                        context,
-                        context.packageName + FILE_PROVIDER_SUFFIX,
-                        file,
-                    )
-                val displayUri =
-                    fileUri
-                        .buildUpon()
-                        .appendQueryParameter(
-                            "v",
-                            "${Integer.toHexString(canvasColor)}_${Integer.toHexString(inkColor)}_${widthPx}x$heightPx",
-                        )
-                        .build()
-                PlateUris(displayUri = displayUri)
+                FileProvider.getUriForFile(context, context.packageName + FILE_PROVIDER_SUFFIX, file)
             } catch (_: Exception) {
                 null
             }
         }
 
-        private fun safeBinderBitmap(source: Bitmap): Bitmap {
+        private fun safeBinderBitmap(source: Bitmap, maxPixels: Int = 144_000): Bitmap {
             val maxSide = maxOf(source.width, source.height)
-            if (maxSide <= MAX_BITMAP_PX) return source
-            val scale = MAX_BITMAP_PX.toFloat() / maxSide.toFloat()
+            val scale = minOf(
+                1f,
+                MAX_BITMAP_PX.toFloat() / maxSide,
+                sqrt(maxPixels.toFloat() / (source.width.toFloat() * source.height)),
+            )
+            if (scale >= 1f) return source
             val w = (source.width * scale).toInt().coerceAtLeast(1)
             val h = (source.height * scale).toInt().coerceAtLeast(1)
             val scaled = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -403,16 +477,12 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun createNeoBrutalPlate(
-            width: Int,
-            height: Int,
-            density: Float,
-            canvasColor: Int,
-            inkColor: Int,
-        ): Bitmap {
-            val offset = (HARD_SHADOW_DP * density).toInt().coerceAtLeast(1)
-            val stroke = (HARD_BORDER_DP * density).toInt().coerceAtLeast(1)
-            val radius = CORNER_RADIUS_DP * density
+        private fun createNeoBrutalPlate(spec: ScheduledWidgetPlateSpec): Bitmap {
+            val width = spec.width
+            val height = spec.height
+            val offset = spec.shadow
+            val stroke = spec.border
+            val radius = spec.radius
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
@@ -421,7 +491,7 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             val faceBottom = (height - offset).toFloat()
 
             // 1) Hard shadow (ink), offset bottom-right
-            paint.color = inkColor
+            paint.color = spec.inkColor
             canvas.drawRoundRect(
                 RectF(offset.toFloat(), offset.toFloat(), width.toFloat(), height.toFloat()),
                 radius,
@@ -438,8 +508,8 @@ class ScheduledWidgetProvider : AppWidgetProvider() {
             )
 
             // 3) Inner canvas inset by border
-            val innerRadius = (radius - stroke).coerceAtLeast(0f)
-            paint.color = canvasColor
+            val innerRadius = spec.innerRadius
+            paint.color = spec.canvasColor
             canvas.drawRoundRect(
                 RectF(
                     stroke.toFloat(),

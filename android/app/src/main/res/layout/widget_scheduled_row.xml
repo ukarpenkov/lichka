@@ -24,20 +24,20 @@
 
         <TextView
             android:id="@+id/widget_row_body"
+            style="@style/WidgetScheduledBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="sans-serif"
             android:maxLines="1"
             android:textColor="@color/widget_ink"
             android:textSize="13sp" />
 
         <TextView
             android:id="@+id/widget_row_meta"
+            style="@style/WidgetScheduledBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="sans-serif"
             android:maxLines="1"
             android:textColor="@color/widget_ink_muted"
             android:textSize="11sp" />

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="widget_corner_radius">36dp</dimen>
+    <dimen name="widget_inner_corner_radius">34dp</dimen>
+
+    <!-- System monospace works in the launcher's restricted RemoteViews context. -->
+    <style name="WidgetScheduledBody">
+        <item name="android:fontFamily">monospace</item>
+    </style>
+    <style name="WidgetScheduledEmpty">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>

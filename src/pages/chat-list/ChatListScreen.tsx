@@ -21,6 +21,7 @@ import { getUnreadCounts } from '../../entities/message';
 import type { ChatStackParamList } from '../../app/types';
 import { useOnTabVisible } from '../../app/MainTabsContext';
 import { ChatForm } from '../../widgets/chat-form';
+import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { setChatStackNavigation } from '../../app/mainTabsApi';
 import {
   useSharePick,
@@ -67,6 +68,7 @@ export function ChatListScreen() {
   const refresh = useCallback(() => {
     setChats(getChats());
     setUnreadCounts(getUnreadCounts());
+    syncScheduledWidgetSnapshot();
   }, []);
 
   useOnTabVisible(0, refresh, [refresh]);
@@ -114,12 +116,12 @@ export function ChatListScreen() {
           style: 'destructive',
           onPress: () => {
             deleteChat(menuChat.id);
-            setChats(getChats());
+            refresh();
           },
         },
       ],
     });
-  }, [menuChat, t]);
+  }, [menuChat, t, refresh]);
 
   const handleEdit = useCallback(() => {
     if (!menuChat) return;

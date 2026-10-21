@@ -29,14 +29,20 @@ object ScheduledWidgetStorage {
         getPrefs(context).edit().putString(KEY_ITEMS, toJsonArray(items).toString()).apply()
     }
 
-    fun saveJson(context: Context, json: String) {
-        getPrefs(context).edit().putString(KEY_ITEMS, json).apply()
+    fun saveJson(context: Context, json: String): Boolean {
+        val prefs = getPrefs(context)
+        if (prefs.getString(KEY_ITEMS, null) == json) return false
+        prefs.edit().putString(KEY_ITEMS, json).apply()
+        return true
     }
 
     fun loadAll(context: Context): List<Item> {
         val json = getPrefs(context).getString(KEY_ITEMS, null) ?: return emptyList()
         return try {
-            fromJsonArray(JSONArray(json))
+            val now = System.currentTimeMillis()
+            fromJsonArray(JSONArray(json)).filter {
+                isScheduledWidgetItemVisible(it.type, it.scheduledAtMillis, now)
+            }
         } catch (_: Exception) {
             emptyList()
         }
