@@ -1,11 +1,13 @@
 # Google Play — Release notes
 
 Поле консоли: **Release notes** / **Что нового в этом выпуске**.
-Выпуск: `versionName` **4.0**, `versionCode` **12** (`android/app/build.gradle`).
+Выпуск: `versionName` **5.0**, `versionCode` **13** (`android/app/build.gradle`).
 
-**Лимит:** 500 символов на язык. Все 23 текста ниже короче лимита. Самый длинный — fr-FR, 151 символ.
+**Лимит:** 500 символов на язык. Все 23 текста ниже короче лимита. Самый длинный — de-DE, 309 символов.
 
 Языки совпадают с листингом в `docs/release/google-play-listing-translations.md`.
+
+Что вошло с выпуска 4.0: запись голоса после разрешения микрофона, устойчивый выбор даты, откладывание напоминания на час или день, клавиатура не закрывает ввод, виджет расписания читается легче.
 
 ## Как вставить
 
@@ -15,146 +17,146 @@
 
 | Язык | Символы |
 |------|---------|
-| en-US | 114 |
-| ar | 95 |
-| de-DE | 137 |
-| es-419 | 133 |
-| es-ES | 135 |
-| fr-FR | 151 |
-| hi-IN | 99 |
-| id | 123 |
-| it-IT | 111 |
-| ja-JP | 47 |
-| ko-KR | 51 |
-| nl-NL | 133 |
-| pl-PL | 112 |
-| pt-BR | 128 |
-| pt-PT | 122 |
-| ru-RU | 105 |
-| sv-SE | 112 |
-| th | 85 |
-| tr-TR | 114 |
-| uk | 102 |
-| vi | 112 |
-| zh-CN | 32 |
-| zh-TW | 34 |
+| en-US | 242 |
+| ar | 186 |
+| de-DE | 309 |
+| es-419 | 240 |
+| es-ES | 242 |
+| fr-FR | 267 |
+| hi-IN | 226 |
+| id | 238 |
+| it-IT | 273 |
+| ja-JP | 111 |
+| ko-KR | 114 |
+| nl-NL | 264 |
+| pl-PL | 228 |
+| pt-BR | 253 |
+| pt-PT | 245 |
+| ru-RU | 229 |
+| sv-SE | 243 |
+| th | 189 |
+| tr-TR | 238 |
+| uk | 226 |
+| vi | 208 |
+| zh-CN | 67 |
+| zh-TW | 67 |
 
 ## Текст
 
 ```
 <en-US>
-Themed icons now match other apps.
+Voice messages record again after the microphone is allowed. The date picker no longer freezes or closes.
 
-The feather is the icon, and the background takes the color of your wallpaper.
+You can snooze a reminder for an hour or a day. The keyboard no longer covers what you type, and the schedule widget is easier to read.
 </en-US>
 <ar>
-أصبحت الأيقونات ذات السمة مثل بقية التطبيقات.
+تعود الرسائل الصوتية للتسجيل بعد السماح بالميكروفون. لم يعد اختيار التاريخ يتجمد أو يُغلق.
 
-الريشة هي الرمز، والخلفية تأخذ لون خلفية الشاشة.
+يمكن تأجيل التذكير ساعة أو يومًا. لم تعد لوحة المفاتيح تغطي ما تكتبه، وأصبحت أداة الجدول أوضح.
 </ar>
 <de-DE>
-Themensymbole passen jetzt zu den anderen Apps.
+Sprachnachrichten werden wieder aufgenommen, sobald das Mikrofon erlaubt ist. Die Datumsauswahl friert nicht mehr ein und schließt sich nicht mehr.
 
-Die Feder bleibt das Symbol, der Hintergrund übernimmt die Farbe Ihres Hintergrundbilds.
+Eine Erinnerung lässt sich um eine Stunde oder einen Tag verschieben. Die Tastatur verdeckt die Eingabe nicht mehr, und das Termin-Widget ist leichter zu lesen.
 </de-DE>
 <es-419>
-Los íconos temáticos ahora se ven como los de las demás apps.
+Los mensajes de voz vuelven a grabarse al permitir el micrófono. El selector de fecha ya no se traba ni se cierra.
 
-La pluma es el ícono y el fondo toma el color de tu fondo de pantalla.
+Puedes posponer un recordatorio una hora o un día. El teclado ya no tapa lo que escribes y el widget de agenda se lee mejor.
 </es-419>
 <es-ES>
-Los iconos temáticos ahora coinciden con los de las demás apps.
+Los mensajes de voz vuelven a grabarse al permitir el micrófono. El selector de fecha ya no se bloquea ni se cierra.
 
-La pluma es el icono y el fondo toma el color de tu fondo de pantalla.
+Puedes posponer un recordatorio una hora o un día. El teclado ya no tapa lo que escribes y el widget de agenda se lee mejor.
 </es-ES>
 <fr-FR>
-Les icônes thématiques suivent désormais les autres applications.
+Les messages vocaux s'enregistrent à nouveau une fois le micro autorisé. Le sélecteur de date ne se fige plus et ne se ferme plus.
 
-La plume reste le symbole, et l'arrière-plan prend la couleur de votre fond d'écran.
+Vous pouvez reporter un rappel d'une heure ou d'un jour. Le clavier ne cache plus la saisie, et le widget du planning est plus lisible.
 </fr-FR>
 <hi-IN>
-थीम आइकन अब दूसरे ऐप्स जैसे दिखते हैं।
+माइक्रोफ़ोन की अनुमति के बाद वॉइस संदेश फिर से रिकॉर्ड होते हैं। तारीख चुनना अब अटकता या बंद नहीं होता।
 
-पंख आइकन रहता है, और पृष्ठभूमि आपके वॉलपेपर का रंग लेती है।
+रिमाइंडर को एक घंटे या एक दिन के लिए टाला जा सकता है। कीबोर्ड अब लिखी बात को नहीं छिपाता, और शेड्यूल विजेट पढ़ना आसान है।
 </hi-IN>
 <id>
-Ikon tema sekarang sama seperti aplikasi lain.
+Pesan suara kembali bisa direkam setelah mikrofon diizinkan. Pemilih tanggal tidak lagi macet atau tertutup.
 
-Bulu tetap menjadi ikon, dan latar belakang mengambil warna wallpaper Anda.
+Pengingat bisa ditunda satu jam atau satu hari. Keyboard tidak lagi menutupi tulisan Anda, dan widget jadwal lebih mudah dibaca.
 </id>
 <it-IT>
-Le icone a tema ora seguono le altre app.
+I messaggi vocali si registrano di nuovo dopo il permesso del microfono. Il selettore della data non si blocca più e non si chiude.
 
-La piuma resta il simbolo e lo sfondo prende il colore dello sfondo.
+Puoi posticipare un promemoria di un'ora o di un giorno. La tastiera non copre più ciò che scrivi e il widget del programma è più leggibile.
 </it-IT>
 <ja-JP>
-テーマアイコンが他のアプリと同じになりました。
+マイクを許可すると、音声メッセージを再び録音できます。日付の選択が固まったり閉じたりしなくなりました。
 
-羽根がアイコンで、背景は壁紙の色になります。
+リマインダーを1時間または1日あとへ延期できます。キーボードが入力を隠さず、予定ウィジェットも読みやすくなりました。
 </ja-JP>
 <ko-KR>
-테마 아이콘이 다른 앱과 같아졌습니다.
+마이크를 허용하면 음성 메시지가 다시 녹음됩니다. 날짜 선택기가 멈추거나 닫히지 않습니다.
 
-깃털이 아이콘이고, 배경은 배경화면 색을 따릅니다.
+알림을 1시간 또는 하루 뒤로 미룰 수 있습니다. 키보드가 입력을 가리지 않고, 일정 위젯이 더 읽기 쉽습니다.
 </ko-KR>
 <nl-NL>
-Themapictogrammen sluiten nu aan bij andere apps.
+Spraakberichten worden weer opgenomen nadat de microfoon is toegestaan. De datumkiezer loopt niet meer vast en sluit niet meer.
 
-De veer blijft het pictogram en de achtergrond krijgt de kleur van je achtergrond.
+Je kunt een herinnering een uur of een dag uitstellen. Het toetsenbord dekt je tekst niet meer af en de planningswidget is duidelijker.
 </nl-NL>
 <pl-PL>
-Ikony z motywem wyglądają teraz jak w innych aplikacjach.
+Wiadomości głosowe nagrywają się znowu po zgodzie na mikrofon. Wybór daty już się nie zawiesza i nie zamyka.
 
-Pióro zostaje symbolem, a tło przyjmuje kolor tapety.
+Przypomnienie można odłożyć o godzinę albo o dzień. Klawiatura nie zasłania tekstu, a widżet planu jest czytelniejszy.
 </pl-PL>
 <pt-BR>
-Os ícones temáticos agora acompanham os outros apps.
+As mensagens de voz voltam a gravar depois da permissão do microfone. O seletor de data não trava nem fecha mais.
 
-A pena continua sendo o ícone, e o fundo usa a cor do seu papel de parede.
+Dá para adiar um lembrete por uma hora ou um dia. O teclado não cobre mais o que você digita, e o widget da agenda fica mais fácil de ler.
 </pt-BR>
 <pt-PT>
-Os ícones temáticos agora acompanham as outras aplicações.
+As mensagens de voz voltam a gravar depois da permissão do microfone. O seletor de data já não bloqueia nem fecha.
 
-A pena continua a ser o ícone e o fundo usa a cor do seu ecrã.
+Pode adiar um lembrete por uma hora ou um dia. O teclado já não cobre o que escreve, e o widget da agenda fica mais fácil de ler.
 </pt-PT>
 <ru-RU>
-Тематические значки теперь как у других приложений.
+Голосовые сообщения снова записываются после разрешения микрофона. Выбор даты больше не зависает и не закрывается.
 
-Перо остаётся значком, а фон берёт цвет ваших обоев.
+Напоминание можно отложить на час или на день. Клавиатура не закрывает текст, а виджет расписания читается легче.
 </ru-RU>
 <sv-SE>
-Temaanpassade ikoner följer nu andra appar.
+Röstmeddelanden spelas in igen när mikrofonen tillåts. Datumväljaren fryser inte längre och stängs inte.
 
-Fjädern är ikonen och bakgrunden tar färgen från din bakgrundsbild.
+Du kan skjuta upp en påminnelse en timme eller en dag. Tangentbordet täcker inte texten, och schemaläggningswidgeten är lättare att läsa.
 </sv-SE>
 <th>
-ไอคอนตามธีมตอนนี้เหมือนแอปอื่นแล้ว
+ข้อความเสียงบันทึกได้อีกครั้งหลังอนุญาตไมโครโฟน ตัวเลือกวันที่ไม่ค้างหรือปิดเองอีกต่อไป
 
-ขนนกยังเป็นไอคอน และพื้นหลังใช้สีวอลเปเปอร์ของคุณ
+เลื่อนการเตือนได้หนึ่งชั่วโมงหรือหนึ่งวัน คีย์บอร์ดไม่บังสิ่งที่พิมพ์ และวิดเจ็ตกำหนดการอ่านง่ายขึ้น
 </th>
 <tr-TR>
-Temalı simgeler artık diğer uygulamalarla aynı.
+Mikrofon izni verildikten sonra sesli mesajlar yeniden kaydedilir. Tarih seçici artık donmaz veya kapanmaz.
 
-Tüy simge olarak kalır, arka plan duvar kağıdınızın rengini alır.
+Anımsatıcıyı bir saat veya bir gün erteleyebilirsiniz. Klavye yazdığınızı kapatmaz ve zamanlanmış pencere öğesi daha okunaklıdır.
 </tr-TR>
 <uk>
-Тематичні значки тепер як в інших застосунках.
+Голосові повідомлення знову записуються після дозволу мікрофона. Вибір дати більше не зависає й не закривається.
 
-Перо лишається значком, а фон бере колір ваших шпалер.
+Нагадування можна відкласти на годину або на день. Клавіатура не закриває текст, а віджет розкладу легше читати.
 </uk>
 <vi>
-Biểu tượng theo chủ đề giờ giống các ứng dụng khác.
+Tin nhắn thoại ghi lại được sau khi cho phép micro. Bộ chọn ngày không còn đứng hoặc đóng nữa.
 
-Chiếc lông vẫn là biểu tượng, nền lấy màu hình nền của bạn.
+Bạn có thể hoãn lời nhắc một giờ hoặc một ngày. Bàn phím không che nội dung bạn gõ, và tiện ích lịch dễ đọc hơn.
 </vi>
 <zh-CN>
-主题图标现在和其他应用一致。
+允许麦克风后，语音消息可以重新录制。日期选择器不再卡住或关闭。
 
-羽毛是图标，背景使用壁纸的颜色。
+提醒可以推迟一小时或一天。键盘不再挡住输入，日程小组件也更容易阅读。
 </zh-CN>
 <zh-TW>
-主題圖示現在和其他應用程式一致。
+允許麥克風後，語音訊息可以重新錄製。日期選擇器不再卡住或關閉。
 
-羽毛是圖示，背景使用桌布的顏色。
+提醒可以延後一小時或一天。鍵盤不再擋住輸入，行程小工具也更容易閱讀。
 </zh-TW>
 ```
