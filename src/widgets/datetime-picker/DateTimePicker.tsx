@@ -153,7 +153,12 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const dividerRadius = (GEO.month.inner + GEO.day.outer) / 2;
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setYearModalVisible(false);
+      setInteracting(null);
+      activeRing.value = RING_NONE;
+      return;
+    }
     const d = value.getDate();
     const m = value.getMonth();
     const y = value.getFullYear();
@@ -168,7 +173,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
     dayCountSV.value = count;
     dayRotation.value = -(d - 1) * dayStep(count);
     monthRotation.value = -m * MONTH_STEP;
-  }, [visible, value, dayRotation, monthRotation, dayCountSV]);
+  }, [visible, value, dayRotation, monthRotation, dayCountSV, activeRing]);
 
   useEffect(() => {
     dayCountSV.value = dayCount;
@@ -250,37 +255,40 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   const yearSwipe = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(visible)
         .activeOffsetX([-20, 20])
         .failOffsetY([-12, 12])
         .onEnd((e) => {
           'worklet';
           runOnJS(onYearSwipeEnd)(e.translationX, e.velocityX);
         }),
-    [onYearSwipeEnd],
+    [visible, onYearSwipeEnd],
   );
 
   const monthSwipe = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(visible)
         .activeOffsetX([-20, 20])
         .failOffsetY([-12, 12])
         .onEnd((e) => {
           'worklet';
           runOnJS(onMonthSwipeEnd)(e.translationX, e.velocityX);
         }),
-    [onMonthSwipeEnd],
+    [visible, onMonthSwipeEnd],
   );
 
   const daySwipe = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(visible)
         .activeOffsetX([-20, 20])
         .failOffsetY([-12, 12])
         .onEnd((e) => {
           'worklet';
           runOnJS(onDaySwipeEnd)(e.translationX, e.velocityX);
         }),
-    [onDaySwipeEnd],
+    [visible, onDaySwipeEnd],
   );
 
   const handleToday = useCallback(() => {
@@ -302,23 +310,11 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   }, [dayCountSV, dayRotation, monthRotation]);
 
   const handleCancel = useCallback(() => {
-    const sv = savedValue.current;
-    const y = sv.getFullYear();
-    const m = sv.getMonth();
-    const d = sv.getDate();
-    const h = sv.getHours();
-    const min = sv.getMinutes();
-    const count = daysInMonth(y, m + 1);
-    setYear(y);
-    setMonth(m);
-    setDay(d);
-    setHour(h);
-    setMinute(min);
-    dayCountSV.value = count;
-    dayRotation.value = -(d - 1) * dayStep(count);
-    monthRotation.value = -m * MONTH_STEP;
+    setYearModalVisible(false);
+    setInteracting(null);
+    activeRing.value = RING_NONE;
     onCancel();
-  }, [onCancel, dayCountSV, dayRotation, monthRotation]);
+  }, [onCancel, activeRing]);
 
   const handleConfirm = useCallback(() => {
     savedValue.current = new Date(year, month, day, hour, minute);
@@ -363,6 +359,7 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
   );
 
   const ringGesture = Gesture.Manual()
+    .enabled(visible)
     .onTouchesDown((e, manager) => {
       'worklet';
       const touch = e.changedTouches[0];
@@ -494,6 +491,8 @@ export function DateTimePicker({ visible, value, onConfirm, onCancel }: Props) {
       visible={visible}
       transparent
       animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={handleCancel}
     >
       <GestureHandlerRootView style={styles.root}>

@@ -1,8 +1,15 @@
-import { PermissionsAndroid } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 export async function requestMicrophonePermission(): Promise<boolean> {
-  const result = await PermissionsAndroid.request(
-    'android.permission.RECORD_AUDIO' as never,
-  );
-  return result === PermissionsAndroid.RESULTS.GRANTED;
+  if (Platform.OS !== 'android') return true;
+
+  try {
+    const permission = PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
+    if (await PermissionsAndroid.check(permission)) return true;
+
+    const result = await PermissionsAndroid.request(permission);
+    return result === PermissionsAndroid.RESULTS.GRANTED;
+  } catch {
+    return false;
+  }
 }

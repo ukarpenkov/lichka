@@ -143,6 +143,9 @@ export const fr: LocaleBundle = {
     // Voice
     voiceMessage: (sec) => `[voice:${sec}]`,
     recording: (duration) => `Enregistrement ${duration}`,
+    microphonePermissionTitle: 'Accès au microphone requis',
+    microphonePermissionMessage: "Autorisez l’accès au microphone dans les réglages de l’application pour enregistrer des messages vocaux.",
+    voiceRecordingFailed: "Impossible de démarrer l’enregistrement. Vérifiez l’accès au microphone et réessayez.",
     checklistMode: 'Liste à cocher',
     checklistSaveError: 'Impossible d’enregistrer la liste. Réessayez.',
     messageInput: 'Message...',

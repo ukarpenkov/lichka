@@ -48,6 +48,7 @@ type Props = {
 };
 
 type PickerMode = 'reminder' | 'alarm' | null;
+type VoiceError = 'permission' | 'start' | null;
 
 function formatDuration(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -81,6 +82,7 @@ export function MessageComposer({
   const [alarmGuideVisible, setAlarmGuideVisible] = useState(false);
   const [imagePreview, setImagePreview] = useState<{ uri: string; width: number; height: number } | null>(null);
   const [imageErrorDialog, setImageErrorDialog] = useState(false);
+  const [voiceError, setVoiceError] = useState<VoiceError>(null);
 
   const { isRecording, durationMs, startRecording, stopRecording, cancelRecording } =
     useVoiceRecorder();
@@ -323,12 +325,15 @@ export function MessageComposer({
   }, []);
 
   const handleMicLongPress = useCallback(async () => {
-    triggerHapticLongPress();
     const granted = await requestMicrophonePermission();
-    if (!granted) return;
+    if (!granted) {
+      setVoiceError('permission');
+      return;
+    }
 
     const uri = await startRecording();
     if (uri) {
+      triggerHapticLongPress();
       dotScale.value = withRepeat(
         withSequence(
           withSpring(1.3, { damping: 2, stiffness: 200 }),
@@ -338,6 +343,8 @@ export function MessageComposer({
         true,
       );
       recOpacity.value = withSpring(1, { damping: 15, stiffness: 150 });
+    } else {
+      setVoiceError('start');
     }
   }, [startRecording, dotScale, recOpacity, triggerHapticLongPress]);
 
@@ -474,6 +481,7 @@ export function MessageComposer({
         <View style={styles.actions}>
           {!imagePreview && (
             <AnimatedPressable
+              testID="composer-mic"
               onLongPress={handleMicLongPress}
               delayLongPress={300}
               style={styles.micBtn}>
@@ -536,6 +544,25 @@ export function MessageComposer({
           { text: t.done, onPress: () => setImageErrorDialog(false) },
         ]}
         onClose={() => setImageErrorDialog(false)}
+      />
+
+      <AlertDialog
+        visible={voiceError !== null}
+        title={voiceError === 'permission' ? t.microphonePermissionTitle : t.error}
+        message={
+          voiceError === 'permission'
+            ? t.microphonePermissionMessage
+            : t.voiceRecordingFailed
+        }
+        buttons={
+          voiceError === 'permission'
+            ? [
+                { text: t.cancel, style: 'cancel' },
+                { text: t.openSettings, onPress: () => Linking.openSettings() },
+              ]
+            : [{ text: t.done }]
+        }
+        onClose={() => setVoiceError(null)}
       />
     </>
   );

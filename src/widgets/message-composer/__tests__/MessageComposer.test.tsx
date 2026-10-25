@@ -7,6 +7,10 @@ const mockCreateMessage = jest.fn();
 const mockScheduleNotification = jest.fn();
 const mockGetSettings = jest.fn(() => ({ hapticEnabled: false, soundEnabled: false, locale: 'en' }));
 const mockPlaySendSound = jest.fn();
+const mockRequestMicrophonePermission = jest.fn();
+const mockStartRecording = jest.fn();
+const mockStopRecording = jest.fn();
+const mockCancelRecording = jest.fn();
 
 jest.mock('../../../entities/message', () => ({
   checklistFromText: jest.requireActual('../../../entities/message/model/checklist').checklistFromText,
@@ -38,11 +42,11 @@ jest.mock('../../../features/voice-record', () => ({
   useVoiceRecorder: () => ({
     isRecording: false,
     durationMs: 0,
-    startRecording: jest.fn(),
-    stopRecording: jest.fn(),
-    cancelRecording: jest.fn(),
+    startRecording: (...args: unknown[]) => mockStartRecording(...args),
+    stopRecording: (...args: unknown[]) => mockStopRecording(...args),
+    cancelRecording: (...args: unknown[]) => mockCancelRecording(...args),
   }),
-  requestMicrophonePermission: jest.fn(),
+  requestMicrophonePermission: (...args: unknown[]) => mockRequestMicrophonePermission(...args),
 }));
 
 jest.mock('../../../shared/config/ThemeProvider', () => ({
@@ -80,6 +84,9 @@ jest.mock('../../../shared/config/LocaleProvider', () => ({
       removeImage: 'Remove',
       imagePickError: 'Failed to pick image',
       recording: (d: string) => `Recording ${d}`,
+      microphonePermissionTitle: 'Microphone access required',
+      microphonePermissionMessage: 'Allow microphone access in settings.',
+      voiceRecordingFailed: 'Could not start recording.',
       cancel: 'Cancel',
       exactAlarms: 'Exact alarms',
       exactAlarmsMessage: 'Exact alarms message',
@@ -135,14 +142,23 @@ jest.mock('../../period-picker/PeriodPicker', () => ({
   PeriodPicker: () => null,
 }));
 
-jest.mock('../../../shared/ui/AlertDialog', () => ({
-  AlertDialog: () => null,
-}));
+jest.mock('../../../shared/ui/AlertDialog', () => {
+  const ReactLocal = require('react');
+  const { Text } = require('react-native');
+  return {
+    AlertDialog: ({ visible, title, message }: { visible: boolean; title?: string; message?: string }) =>
+      visible ? ReactLocal.createElement(Text, { testID: 'alert-dialog' }, `${title}: ${message}`) : null,
+  };
+});
 
 beforeEach(() => {
   mockCreateMessage.mockReset();
   mockScheduleNotification.mockReset();
   mockPlaySendSound.mockReset();
+  mockRequestMicrophonePermission.mockReset();
+  mockStartRecording.mockReset();
+  mockStopRecording.mockReset();
+  mockCancelRecording.mockReset();
   mockGetSettings.mockReturnValue({ hapticEnabled: false, soundEnabled: false, locale: 'en' });
 });
 
@@ -215,6 +231,37 @@ describe('MessageComposer', () => {
     const { getByTestId } = render(<MessageComposer chatId="chat-1" />);
     expect(getByTestId('icon-Repeat')).toBeTruthy();
     expect(getByTestId('icon-Bell')).toBeTruthy();
+  });
+
+  it('starts voice recording after microphone permission is granted', async () => {
+    mockRequestMicrophonePermission.mockResolvedValue(true);
+    mockStartRecording.mockResolvedValue('file:///mock/docs/media/voice/voice.m4a');
+    const { getByTestId, queryByTestId } = render(<MessageComposer chatId="chat-1" />);
+
+    fireEvent(getByTestId('composer-mic'), 'longPress');
+
+    await waitFor(() => expect(mockStartRecording).toHaveBeenCalledTimes(1));
+    expect(queryByTestId('alert-dialog')).toBeNull();
+  });
+
+  it('explains when microphone permission is denied instead of pretending to record', async () => {
+    mockRequestMicrophonePermission.mockResolvedValue(false);
+    const { getByTestId, findByText } = render(<MessageComposer chatId="chat-1" />);
+
+    fireEvent(getByTestId('composer-mic'), 'longPress');
+
+    expect(await findByText('Microphone access required: Allow microphone access in settings.')).toBeTruthy();
+    expect(mockStartRecording).not.toHaveBeenCalled();
+  });
+
+  it('shows an error when the native recorder cannot start', async () => {
+    mockRequestMicrophonePermission.mockResolvedValue(true);
+    mockStartRecording.mockResolvedValue(null);
+    const { getByTestId, findByText } = render(<MessageComposer chatId="chat-1" />);
+
+    fireEvent(getByTestId('composer-mic'), 'longPress');
+
+    expect(await findByText('Error: Could not start recording.')).toBeTruthy();
   });
 
   it('renders scheduled buttons even when image preview is active', () => {

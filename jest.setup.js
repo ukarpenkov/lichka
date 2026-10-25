@@ -20,6 +20,7 @@ jest.mock('react-native-gesture-handler', () => {
       'onTouchesDown',
       'onTouchesUp',
       'onTouchesMove',
+      'onTouchesCancelled',
     ];
     for (const method of methods) {
       self[method] = () => self;
@@ -102,6 +103,8 @@ jest.mock('react-native-reanimated', () => {
     default: {
       View: ({ children, style, ...rest }) =>
         React.createElement(require('react-native').View, { style, ...rest }, children),
+      Text: ({ children, style, ...rest }) =>
+        React.createElement(require('react-native').Text, { style, ...rest }, children),
       createAnimatedComponent: (C) => C,
       useSharedValue: (v) => ({ value: v }),
       useAnimatedStyle: (fn) => ({}),
