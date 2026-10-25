@@ -145,7 +145,7 @@ export const ru: LocaleBundle = {
     recording: (duration) => `Запись ${duration}`,
     microphonePermissionTitle: 'Нет доступа к микрофону',
     microphonePermissionMessage: 'Разрешите доступ к микрофону в настройках приложения, чтобы записывать голосовые сообщения.',
-    voiceRecordingFailed: 'Не удалось начать запись. Проверьте доступ к микрофону и попробуйте ещё раз.',
+    voiceRecordingFailed: 'Не удалось начать запись. Попробуйте ещё раз.',
     checklistMode: 'Список с галочками',
     checklistSaveError: 'Не удалось сохранить галочку. Попробуйте ещё раз.',
     messageInput: 'Сообщение...',

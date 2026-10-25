@@ -8,3 +8,7 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# Nitro constructs this implementation by its JNI class name from C++, so R8
+# cannot see the reference. The library only annotates the generated base class.
+-keep class com.margelo.nitro.audiorecorderplayer.HybridAudioRecorderPlayer { *; }

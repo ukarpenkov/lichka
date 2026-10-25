@@ -145,7 +145,7 @@ export const es: LocaleBundle = {
     recording: (duration) => `Grabando ${duration}`,
     microphonePermissionTitle: 'Se necesita acceso al micrófono',
     microphonePermissionMessage: 'Permite el acceso al micrófono en los ajustes de la aplicación para grabar mensajes de voz.',
-    voiceRecordingFailed: 'No se pudo iniciar la grabación. Comprueba el acceso al micrófono e inténtalo de nuevo.',
+    voiceRecordingFailed: 'No se pudo iniciar la grabación. Inténtalo de nuevo.',
     checklistMode: 'Lista de tareas',
     checklistSaveError: 'No se pudo guardar la lista. Inténtalo de nuevo.',
     messageInput: 'Mensaje...',
