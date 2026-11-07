@@ -6,7 +6,7 @@ import {
   getInitialMessageId,
   consumeInitialChatId,
 } from '../../shared/lib/notificationChannels';
-import { setNavigationReady, navigateToChat } from '../../app/mainTabsApi';
+import { setNavigationReady, navigateToChat } from '../../shared/lib/appNavigationPort';
 
 export function useNotificationNavigation() {
   useEffect(() => {

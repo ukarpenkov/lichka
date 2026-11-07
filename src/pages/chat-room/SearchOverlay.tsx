@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from '../../shared/ui/pixel';
 
 import { Text, KeyboardAwareView, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, spacing, radii, listRow } from '../../shared/config';
-import { searchMessages, type SearchResult } from '../../entities/message';
+import { useTheme, useLocale, formatTime, spacing, radii, listRow } from '../../shared/config';
+import { useMessageSearch } from '../../shared/lib';
+import { type SearchResult } from '../../entities/message';
 import { DateSeparator } from './DateSeparator';
 
 type Props = {
@@ -57,21 +58,12 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const results = useMessageSearch(query, { chatId });
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-    setResults(searchMessages(trimmed, chatId));
-  }, [query, chatId]);
 
   const listItems = useMemo(() => buildSearchListItems(results), [results]);
 
@@ -82,12 +74,6 @@ export function SearchOverlay({ chatId, onClose, onSelect }: Props) {
     },
     [onSelect, onClose],
   );
-
-  const formatTime = useCallback((iso: string) => {
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }, []);
 
   return (
     <Animated.View

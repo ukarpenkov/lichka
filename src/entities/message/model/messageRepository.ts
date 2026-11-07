@@ -243,11 +243,14 @@ export function extractTemplateId(displayId: string): string {
   return displayId.slice(PERIODIC_DISPLAY_PREFIX.length);
 }
 
-function getLatestPeriodicFireAt(template: Message, now: number): string | null {
-  const interval = template.intervalMinutes;
-  if (!interval || interval <= 0 || !Number.isFinite(interval)) return null;
-  const createdAtMs = new Date(template.createdAt).getTime();
-  const intervalMs = interval * 60_000;
+export function resolveLatestPeriodicFireAt(
+  createdAt: string,
+  intervalMinutes: number | null,
+  now: number,
+): string | null {
+  if (!intervalMinutes || intervalMinutes <= 0 || !Number.isFinite(intervalMinutes)) return null;
+  const createdAtMs = new Date(createdAt).getTime();
+  const intervalMs = intervalMinutes * 60_000;
   const fires = Math.floor((now - createdAtMs) / intervalMs);
   if (!Number.isFinite(fires) || fires <= 0) return null;
   return new Date(createdAtMs + fires * intervalMs).toISOString();
@@ -257,7 +260,11 @@ function getLatestPeriodicFireAt(template: Message, now: number): string | null 
 export function finishPeriodicMessage(id: string): Message | null {
   const template = getMessageById(id);
   if (!template || template.type !== 'periodic' || !template.enabled) return null;
-  const latestFireAt = getLatestPeriodicFireAt(template, Date.now());
+  const latestFireAt = resolveLatestPeriodicFireAt(
+    template.createdAt,
+    template.intervalMinutes,
+    Date.now(),
+  );
   if (!latestFireAt) return null;
 
   getDatabase().executeSync(
@@ -291,7 +298,11 @@ export function getPeriodicDisplayMessages(chatId: string): Message[] {
 
   for (const row of result.rows) {
     const template = mapRow(row);
-    const latestFireAt = getLatestPeriodicFireAt(template, now);
+    const latestFireAt = resolveLatestPeriodicFireAt(
+      template.createdAt,
+      template.intervalMinutes,
+      now,
+    );
     if (latestFireAt) {
       displayMessages.push({
         ...template,
@@ -352,13 +363,12 @@ export function getUnreadCounts(): Record<string, number> {
 
   const now = Date.now();
   for (const row of periodicResult.rows) {
-    const intervalMinutes = row.interval_minutes as number;
-    const createdAtMs = new Date(row.created_at as string).getTime();
-    const intervalMs = intervalMinutes * 60_000;
-    const fires = Math.floor((now - createdAtMs) / intervalMs);
-    if (fires <= 0) continue;
-
-    const latestFireAt = new Date(createdAtMs + fires * intervalMs).toISOString();
+    const latestFireAt = resolveLatestPeriodicFireAt(
+      row.created_at as string,
+      row.interval_minutes as number,
+      now,
+    );
+    if (!latestFireAt) continue;
     const lastReadAt = row.last_read_at as string | null;
     if (lastReadAt !== null && lastReadAt >= latestFireAt) continue;
 

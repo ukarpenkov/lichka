@@ -16,6 +16,16 @@ export function useAppInit(): InitState {
   return useContext(InitContext);
 }
 
+function runInitStep(label: string, action: () => void): void {
+  try {
+    action();
+  } catch (e) {
+    throw new Error(
+      `${label}: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+}
+
 export function AppInitProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<InitState>({ status: 'loading' });
 
@@ -24,31 +34,12 @@ export function AppInitProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       try {
-        try {
-          runMigrations();
-        } catch (e) {
-          throw new Error(
-            `Database migration failed: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
-
-        try {
-          seedDefaultChat();
-        } catch (e) {
-          throw new Error(
-            `Seed default chat failed: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
+        runInitStep('Database migration failed', runMigrations);
+        runInitStep('Seed default chat failed', seedDefaultChat);
 
         getSettings();
 
-        try {
-          registerNotificationChannels();
-        } catch (e) {
-          throw new Error(
-            `Notification channels failed: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
+        runInitStep('Notification channels failed', registerNotificationChannels);
 
         requestNotificationPermission().catch(() => {});
         cleanupOrphanMedia().catch(() => {});

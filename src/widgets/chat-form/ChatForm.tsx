@@ -13,7 +13,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import { Camera, Smile, X, PixelIcon, isChatIconAvatar } from '../../shared/ui/pixel';
 
-import { Input, Button, Text, AlertDialog, KeyboardAwareView, type AlertButton } from '../../shared/ui';
+import { Input, Button, Text, AlertDialog, KeyboardAwareView, useAlertDialog } from '../../shared/ui';
 import { useTheme, useLocale, monoWeight } from '../../shared/config';
 import { createChat, updateChat, type Chat } from '../../entities/chat';
 import { resolveMediaPath, saveAvatarPng, generateId } from '../../shared/lib';
@@ -105,11 +105,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [processingAvatar, setProcessingAvatar] = useState(false);
-  const [dialog, setDialog] = useState<{
-    title?: string;
-    message?: string;
-    buttons?: AlertButton[];
-  } | null>(null);
+  const { show: setDialog, dialogProps } = useAlertDialog();
 
   const isEdit = !!editChat;
   const canSave = title.trim().length > 0;
@@ -201,7 +197,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         setProcessingAvatar(false);
       }
     },
-    [t, background, text],
+    [t, background, text, setDialog],
   );
 
   const handlePickImage = useCallback(() => {
@@ -231,7 +227,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         }
       },
     );
-  }, [t, applyPixelAvatar]);
+  }, [t, applyPixelAvatar, setDialog]);
 
   const handleAvatarTap = useCallback(() => {
     if (iconAvatar) {
@@ -281,7 +277,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, processingAvatar, title, pendingPngBase64, iconAvatar, editChat, isEdit, onSaved, onClose, t]);
+  }, [canSave, saving, processingAvatar, title, pendingPngBase64, iconAvatar, editChat, isEdit, onSaved, onClose, t, setDialog]);
 
   const avatarContent = () => {
     if (processingAvatar) {
@@ -396,13 +392,7 @@ export function ChatForm({ visible, onClose, onSaved, editChat }: ChatFormProps)
         </View>
       </KeyboardAwareView>
 
-      <AlertDialog
-        visible={dialog !== null}
-        title={dialog?.title}
-        message={dialog?.message}
-        buttons={dialog?.buttons}
-        onClose={() => setDialog(null)}
-      />
+      <AlertDialog {...dialogProps} />
     </Modal>
   );
 }

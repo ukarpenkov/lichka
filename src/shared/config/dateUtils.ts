@@ -15,6 +15,39 @@ export function getWeekdayShort(date: Date, locale: Locale): string {
   return getLocaleBundle(locale).weekdaysShort[date.getDay()];
 }
 
+/** True when both dates fall on the same local calendar day. */
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+export function isToday(date: Date, now: Date = new Date()): boolean {
+  return isSameLocalDay(date, now);
+}
+
+export function isTomorrow(date: Date, now: Date = new Date()): boolean {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return isSameLocalDay(date, tomorrow);
+}
+
+/** Format a clock time as HH:MM (always 24h). */
+export function formatTimeOfDay(date: Date): string {
+  const h = date.getHours().toString().padStart(2, '0');
+  const m = date.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+/** Voice length as m:ss. Minutes are not zero-padded. */
+export function formatVoiceDuration(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 /**
  * Format a date label for chat separators.
  * Returns "Сегодня"/"Today", "Вчера"/"Yesterday", or a locale-formatted date
@@ -24,21 +57,11 @@ export function formatDateLabel(iso: string, locale: Locale, t: LocaleDictionary
   const d = new Date(iso);
   const now = new Date();
 
-  const isSameDay =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-
-  if (isSameDay) return t.today;
+  if (isToday(d, now)) return t.today;
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday =
-    d.getFullYear() === yesterday.getFullYear() &&
-    d.getMonth() === yesterday.getMonth() &&
-    d.getDate() === yesterday.getDate();
-
-  if (isYesterday) return t.yesterday;
+  if (isSameLocalDay(d, yesterday)) return t.yesterday;
 
   const { monthsFull, date: cfg } = getLocaleBundle(locale);
   const day = d.getDate();
@@ -57,10 +80,7 @@ export function formatDateLabel(iso: string, locale: Locale, t: LocaleDictionary
  * Format time as HH:MM (always 24h, no AM/PM).
  */
 export function formatTime(iso: string): string {
-  const d = new Date(iso);
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `${h}:${m}`;
+  return formatTimeOfDay(new Date(iso));
 }
 
 /**
@@ -89,21 +109,8 @@ export function formatRelativeDate(iso: string, locale: Locale, t: LocaleDiction
   const d = new Date(iso);
   const now = new Date();
 
-  const isSameDay =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-
-  if (isSameDay) return t.today;
-
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const isTomorrow =
-    d.getFullYear() === tomorrow.getFullYear() &&
-    d.getMonth() === tomorrow.getMonth() &&
-    d.getDate() === tomorrow.getDate();
-
-  if (isTomorrow) return t.tomorrow;
+  if (isToday(d, now)) return t.today;
+  if (isTomorrow(d, now)) return t.tomorrow;
 
   const { localeTag } = getLocaleBundle(locale).date;
   return d.toLocaleDateString(localeTag, {
@@ -134,19 +141,8 @@ export function formatScheduledWhen(
   const now = new Date();
   const time = formatTime(message.scheduledAt);
 
-  const isToday =
-    date.getDate() === now.getDate() &&
-    date.getMonth() === now.getMonth() &&
-    date.getFullYear() === now.getFullYear();
-  if (isToday) return time;
-
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const isTomorrow =
-    date.getDate() === tomorrow.getDate() &&
-    date.getMonth() === tomorrow.getMonth() &&
-    date.getFullYear() === tomorrow.getFullYear();
-  if (isTomorrow) return `${t.tomorrow} ${time}`;
+  if (isToday(date, now)) return time;
+  if (isTomorrow(date, now)) return `${t.tomorrow} ${time}`;
 
   const { localeTag } = getLocaleBundle(locale).date;
   return (

@@ -1,9 +1,9 @@
-jest.mock('../../../app/mainTabsApi', () => ({
+jest.mock('../../../shared/lib/appNavigationPort', () => ({
   navigateToChat: jest.fn(),
   revealChatListForShare: jest.fn(),
 }));
 
-import { navigateToChat, revealChatListForShare } from '../../../app/mainTabsApi';
+import { navigateToChat, revealChatListForShare } from '../../../shared/lib/appNavigationPort';
 import {
   beginSharePick,
   cancelSharePick,

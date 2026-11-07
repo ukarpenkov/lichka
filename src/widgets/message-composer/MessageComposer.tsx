@@ -10,7 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme, useLocale, fonts, radii } from '../../shared/config';
+import { useTheme, useLocale, formatVoiceDuration, fonts, radii } from '../../shared/config';
 import { IconButton, Text, AlertDialog, AlarmClockIcon, MicIcon } from '../../shared/ui';
 import { createMessage, checklistFromText, type MessageType } from '../../entities/message';
 import { getSettings } from '../../entities/settings';
@@ -49,13 +49,6 @@ type Props = {
 
 type PickerMode = 'reminder' | 'alarm' | null;
 type VoiceError = 'permission' | 'start' | null;
-
-function formatDuration(ms: number): string {
-  const totalSec = Math.floor(ms / 1000);
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -408,7 +401,7 @@ export function MessageComposer({
           <GestureDetector gesture={panGesture}>
             <Animated.View style={[styles.recordingIndicator, panStyle]}>
               <Animated.View style={[styles.recDot, { backgroundColor: colors.destructive }, dotAnimatedStyle]} />
-              <Text variant="body">{t.recording(formatDuration(durationMs))}</Text>
+              <Text variant="body">{t.recording(formatVoiceDuration(Math.floor(durationMs / 1000)))}</Text>
               <Text variant="caption" tone="mutedSoft" style={styles.cancelHint}>
                 ← {t.cancel}
               </Text>

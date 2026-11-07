@@ -6,7 +6,7 @@ import {
   getInitialWidgetMessageId,
   consumeInitialWidgetOpen,
 } from '../../shared/lib/scheduledWidget';
-import { openScheduledTab, setNavigationReady } from '../../app/mainTabsApi';
+import { openScheduledTab, setNavigationReady } from '../../shared/lib/appNavigationPort';
 
 const OPEN_TARGET_SCHEDULED = 'scheduled';
 

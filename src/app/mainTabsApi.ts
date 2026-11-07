@@ -6,6 +6,7 @@
  */
 
 import type { ChatRoomMode } from './types';
+import { registerAppNavigation } from '../shared/lib/appNavigationPort';
 
 /** Scheduled tab index in SwipeablePager (Chats=0, Scheduled=1, Settings=2). */
 export const SCHEDULED_TAB_INDEX = 1;
@@ -254,3 +255,10 @@ export function __resetMainTabsApiForTests() {
   pendingShareReveal = false;
   pendingSharePop = false;
 }
+
+registerAppNavigation({
+  setNavigationReady,
+  navigateToChat,
+  revealChatListForShare,
+  openScheduledTab,
+});

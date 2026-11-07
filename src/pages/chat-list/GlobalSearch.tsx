@@ -6,9 +6,9 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { X } from '../../shared/ui/pixel';
 
 import { Text, KeyboardAwareView, IconButton, HighlightedBody, AnimatedPressable } from '../../shared/ui';
-import { useTheme, useLocale, formatShortMonth, spacing, radii, listRow, fonts } from '../../shared/config';
-import { searchMessages, type SearchResult } from '../../entities/message';
-import { hapticTap } from '../../shared/lib';
+import { useTheme, useLocale, formatShortMonth, formatTime, isToday, spacing, radii, listRow, fonts } from '../../shared/config';
+import { type SearchResult } from '../../entities/message';
+import { hapticTap, useMessageSearch } from '../../shared/lib';
 import type { ChatStackParamList } from '../../app/types';
 
 type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatList'>;
@@ -23,24 +23,14 @@ export function GlobalSearch({ visible, onClose }: Props) {
   const { colors } = useTheme();
   const { t, locale } = useLocale();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const results = useMessageSearch(query, { resetWhen: !visible });
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (!visible) {
       setQuery('');
-      setResults([]);
     }
   }, [visible]);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-    setResults(searchMessages(trimmed));
-  }, [query]);
 
   const handleSelect = useCallback(
     (item: SearchResult) => {
@@ -54,20 +44,10 @@ export function GlobalSearch({ visible, onClose }: Props) {
     [navigation, onClose],
   );
 
-  const formatTime = useCallback((iso: string) => {
+  const formatStamp = useCallback((iso: string) => {
     const d = new Date(iso);
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-    if (
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate()
-    ) {
-      return time;
-    }
-
+    const time = formatTime(iso);
+    if (isToday(d)) return time;
     const month = formatShortMonth(d, locale);
     return `${d.getDate()} ${month}, ${time}`;
   }, [locale]);
@@ -121,7 +101,7 @@ export function GlobalSearch({ visible, onClose }: Props) {
                   {item.chat_title}
                 </Text>
                 <Text variant="body-sm" tone="mutedSoft">
-                  {formatTime(item.created_at)}
+                  {formatStamp(item.created_at)}
                 </Text>
               </View>
             </AnimatedPressable>

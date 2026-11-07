@@ -4,6 +4,11 @@ import {
   getWeekdayShort,
   formatDateLabel,
   formatTime,
+  isSameLocalDay,
+  isToday,
+  isTomorrow,
+  formatTimeOfDay,
+  formatVoiceDuration,
   formatScheduledAt,
   formatRelativeDate,
   formatScheduledWhen,
@@ -290,6 +295,38 @@ describe('dateUtils', () => {
       expect(formatInterval(1440, ru)).toBe('1 дн');
       expect(formatInterval(1440, en)).toBe('1 d');
       expect(formatInterval(1440, fr)).toBe('1 j');
+    });
+  });
+
+  describe('local day helpers', () => {
+    const morning = new Date(2024, 0, 15, 9, 5);
+    const evening = new Date(2024, 0, 15, 23, 59);
+    const nextDay = new Date(2024, 0, 16, 0, 1);
+
+    it('should treat different clock times on one date as the same local day', () => {
+      expect(isSameLocalDay(morning, evening)).toBe(true);
+      expect(isSameLocalDay(evening, nextDay)).toBe(false);
+    });
+
+    it('should recognize today and tomorrow against an explicit clock', () => {
+      expect(isToday(evening, morning)).toBe(true);
+      expect(isToday(nextDay, morning)).toBe(false);
+      expect(isTomorrow(nextDay, morning)).toBe(true);
+      expect(isTomorrow(morning, morning)).toBe(false);
+    });
+  });
+
+  describe('formatTimeOfDay', () => {
+    it('should pad hours and minutes', () => {
+      expect(formatTimeOfDay(new Date(2024, 0, 15, 9, 5))).toBe('09:05');
+    });
+  });
+
+  describe('formatVoiceDuration', () => {
+    it('should format seconds as m:ss without padding minutes', () => {
+      expect(formatVoiceDuration(5)).toBe('0:05');
+      expect(formatVoiceDuration(65)).toBe('1:05');
+      expect(formatVoiceDuration(600)).toBe('10:00');
     });
   });
 

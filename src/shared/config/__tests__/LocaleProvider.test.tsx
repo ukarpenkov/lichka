@@ -11,6 +11,19 @@ jest.mock('../../db', () => ({
   getDatabase: () => ({
     executeSync: mockExecuteSync,
   }),
+  readSetting: (key: string) => {
+    const result = mockExecuteSync(
+      'SELECT value FROM settings WHERE key = ?',
+      [key],
+    );
+    return result.rows.length > 0 ? result.rows[0].value : null;
+  },
+  writeSetting: (key: string, value: string) => {
+    mockExecuteSync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      [key, value],
+    );
+  },
 }));
 
 function wrapper({ children }: { children: React.ReactNode }) {

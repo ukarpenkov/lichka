@@ -6,7 +6,7 @@ import {
   getInitialShare,
   type NativeSharePayload,
 } from '../../shared/lib/shareIntent';
-import { setNavigationReady } from '../../app/mainTabsApi';
+import { setNavigationReady } from '../../shared/lib/appNavigationPort';
 import { handleShareReceived } from './shareIntoChat';
 
 export function useShareNavigation() {

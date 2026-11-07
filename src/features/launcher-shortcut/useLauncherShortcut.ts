@@ -5,7 +5,7 @@ import {
   consumeInitialShortcut,
   getInitialShortcutId,
 } from '../../shared/lib/launcherShortcut';
-import { navigateToChat, setNavigationReady } from '../../app/mainTabsApi';
+import { navigateToChat, setNavigationReady } from '../../shared/lib/appNavigationPort';
 
 export const SAVED_MESSAGES_CHAT_ID = 'saved-messages';
 export const SHORTCUT_WRITE_SAVED = 'write_saved';

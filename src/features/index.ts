@@ -8,6 +8,8 @@ export {
   useNotificationNavigation,
 } from './notifications';
 
+export { deleteMessageWithEffects } from './delete-message';
+
 export { useVoiceRecorder, requestMicrophonePermission } from './voice-record';
 export type { VoiceRecorderState } from './voice-record';
 

@@ -68,3 +68,14 @@ export {
   openExternalUrl,
   type MessageTextSegment,
 } from './messageLinks';
+export { useMessageSearch } from './useMessageSearch';
+export { useAndroidBackgroundEffect } from './useAndroidBackgroundEffect';
+export {
+  registerAppNavigation,
+  setNavigationReady,
+  navigateToChat,
+  revealChatListForShare,
+  openScheduledTab,
+  type AppNavigationOptions,
+  type AppNavigationPort,
+} from './appNavigationPort';

@@ -17,6 +17,7 @@ export {
   isPeriodicDisplayId,
   extractTemplateId,
   getUnreadCounts,
+  resolveLatestPeriodicFireAt,
   markChatAsRead,
   getAllReadMarkers,
 } from './model/messageRepository';

@@ -17,7 +17,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { FlatList, GestureDetector } from 'react-native-gesture-handler';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,33 +29,23 @@ import {
   MESSAGE_LIST_BOTTOM_GAP,
   PAGER_TAB_BAR_HEIGHT,
   setClipboardString,
-  playDeleteSound,
   hapticTap,
 } from '../../shared/lib';
-import { getSettings } from '../../entities/settings';
-import { Text, AlertDialog, KeyboardAwareView, type AlertButton } from '../../shared/ui';
-import { getChatById, type Chat } from '../../entities/chat';
+import { Text, AlertDialog, KeyboardAwareView, useAlertDialog } from '../../shared/ui';
 import {
-  getVisibleMessagesByChatId,
-  deleteMessage,
   getMessageById,
-  getPeriodicDisplayMessages,
-  getScheduledMessagesByChatId,
-  disableFiredMessages,
   isPeriodicDisplayId,
   extractTemplateId,
   type Message,
 } from '../../entities/message';
 import {
-  cancelNotification,
   canStopPeriodicReminder,
   stopPeriodicReminder,
   canSnoozeReminder,
   snoozeReminder,
   type SnoozeDelay,
 } from '../../features/notifications';
-import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
-import { markChatAsRead } from '../../features/unread-badges';
+import { deleteMessageWithEffects } from '../../features/delete-message';
 import { useEditMessage, type EditFields } from '../../features/edit-message';
 import { toggleChecklistItem } from '../../features/message-checklist';
 import {
@@ -78,6 +68,7 @@ import { DateSeparator } from './DateSeparator';
 import { SearchOverlay } from './SearchOverlay';
 import { FutureTimeline } from './FutureTimeline';
 import { resolveTimelineMode, type TimelineMode } from './timelineMode';
+import { useChatRoomData } from './useChatRoomData';
 import { buildHistoryListItems, type HistoryListItem } from './historyListItems';
 import {
   getListPointerEvents,
@@ -99,9 +90,6 @@ type Nav = NativeStackNavigationProp<ChatStackParamList, 'ChatRoom'>;
 type ChatRoomRoute = RouteProp<ChatStackParamList, 'ChatRoom'>;
 
 type ListItem = HistoryListItem;
-
-const REFRESH_INTERVAL = 30_000;
-const FUTURE_REFRESH_INTERVAL = 15_000;
 
 const AnimatedFlatList = Animated.createAnimatedComponent(
   FlatList as any,
@@ -126,10 +114,8 @@ export function ChatRoomScreen() {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const tabBarHeight = PAGER_TAB_BAR_HEIGHT + insets.bottom;
+  const { chat, messages, futureMessages, loadData, loadFuture } = useChatRoomData(chatId);
 
-  const [chat, setChat] = useState<Chat | null | undefined>(undefined);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [futureMessages, setFutureMessages] = useState<Message[]>([]);
   const [timelineMode, setTimelineMode] = useState<TimelineMode>(() =>
     resolveTimelineMode(mode),
   );
@@ -140,11 +126,7 @@ export function ChatRoomScreen() {
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [editFormVisible, setEditFormVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [dialog, setDialog] = useState<{
-    title?: string;
-    message?: string;
-    buttons?: AlertButton[];
-  } | null>(null);
+  const { show: setDialog, dialogProps } = useAlertDialog();
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const [headerAreaHeight, setHeaderAreaHeight] = useState(0);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -178,8 +160,6 @@ export function ChatRoomScreen() {
   const historyOffsetRef = useRef(0);
   const historyMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
   const futureMetricsRef = useRef({ contentHeight: 0, layoutHeight: 0 });
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const futureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Keys that already played enter animation — survives layout churn. */
   const animatedItemKeysRef = useRef<Set<string>>(new Set());
 
@@ -312,21 +292,6 @@ export function ChatRoomScreen() {
     [],
   );
 
-  const loadData = useCallback(() => {
-    setChat(getChatById(chatId) ?? null);
-    const regularMessages = getVisibleMessagesByChatId(chatId);
-    const periodicMessages = getPeriodicDisplayMessages(chatId);
-    const allMessages = [...regularMessages, ...periodicMessages];
-    allMessages.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    setMessages(allMessages);
-  }, [chatId]);
-
-  const loadFuture = useCallback(() => {
-    disableFiredMessages();
-    setFutureMessages(getScheduledMessagesByChatId(chatId));
-    syncScheduledWidgetSnapshot();
-  }, [chatId]);
-
   useEffect(() => {
     if (mode === 'future') {
       timelineModeRef.current = 'future';
@@ -358,27 +323,6 @@ export function ChatRoomScreen() {
       setTimelineMode('history');
     }
   }, [composerFocusNonce]);
-
-  useFocusEffect(
-    useCallback(() => {
-      markChatAsRead(chatId);
-      loadData();
-      loadFuture();
-      timerRef.current = setInterval(loadData, REFRESH_INTERVAL);
-      futureTimerRef.current = setInterval(loadFuture, FUTURE_REFRESH_INTERVAL);
-      return () => {
-        markChatAsRead(chatId);
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        if (futureTimerRef.current) {
-          clearInterval(futureTimerRef.current);
-          futureTimerRef.current = null;
-        }
-      };
-    }, [chatId, loadData, loadFuture]),
-  );
 
   useEffect(() => {
     animatedItemKeysRef.current = new Set();
@@ -632,11 +576,7 @@ export function ChatRoomScreen() {
             text: t.delete,
             style: 'destructive',
             onPress: () => {
-              deleteMessage(actualId);
-              cancelNotification(actualId);
-              if (getSettings().soundEnabled) {
-                playDeleteSound();
-              }
+              deleteMessageWithEffects(actualId);
               loadData();
               loadFuture();
             },
@@ -644,7 +584,7 @@ export function ChatRoomScreen() {
         ],
       });
     }, 300);
-  }, [menuMessage, t, loadData, loadFuture]);
+  }, [menuMessage, t, loadData, loadFuture, setDialog]);
 
   const { saveEdit } = useEditMessage();
 
@@ -656,7 +596,7 @@ export function ChatRoomScreen() {
     } catch {
       setDialog({ title: t.error, message: t.checklistSaveError });
     }
-  }, [loadData, loadFuture, t]);
+  }, [loadData, loadFuture, t, setDialog]);
 
   const handleStopReminder = useCallback(() => {
     if (!menuMessage) return;
@@ -680,7 +620,7 @@ export function ChatRoomScreen() {
     } finally {
       snoozeInFlight.current = false;
     }
-  }, [menuMessage, loadFuture, t]);
+  }, [menuMessage, loadFuture, t, setDialog]);
 
   const handleCopyMessage = useCallback(() => {
     if (!menuMessage) return;
@@ -1071,13 +1011,7 @@ export function ChatRoomScreen() {
         editChat={chat}
       />
 
-      <AlertDialog
-        visible={dialog !== null}
-        title={dialog?.title}
-        message={dialog?.message}
-        buttons={dialog?.buttons}
-        onClose={() => setDialog(null)}
-      />
+      <AlertDialog {...dialogProps} />
 
       <ImageViewer
         visible={viewerVisible}

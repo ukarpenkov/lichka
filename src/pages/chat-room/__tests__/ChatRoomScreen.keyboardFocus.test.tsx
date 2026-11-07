@@ -99,6 +99,10 @@ jest.mock('../../../shared/ui', () => {
     Text: ({ children, ...props }: { children?: React.ReactNode }) =>
       ReactModule.createElement(Text, props, children),
     AlertDialog: () => null,
+    useAlertDialog: () => ({
+      show: jest.fn(),
+      dialogProps: { visible: false, onClose: jest.fn() },
+    }),
     KeyboardAwareView: require('../../../shared/ui/KeyboardAwareView').KeyboardAwareView,
   };
 });

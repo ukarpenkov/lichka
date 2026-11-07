@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Play, Pause } from '../../shared/ui/pixel';
-import { useTheme } from '../../shared/config';
+import { useTheme, formatVoiceDuration } from '../../shared/config';
 import { IconButton } from '../../shared/ui';
 import { Text } from '../../shared/ui';
 import { resolveMediaPath } from '../../shared/lib';
@@ -38,12 +38,6 @@ function idToSeed(id: string): number {
     hash = (hash * 31 + id.charCodeAt(i)) | 0;
   }
   return Math.abs(hash);
-}
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 export function VoiceMessage({ message }: VoiceMessageProps) {
@@ -94,7 +88,7 @@ export function VoiceMessage({ message }: VoiceMessageProps) {
       />
       <WaveformBar progress={progress} seed={seed} />
       <Text variant="caption" style={[styles.duration, { color: text + '60' }]}>
-        {formatDuration(displaySeconds)}
+        {formatVoiceDuration(displaySeconds)}
       </Text>
     </View>
   );

@@ -12,7 +12,7 @@ import {
   AnimatedPressable,
   AlertDialog,
   PageHeader,
-  type AlertButton,
+  useAlertDialog,
 } from '../../shared/ui';
 import { useTheme, useLocale, fabShadow } from '../../shared/config';
 import { hapticTap } from '../../shared/lib';
@@ -45,11 +45,7 @@ export function ChatListScreen() {
   const [formVisible, setFormVisible] = useState(false);
   const [editChat, setEditChat] = useState<Chat | null>(null);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [dialog, setDialog] = useState<{
-    title?: string;
-    message?: string;
-    buttons?: AlertButton[];
-  } | null>(null);
+  const { show: setDialog, dialogProps } = useAlertDialog();
   const shareDraft = useSharePick();
 
   useEffect(() => {
@@ -121,7 +117,7 @@ export function ChatListScreen() {
         },
       ],
     });
-  }, [menuChat, t, refresh]);
+  }, [menuChat, t, refresh, setDialog]);
 
   const handleEdit = useCallback(() => {
     if (!menuChat) return;
@@ -224,13 +220,7 @@ export function ChatListScreen() {
         onClose={() => setSearchVisible(false)}
       />
 
-      <AlertDialog
-        visible={dialog !== null}
-        title={dialog?.title}
-        message={dialog?.message}
-        buttons={dialog?.buttons}
-        onClose={() => setDialog(null)}
-      />
+      <AlertDialog {...dialogProps} />
     </Screen>
   );
 }

@@ -15,7 +15,7 @@ import Animated, {
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { Clock, X } from '../../shared/ui/pixel';
 import { Screen, Text, AlarmClockIcon, AnimatedPressable } from '../../shared/ui';
-import { useTheme } from '../../shared/config';
+import { useTheme, formatTimeOfDay } from '../../shared/config';
 import { fonts, spacing, fixedColors } from '../../shared/config/tokens';
 import { hapticTap, hapticSuccess } from '../../shared/lib';
 import type { RootStackParamList } from '../../app/types';
@@ -37,17 +37,11 @@ export function AlarmScreen() {
   const { body, chatTitle } = route.params ?? {};
   const label = body || chatTitle || 'Будильник';
 
-  const [timeStr, setTimeStr] = useState(() => {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  });
+  const [timeStr, setTimeStr] = useState(() => formatTimeOfDay(new Date()));
 
   useEffect(() => {
     const id = setInterval(() => {
-      const now = new Date();
-      setTimeStr(
-        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
-      );
+      setTimeStr(formatTimeOfDay(new Date()));
     }, 1000);
     return () => clearInterval(id);
   }, []);

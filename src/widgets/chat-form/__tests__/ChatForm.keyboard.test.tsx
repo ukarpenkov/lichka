@@ -26,6 +26,10 @@ jest.mock('../../../shared/ui', () => {
       Pressable, props, ReactModule.createElement(Text, null, title),
     ),
     AlertDialog: () => null,
+    useAlertDialog: () => ({
+      show: jest.fn(),
+      dialogProps: { visible: false, onClose: jest.fn() },
+    }),
     KeyboardAwareView: require('../../../shared/ui/KeyboardAwareView').KeyboardAwareView,
   };
 });

@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Palette, Volume2, Vibrate, Languages, Cloud, CloudDownload, FileArchive, FileUp, Info, ChevronRight } from '../../shared/ui/pixel';
 
-import { Screen, Text, AlertDialog, PageHeader, Switch, type AlertButton } from '../../shared/ui';
+import { Screen, Text, AlertDialog, PageHeader, Switch, useAlertDialog, type AlertButton } from '../../shared/ui';
 import { useTheme, getTheme, useLocale, getLocaleBundle, SUPPORTED_LOCALES, type Locale, type LocaleDictionary, spacing } from '../../shared/config';
 import { getSettings, updateSettings, type AppSettings } from '../../entities/settings';
 import {
@@ -83,11 +83,6 @@ export function SettingsScreen() {
   const { colors } = useTheme();
   const { t, setLocale: setAppLocale, locale } = useLocale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [dialog, setDialog] = useState<{
-    title?: string;
-    message?: string;
-    buttons?: AlertButton[];
-  } | null>(null);
   const { isGroupDisabled, isActionLoading, run } = useBackupGroupBusy();
   const pendingPromptRef = useRef<((value: BackupPrompt) => void) | null>(null);
 
@@ -122,6 +117,12 @@ export function SettingsScreen() {
     settle?.(value);
   }, []);
 
+  const dismissBackupPrompt = useCallback(() => {
+    settlePrompt('cancel');
+  }, [settlePrompt]);
+
+  const { show: setDialog, dialogProps } = useAlertDialog(dismissBackupPrompt);
+
   const promptBackup = useCallback(
     (config: {
       title?: string;
@@ -140,13 +141,8 @@ export function SettingsScreen() {
         });
       });
     },
-    [settlePrompt],
+    [settlePrompt, setDialog],
   );
-
-  const handleDialogClose = useCallback(() => {
-    setDialog(null);
-    settlePrompt('cancel');
-  }, [settlePrompt]);
 
   const promptImportMode = useCallback(
     async (title: string, message: string) => {
@@ -217,7 +213,7 @@ export function SettingsScreen() {
         }, DIALOG_CHAIN_MS);
       }
     },
-    [t],
+    [t, setDialog],
   );
 
   const performDriveImport = useCallback(
@@ -250,7 +246,7 @@ export function SettingsScreen() {
         await RNFS.unlink(backup.path).catch(() => {});
       }
     },
-    [t],
+    [t, setDialog],
   );
 
   const handleDriveBackup = useCallback(() => {
@@ -269,7 +265,7 @@ export function SettingsScreen() {
         });
       }
     });
-  }, [run, t]);
+  }, [run, t, setDialog]);
 
   const handleDriveRestore = useCallback(() => {
     return run('driveRestore', async () => {
@@ -302,7 +298,7 @@ export function SettingsScreen() {
         });
       }
     });
-  }, [run, promptImportMode, performDriveImport, t]);
+  }, [run, promptImportMode, performDriveImport, t, setDialog]);
 
   const handleExport = useCallback(() => {
     return run('exportFile', async () => {
@@ -313,7 +309,7 @@ export function SettingsScreen() {
         setDialog({ title: t.error, message: t.exportFailed, buttons: [{ text: t.done }] });
       }
     });
-  }, [run, t]);
+  }, [run, t, setDialog]);
 
   const handleImportPress = useCallback(() => {
     return run('importFile', async () => {
@@ -448,13 +444,7 @@ export function SettingsScreen() {
         </View>
       </ScrollView>
 
-      <AlertDialog
-        visible={dialog !== null}
-        title={dialog?.title}
-        message={dialog?.message}
-        buttons={dialog?.buttons}
-        onClose={handleDialogClose}
-      />
+      <AlertDialog {...dialogProps} />
     </Screen>
   );
 }

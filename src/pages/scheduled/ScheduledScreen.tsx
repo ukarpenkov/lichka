@@ -1,18 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 
-import { Screen, Text, PageHeader, AlertDialog, type AlertButton } from '../../shared/ui';
+import { Screen, Text, PageHeader, AlertDialog, useAlertDialog } from '../../shared/ui';
 import { useTheme, useLocale } from '../../shared/config';
-import { playDeleteSound } from '../../shared/lib';
-import { getSettings } from '../../entities/settings';
 import {
   getScheduledMessages,
   disableFiredMessages,
-  deleteMessage,
   type Message,
 } from '../../entities/message';
 import { getChatById } from '../../entities/chat';
-import { cancelNotification } from '../../features/notifications';
+import { deleteMessageWithEffects } from '../../features/delete-message';
 import { syncScheduledWidgetSnapshot } from '../../features/scheduled-widget';
 import { useMainTabs, useTabVisible } from '../../app/MainTabsContext';
 import {
@@ -41,11 +38,7 @@ export function ScheduledScreen() {
   const [entries, setEntries] = useState<ScheduledEntry[]>([]);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
-  const [dialog, setDialog] = useState<{
-    title?: string;
-    message?: string;
-    buttons?: AlertButton[];
-  } | null>(null);
+  const { show: setDialog, dialogProps } = useAlertDialog();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,18 +166,14 @@ export function ScheduledScreen() {
             text: t.delete,
             style: 'destructive',
             onPress: () => {
-              deleteMessage(entry.message.id);
-              cancelNotification(entry.message.id);
-              if (getSettings().soundEnabled) {
-                playDeleteSound();
-              }
+              deleteMessageWithEffects(entry.message.id);
               loadEntries();
             },
           },
         ],
       });
     },
-    [t, loadEntries],
+    [t, loadEntries, setDialog],
   );
 
   return (
@@ -229,13 +218,7 @@ export function ScheduledScreen() {
         />
       )}
 
-      <AlertDialog
-        visible={dialog !== null}
-        title={dialog?.title}
-        message={dialog?.message}
-        buttons={dialog?.buttons}
-        onClose={() => setDialog(null)}
-      />
+      <AlertDialog {...dialogProps} />
     </Screen>
   );
 }

@@ -1,4 +1,4 @@
-import { navigateToChat, revealChatListForShare } from '../../app/mainTabsApi';
+import { navigateToChat, revealChatListForShare } from '../../shared/lib/appNavigationPort';
 import type { NativeShareEvent, ShareDraft } from './shareDraft';
 import { normalizeSharePayload } from './shareDraft';
 import { getShareDraft, setShareDraft } from './sharePickStore';

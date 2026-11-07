@@ -36,6 +36,15 @@ import {
   popChatStackToTop,
 } from './mainTabsApi';
 
+/** Metro inline-requires delay this module until a binding is read. */
+function loadMainTabsApi(): void {
+  if (typeof setMainTabsApi !== 'function') {
+    throw new Error('Main tabs API failed to load');
+  }
+}
+
+loadMainTabsApi();
+
 import type {
   RootStackParamList,
   ChatStackParamList,
@@ -93,13 +102,9 @@ function useIndependentStackBridge(
 }
 
 function ChatStackScreen() {
-  const { text, background } = useTheme();
+  const { navTheme, screenOptions } = useNavigationTheme();
   const navRef = useNavigationContainerRef<ChatStackParamList>();
   const syncNestedOpen = useIndependentStackBridge(CHAT_TAB_INDEX, navRef);
-  const navTheme = React.useMemo(
-    () => buildNavTheme(text, background),
-    [text, background],
-  );
 
   return (
     <NavigationIndependentTree>
@@ -108,14 +113,7 @@ function ChatStackScreen() {
         theme={navTheme}
         onStateChange={syncNestedOpen}>
         <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: background },
-            headerTintColor: text,
-            headerTitleStyle: { color: text },
-            contentStyle: { backgroundColor: background },
-            gestureEnabled: true,
-            fullScreenGestureEnabled: true,
-          }}>
+          screenOptions={screenOptions}>
           <Stack.Screen
             name="ChatList"
             component={ChatListScreen}
@@ -149,15 +147,11 @@ function ThemePickerBackButton() {
 }
 
 function SettingsStackScreen() {
-  const { text, background } = useTheme();
+  const { navTheme, screenOptions } = useNavigationTheme();
   const { t } = useLocale();
   const navRef = useNavigationContainerRef<SettingsStackParamList>();
   themePickerGoBack.current = () => navRef.current?.goBack();
   const syncNestedOpen = useIndependentStackBridge(SETTINGS_TAB_INDEX, navRef);
-  const navTheme = React.useMemo(
-    () => buildNavTheme(text, background),
-    [text, background],
-  );
 
   return (
     <NavigationIndependentTree>
@@ -166,14 +160,7 @@ function SettingsStackScreen() {
         theme={navTheme}
         onStateChange={syncNestedOpen}>
         <SettingsStack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: background },
-            headerTintColor: text,
-            headerTitleStyle: { color: text },
-            contentStyle: { backgroundColor: background },
-            gestureEnabled: true,
-            fullScreenGestureEnabled: true,
-          }}>
+          screenOptions={screenOptions}>
           <SettingsStack.Screen
             name="Settings"
             component={SettingsScreen}
@@ -225,6 +212,31 @@ function buildNavTheme(text: string, background: string) {
       heavy: { fontFamily: fonts.bold, fontWeight: Platform.OS === 'ios' ? ('700' as const) : ('normal' as const) },
     },
   };
+}
+
+function stackScreenOptions(text: string, background: string) {
+  return {
+    headerStyle: { backgroundColor: background },
+    headerTintColor: text,
+    headerTitleStyle: { color: text },
+    contentStyle: { backgroundColor: background },
+    gestureEnabled: true as const,
+    fullScreenGestureEnabled: true as const,
+  };
+}
+
+function useNavigationTheme() {
+  const { text, background } = useTheme();
+  const isDark = isBackgroundDark(background);
+  const navTheme = React.useMemo(
+    () => buildNavTheme(text, background),
+    [text, background],
+  );
+  const screenOptions = React.useMemo(
+    () => stackScreenOptions(text, background),
+    [text, background],
+  );
+  return { text, background, isDark, navTheme, screenOptions };
 }
 
 const TAB_ICONS = [MessageCircle, CalendarDays, Settings];
@@ -310,13 +322,8 @@ function MainTabs() {
 }
 
 export function AppNavigator() {
-  const { text, background } = useTheme();
-  const isDark = isBackgroundDark(background);
-
-  const navTheme = React.useMemo(
-    () => buildNavTheme(text, background),
-    [text, background],
-  );
+  loadMainTabsApi();
+  const { isDark, navTheme } = useNavigationTheme();
 
   return (
     <NavigationContainer

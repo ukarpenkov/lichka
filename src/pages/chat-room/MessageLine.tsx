@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, AccessibilityInfo, Platform } from 'react-native';
 import { Pressable as GesturePressable } from 'react-native-gesture-handler';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { useTheme, useLocale, spacing } from '../../shared/config';
+import { useTheme, useLocale, formatTime, spacing } from '../../shared/config';
 import { Bell, Repeat, Image as ImageIcon, type PixelIconComponent } from '../../shared/ui/pixel';
 import { Text, AlarmClockIcon, LinkifiedText } from '../../shared/ui';
 import { VoiceMessage } from '../../widgets/voice-message';
@@ -24,10 +24,7 @@ type MessageLineProps = {
 
 /** Chat timestamp: [HH:MM] — stored seconds remain unchanged. */
 export function formatLogTime(iso: string): string {
-  const d = new Date(iso);
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `[${h}:${m}]`;
+  return `[${formatTime(iso)}]`;
 }
 
 function isVoiceMessage(message: Message): boolean {
