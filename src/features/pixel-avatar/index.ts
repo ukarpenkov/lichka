@@ -15,9 +15,6 @@ export {
   recolorThemePixelAvatar,
   recolorThemePixelAvatarFromBase64,
   recolorThemePixelAvatarFromBytes,
-  createPixelContourAvatar,
-  createPixelContourAvatarFromBase64,
-  createPixelContourAvatarFromBytes,
   base64ToBytes,
 } from './model/createThemePixelAvatar';
 export { sniffImageFormat, decodeImageBytes } from './model/decodeImage';
@@ -28,7 +25,6 @@ export {
 } from './model/types';
 export {
   processThemePixelBuffer,
-  processPixelContourBuffer,
   buildThemePixelMask,
   paintThemePixelMask,
 } from './model/processThemePixelBuffer';

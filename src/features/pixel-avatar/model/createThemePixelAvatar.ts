@@ -14,11 +14,7 @@ import { decodeImageBase64, decodeImageBytes } from './decodeImage';
 export type PixelAvatarInput =
   | { kind: 'rgba'; image: RgbaImage }
   | { kind: 'bytes'; bytes: Uint8Array }
-  | { kind: 'base64'; base64: string }
-  /** @deprecated use kind: 'bytes' */
-  | { kind: 'jpeg-bytes'; bytes: Uint8Array }
-  /** @deprecated use kind: 'base64' */
-  | { kind: 'jpeg-base64'; base64: string };
+  | { kind: 'base64'; base64: string };
 
 export type ThemePixelPaintResult = {
   png: Uint8Array;
@@ -32,10 +28,8 @@ function decodeInput(input: PixelAvatarInput): RgbaImage {
     case 'rgba':
       return input.image;
     case 'bytes':
-    case 'jpeg-bytes':
       return decodeImageBytes(input.bytes);
     case 'base64':
-    case 'jpeg-base64':
       return decodeImageBase64(input.base64);
     default: {
       const _exhaustive: never = input;
@@ -123,12 +117,5 @@ export function recolorThemePixelAvatarFromBytes(
 ): ThemePixelPaintResult {
   return recolorThemePixelAvatar({ kind: 'bytes', bytes }, options);
 }
-
-/** @deprecated Use createThemePixelAvatar */
-export const createPixelContourAvatar = createThemePixelAvatar;
-/** @deprecated Use createThemePixelAvatarFromBase64 */
-export const createPixelContourAvatarFromBase64 = createThemePixelAvatarFromBase64;
-/** @deprecated Use createThemePixelAvatarFromBytes */
-export const createPixelContourAvatarFromBytes = createThemePixelAvatarFromBytes;
 
 export { base64ToBytes };

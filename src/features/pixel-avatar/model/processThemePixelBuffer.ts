@@ -199,6 +199,3 @@ export function processThemePixelBuffer(
 ): RgbaImage {
   return paintThemePixelMask(buildThemePixelMask(source, options), options);
 }
-
-/** @deprecated Use processThemePixelBuffer — contour MVP replaced by theme-pixel. */
-export const processPixelContourBuffer = processThemePixelBuffer;

@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, View, StyleSheet, Platform } from 'react-native';
+import { Pressable, Platform, type StyleProp, type TextStyle } from 'react-native';
 import { CalendarDays, Clock, Copy, Pencil, Stop, Trash2 } from '../../shared/ui/pixel';
-import { Text } from '../../shared/ui';
-import {
-  useTheme,
-  useLocale,
-  radii,
-  hardShadowOffset,
-  hardBorderWidth,
-  spacing,
-} from '../../shared/config';
+import { HardMenu, Text, hardMenuStyles } from '../../shared/ui';
+import { useTheme, useLocale } from '../../shared/config';
 
 type MessageContextMenuProps = {
   visible: boolean;
@@ -24,8 +17,50 @@ type MessageContextMenuProps = {
   onClose: () => void;
 };
 
+type IconComponent = React.ComponentType<{ size?: number; color?: string }>;
+
 /** Ignore presses that arrive from the long-press that opened the menu. */
 const MENU_ARM_MS = 350;
+
+function MenuItem({
+  armed,
+  rippleColor,
+  pressedColor,
+  icon: Icon,
+  iconColor,
+  label,
+  labelStyle,
+  onPress,
+}: {
+  armed: boolean;
+  rippleColor: string;
+  pressedColor: string;
+  icon: IconComponent;
+  iconColor: string;
+  label: string;
+  labelStyle?: StyleProp<TextStyle>;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      android_ripple={
+        Platform.OS === 'android' ? { color: rippleColor } : undefined
+      }
+      style={({ pressed }) => [
+        hardMenuStyles.item,
+        pressed && armed && Platform.OS !== 'android'
+          ? { backgroundColor: pressedColor }
+          : null,
+      ]}
+      accessibilityRole="menuitem"
+      accessibilityState={{ disabled: !armed }}
+    >
+      <Icon size={18} color={iconColor} />
+      <Text variant="body" style={labelStyle}>{label}</Text>
+    </Pressable>
+  );
+}
 
 // RN Pressable: Modal is outside app GestureHandlerRootView; RNGH pressables often miss onPress.
 export function MessageContextMenu({
@@ -39,7 +74,7 @@ export function MessageContextMenu({
   onSnoozeDay,
   onClose,
 }: MessageContextMenuProps) {
-  const { text, background, colors } = useTheme();
+  const { colors } = useTheme();
   const { t } = useLocale();
   const [armed, setArmed] = useState(false);
 
@@ -59,180 +94,83 @@ export function MessageContextMenu({
   };
 
   return (
-    <Modal
-      key={presentationKey}
+    <HardMenu
       visible={visible}
-      transparent
+      presentationKey={presentationKey}
       statusBarTranslucent
-      animationType="fade"
-      onRequestClose={onClose}
+      onClose={onClose}
+      onBackdropPress={() => {
+        if (!armed) return;
+        onClose();
+      }}
+      backdropAccessibilityRole="button"
+      absorbContentPresses
+      menuAccessibilityRole="menu"
     >
-      <Pressable
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
-        onPress={() => {
-          if (!armed) return;
-          onClose();
-        }}
-        accessibilityRole="button"
-      >
-        {/* Absorb presses so they never reach the backdrop (esp. while items were disabled). */}
-        <Pressable
-          accessibilityRole="menu"
-          onPress={() => {}}
-          style={styles.menuShadowWrap}
-        >
-          <View
-            style={[
-              styles.hardShadowLayer,
-              { backgroundColor: text, borderRadius: radii.sm },
-            ]}
-          />
-          <View
-            style={[
-              styles.menu,
-              {
-                backgroundColor: background,
-                borderColor: text,
-                borderWidth: hardBorderWidth,
-                borderRadius: radii.sm,
-              },
-            ]}
-          >
-            <Pressable
-              onPress={() => runWhenArmed(onCopy)}
-              android_ripple={
-                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-              }
-              style={({ pressed }) => [
-                styles.item,
-                pressed && armed && Platform.OS !== 'android'
-                  ? { backgroundColor: colors.surfaceSoft }
-                  : null,
-              ]}
-              accessibilityRole="menuitem"
-              accessibilityState={{ disabled: !armed }}
-            >
-              <Copy size={18} color={colors.ink} />
-              <Text variant="body">{t.copy}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => runWhenArmed(onEdit)}
-              android_ripple={
-                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-              }
-              style={({ pressed }) => [
-                styles.item,
-                pressed && armed && Platform.OS !== 'android'
-                  ? { backgroundColor: colors.surfaceSoft }
-                  : null,
-              ]}
-              accessibilityRole="menuitem"
-              accessibilityState={{ disabled: !armed }}
-            >
-              <Pencil size={18} color={colors.ink} />
-              <Text variant="body">{t.edit}</Text>
-            </Pressable>
-            {[
-              { action: onSnoozeHour, label: t.snoozeHour, Icon: Clock, key: 'hour' },
-              { action: onSnoozeDay, label: t.snoozeDay, Icon: CalendarDays, key: 'day' },
-            ].map(({ action, label, Icon, key }) => action ? (
-              <Pressable
-                key={key}
-                onPress={() => runWhenArmed(action)}
-                android_ripple={
-                  Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-                }
-                style={({ pressed }) => [
-                  styles.item,
-                  pressed && armed && Platform.OS !== 'android'
-                    ? { backgroundColor: colors.surfaceSoft }
-                    : null,
-                ]}
-                accessibilityRole="menuitem"
-                accessibilityState={{ disabled: !armed }}
-              >
-                <Icon size={18} color={colors.ink} />
-                <Text variant="body" style={styles.itemLabel}>{label}</Text>
-              </Pressable>
-            ) : null)}
-            {onStopReminder ? (
-              <Pressable
-                onPress={() => runWhenArmed(onStopReminder)}
-                android_ripple={
-                  Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-                }
-                style={({ pressed }) => [
-                  styles.item,
-                  pressed && armed && Platform.OS !== 'android'
-                    ? { backgroundColor: colors.surfaceSoft }
-                    : null,
-                ]}
-                accessibilityRole="menuitem"
-                accessibilityState={{ disabled: !armed }}
-              >
-                <Stop size={18} color={colors.ink} />
-                <Text variant="body" style={styles.itemLabel}>{t.stopReminder}</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={() => runWhenArmed(onDelete)}
-              android_ripple={
-                Platform.OS === 'android' ? { color: colors.surfaceSoft } : undefined
-              }
-              style={({ pressed }) => [
-                styles.item,
-                pressed && armed && Platform.OS !== 'android'
-                  ? { backgroundColor: colors.surfaceSoft }
-                  : null,
-              ]}
-              accessibilityRole="menuitem"
-              accessibilityState={{ disabled: !armed }}
-            >
-              <Trash2 size={18} color={colors.destructive} />
-              <Text variant="body" style={{ color: colors.destructive }}>
-                {t.delete}
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      <MenuItem
+        armed={armed}
+        rippleColor={colors.surfaceSoft}
+        pressedColor={colors.surfaceSoft}
+        icon={Copy}
+        iconColor={colors.ink}
+        label={t.copy}
+        onPress={() => runWhenArmed(onCopy)}
+      />
+      <MenuItem
+        armed={armed}
+        rippleColor={colors.surfaceSoft}
+        pressedColor={colors.surfaceSoft}
+        icon={Pencil}
+        iconColor={colors.ink}
+        label={t.edit}
+        onPress={() => runWhenArmed(onEdit)}
+      />
+      {onSnoozeHour ? (
+        <MenuItem
+          armed={armed}
+          rippleColor={colors.surfaceSoft}
+          pressedColor={colors.surfaceSoft}
+          icon={Clock}
+          iconColor={colors.ink}
+          label={t.snoozeHour}
+          labelStyle={hardMenuStyles.itemLabel}
+          onPress={() => runWhenArmed(onSnoozeHour)}
+        />
+      ) : null}
+      {onSnoozeDay ? (
+        <MenuItem
+          armed={armed}
+          rippleColor={colors.surfaceSoft}
+          pressedColor={colors.surfaceSoft}
+          icon={CalendarDays}
+          iconColor={colors.ink}
+          label={t.snoozeDay}
+          labelStyle={hardMenuStyles.itemLabel}
+          onPress={() => runWhenArmed(onSnoozeDay)}
+        />
+      ) : null}
+      {onStopReminder ? (
+        <MenuItem
+          armed={armed}
+          rippleColor={colors.surfaceSoft}
+          pressedColor={colors.surfaceSoft}
+          icon={Stop}
+          iconColor={colors.ink}
+          label={t.stopReminder}
+          labelStyle={hardMenuStyles.itemLabel}
+          onPress={() => runWhenArmed(onStopReminder)}
+        />
+      ) : null}
+      <MenuItem
+        armed={armed}
+        rippleColor={colors.surfaceSoft}
+        pressedColor={colors.surfaceSoft}
+        icon={Trash2}
+        iconColor={colors.destructive}
+        label={t.delete}
+        labelStyle={{ color: colors.destructive }}
+        onPress={() => runWhenArmed(onDelete)}
+      />
+    </HardMenu>
   );
 }
-
-const MENU_WIDTH = 220;
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuShadowWrap: {
-    position: 'relative',
-    paddingRight: hardShadowOffset,
-    paddingBottom: hardShadowOffset,
-  },
-  hardShadowLayer: {
-    ...StyleSheet.absoluteFill,
-    top: hardShadowOffset,
-    left: hardShadowOffset,
-    right: 0,
-    bottom: 0,
-  },
-  menu: {
-    width: MENU_WIDTH,
-    overflow: 'hidden',
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: spacing.lg,
-    gap: 12,
-    minHeight: 56,
-  },
-  itemLabel: {
-    flexShrink: 1,
-  },
-});

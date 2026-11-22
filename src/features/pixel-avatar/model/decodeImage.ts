@@ -165,13 +165,3 @@ export function decodeImageBase64(base64: string): RgbaImage {
   }
   return decodeImageBytes(base64ToBytes(clean));
 }
-
-/** @deprecated use decodeImageBytes */
-export function decodeJpegBytes(bytes: Uint8Array): RgbaImage {
-  return decodeJpeg(bytes);
-}
-
-/** @deprecated use decodeImageBase64 */
-export function decodeJpegBase64(base64: string): RgbaImage {
-  return decodeImageBase64(base64);
-}

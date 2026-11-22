@@ -11,6 +11,7 @@ export { LinkifiedText, type LinkifiedTextProps } from './LinkifiedText';
 export { AnimatedPressable } from './AnimatedPressable';
 export { SharedElementAvatar, SharedElementProvider } from './SharedElementAvatar';
 export { AlertDialog, type AlertButton } from './AlertDialog';
+export { HardMenu, hardMenuStyles } from './HardMenu';
 export { useAlertDialog, type AlertDialogState } from './useAlertDialog';
 export { Switch, type SwitchProps } from './Switch';
 export {
